@@ -28,9 +28,19 @@ export type Category = typeof categories[number];
 // Sample projects data - can be expanded later
 export const projects: Project[] = [
   {
+    id: '25',
+    category: 'Miscellaneous',
+    image: '/projects/photo14.JPG',
+  },
+  {
     id: '12',
     category: 'Miscellaneous',
     image: '/projects/photo1.JPG',
+  },
+  {
+    id: '30',
+    category: 'Miscellaneous',
+    image: '/projects/photo19.JPG',
   },
   {
     id: '13',
@@ -93,11 +103,6 @@ export const projects: Project[] = [
     image: '/projects/photo13.jpg',
   },
   {
-    id: '25',
-    category: 'Miscellaneous',
-    image: '/projects/photo14.JPG',
-  },
-  {
     id: '26',
     category: 'Miscellaneous',
     image: '/projects/photo15.JPG',
@@ -116,11 +121,6 @@ export const projects: Project[] = [
     id: '29',
     category: 'Miscellaneous',
     image: '/projects/photo18.JPG',
-  },
-  {
-    id: '30',
-    category: 'Miscellaneous',
-    image: '/projects/photo19.JPG',
   },
   {
     id: '31',
