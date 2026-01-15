@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 600" role="img" aria-label="Gecko spider crane line-art">
+  <g fill="none" stroke="#d4d4d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+
+    <!-- ground reference -->
+    <path d="M40 520H260" opacity="0.45"></path>
+
+    <!-- main body -->
+    <rect x="108" y="430" width="84" height="34" rx="6"></rect>
+    <rect x="126" y="412" width="48" height="18" rx="4"></rect>
+
+    <!-- turret -->
+    <circle cx="150" cy="432" r="9"></circle>
+
+    <!-- mast -->
+    <path d="M150 412V338"></path>
+
+    <!-- articulated boom (mirrored left) -->
+    <path d="M150 338L90 258"></path>
+    <path d="M90 258L54 200"></path>
+
+    <!-- telescoping boom detail -->
+    <path d="M140 328L84 246" opacity="0.55"></path>
+    <path d="M124 308L68 224" opacity="0.55"></path>
+
+    <!-- boom tip -->
+    <circle cx="50" cy="196" r="5"></circle>
+    <path d="M46 196h8"></path>
+
+    <!-- hoist line -->
+    <path d="M50 201V258"></path>
+
+    <!-- hook -->
+    <path d="M50 258c0 10 8 16 16 16"></path>
+    <path d="M66 274c-8 0-14 6-14 14"></path>
+    <path d="M52 288c0 8 6 14 14 14"></path>
+
+    <!-- outrigger hub -->
+    <circle cx="150" cy="468" r="8"></circle>
+
+    <!-- spider legs -->
+    <path d="M150 468L78 502"></path>
+    <path d="M150 468L222 502"></path>
+    <path d="M150 468L98 540"></path>
+    <path d="M150 468L202 540"></path>
+
+    <!-- leg articulation -->
+    <path d="M116 486L94 500"></path>
+    <path d="M184 486L206 500"></path>
+    <path d="M130 508L114 528"></path>
+    <path d="M170 508L186 528"></path>
+
+    <!-- feet -->
+    <rect x="64" y="500" width="26" height="9" rx="3"></rect>
+    <rect x="210" y="500" width="26" height="9" rx="3"></rect>
+    <rect x="100" y="538" width="28" height="9" rx="3"></rect>
+    <rect x="172" y="538" width="28" height="9" rx="3"></rect>
+
+  </g>
+</svg>
