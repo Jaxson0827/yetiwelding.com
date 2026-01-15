@@ -13,15 +13,17 @@ export default function Header() {
   // Increment this version number when you update the logo to force cache refresh
   const LOGO_VERSION = '4';
   const logoPath = `/Website Logo.png?v=${LOGO_VERSION}`;
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:logoPath',message:'Client logo path computed',data:{logoPath,LOGO_VERSION,isClient:true},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'A'})}).catch(()=>{});
-  } else {
-    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:logoPath',message:'Server logo path computed',data:{logoPath,LOGO_VERSION,isClient:false},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'A'})}).catch(()=>{});
-  }
-  // #endregion
 
-  const navItems = [
+  type NavItem = {
+    label: string;
+    href: string;
+    dropdownItems?: Array<{
+      label: string;
+      href: string;
+    }>;
+  };
+
+  const navItems: NavItem[] = [
     { label: 'HOME', href: '/' },
     { label: 'SERVICES', href: '/services' },
     { label: 'PROJECTS', href: '/projects' },
@@ -31,17 +33,12 @@ export default function Header() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      const shouldScroll = window.scrollY > 50;
+      setIsScrolled(shouldScroll);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:useEffect',message:'Hovered nav item state changed',data:{hoveredNavItem},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'G'})}).catch(()=>{});
-    // #endregion
-  }, [hoveredNavItem]);
 
   return (
     <motion.header
@@ -100,13 +97,6 @@ export default function Header() {
               style={{ top: '-12px', left: '1px', position: 'relative' }}
               loading="eager"
               suppressHydrationWarning
-              // #region agent log
-              ref={(el) => {
-                if (el) {
-                  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:img-ref',message:'Logo img element rendered',data:{src:el.src,actualSrc:el.getAttribute('src'),computedSrc:logoPath,isClient:typeof window !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'B'})}).catch(()=>{});
-                }
-              }}
-              // #endregion
             />
           </motion.div>
         </motion.a>
@@ -118,9 +108,6 @@ export default function Header() {
               key={item.label} 
               className="relative group"
               onMouseEnter={(e) => {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:104',message:'Parent group mouse enter',data:{item:item.label,hasDropdown:!!item.dropdownItems},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-                // #endregion
                 // Clear any pending timeout
                 const timeoutId = (e.currentTarget as any)._hoverTimeout;
                 if (timeoutId) {
@@ -129,23 +116,14 @@ export default function Header() {
                 }
                 if (item.dropdownItems) {
                   setHoveredNavItem(item.label);
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:104',message:'Set hovered nav item state',data:{item:item.label,state:'hovered'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'D'})}).catch(()=>{});
-                  // #endregion
                 }
               }}
               onMouseLeave={(e) => {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:104',message:'Parent group mouse leave',data:{item:item.label,relatedTarget:e.relatedTarget instanceof HTMLElement ? e.relatedTarget.tagName : null},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-                // #endregion
                 if (item.dropdownItems) {
                   // Use a small delay to allow mouse to move to dropdown/bridge
                   // This prevents clearing when moving between child elements
                   const timeoutId = setTimeout(() => {
                     setHoveredNavItem(null);
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:104',message:'Clear hovered nav item state (delayed)',data:{item:item.label,state:'cleared'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'D'})}).catch(()=>{});
-                    // #endregion
                   }, 100);
                   // Store timeout to clear if mouse re-enters
                   (e.currentTarget as any)._hoverTimeout = timeoutId;
@@ -161,20 +139,11 @@ export default function Header() {
                   textShadow: pathname === item.href ? '0 0 10px rgba(220, 20, 60, 0.5)' : 'none',
                 }}
                 onMouseEnter={() => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:105',message:'Link mouse enter',data:{item:item.label,hasDropdown:!!item.dropdownItems,currentHovered:hoveredNavItem},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
-                  // #endregion
                   if (item.dropdownItems) {
                     setHoveredNavItem(item.label);
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:105',message:'Link set hover state',data:{item:item.label,willBeHovered:item.label},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'F'})}).catch(()=>{});
-                    // #endregion
                   }
                 }}
                 onMouseLeave={(e) => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:105',message:'Link mouse leave',data:{item:item.label,relatedTarget:e.relatedTarget instanceof HTMLElement ? e.relatedTarget.tagName : null},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
-                  // #endregion
                   // Don't clear state here - let parent group handle it
                   // This prevents clearing when moving to dropdown/bridge
                 }}
@@ -230,9 +199,6 @@ export default function Header() {
                   <div 
                     className="absolute top-full left-0 w-full h-2 z-40"
                     onMouseEnter={() => {
-                      // #region agent log
-                      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:160',message:'Hover bridge mouse enter',data:{item:item.label},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'E'})}).catch(()=>{});
-                      // #endregion
                       setHoveredNavItem(item.label);
                     }}
                   />
@@ -244,15 +210,9 @@ export default function Header() {
                       pointerEvents: 'auto'
                     }}
                     onMouseEnter={() => {
-                      // #region agent log
-                      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:160',message:'Dropdown wrapper mouse enter',data:{item:item.label,isHovered:hoveredNavItem === item.label},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
-                      // #endregion
                       setHoveredNavItem(item.label);
                     }}
                     onMouseLeave={() => {
-                      // #region agent log
-                      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:160',message:'Dropdown wrapper mouse leave',data:{item:item.label},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
-                      // #endregion
                       // Don't clear immediately - let parent group handle with delay
                     }}
                   >

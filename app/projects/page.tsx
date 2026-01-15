@@ -6,7 +6,6 @@ import Footer from '@/components/Footer';
 import {
   ProjectsHero,
   ProjectFilter,
-  ProjectStatsDashboard,
   ProjectsGrid,
 } from '@/components/projects';
 import ProjectModal from '@/components/projects/ProjectModal';
@@ -160,8 +159,10 @@ export default function ProjectsPage() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
-        <ProjectStatsDashboard projects={filteredProjects} />
-        <ProjectsGrid projects={filteredProjects} />
+        <ProjectsGrid
+          projects={filteredProjects}
+          showFeatured={activeCategory === 'All'}
+        />
         <Footer />
       </main>
 

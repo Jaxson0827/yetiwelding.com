@@ -7,9 +7,14 @@ import ProjectCard from './ProjectCard';
 interface ProjectsGridProps {
   projects: Project[];
   onProjectSelect?: (project: Project) => void;
+  showFeatured?: boolean;
 }
 
-export default function ProjectsGrid({ projects, onProjectSelect }: ProjectsGridProps) {
+export default function ProjectsGrid({
+  projects,
+  onProjectSelect,
+  showFeatured = true,
+}: ProjectsGridProps) {
   if (projects.length === 0) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
@@ -30,8 +35,8 @@ export default function ProjectsGrid({ projects, onProjectSelect }: ProjectsGrid
   }
 
   // Split projects into featured (first 3) and regular
-  const featuredProjects = projects.slice(0, 3);
-  const regularProjects = projects.slice(3);
+  const featuredProjects = showFeatured ? projects.slice(0, 3) : [];
+  const regularProjects = showFeatured ? projects.slice(3) : projects;
 
   return (
     <div className="container mx-auto px-4 py-12 md:py-16">

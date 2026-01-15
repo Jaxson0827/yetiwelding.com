@@ -123,34 +123,6 @@ export default function ContactHero() {
           discuss how we can turn your ideas into exceptional metalwork.
         </motion.p>
 
-        {/* Response Time Promise */}
-        <motion.div
-          className="mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-full"
-          style={{
-            background: 'rgba(220, 20, 60, 0.1)',
-            border: '1px solid rgba(220, 20, 60, 0.3)',
-            backdropFilter: 'blur(10px)',
-          }}
-          variants={itemVariants}
-        >
-          <svg
-            className="w-5 h-5 text-accent-red"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span className="text-white/90 text-sm font-medium">
-            We respond within 24 hours
-          </span>
-        </motion.div>
       </motion.div>
 
       {/* Decorative Elements */}
