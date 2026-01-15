@@ -6,7 +6,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { services } from '@/lib/homepageData';
 
-export default function ServicesPreview() {
+interface ServicesPreviewProps {
+  onSelect?: (serviceId: string) => void;
+}
+
+export default function ServicesPreview({ onSelect }: ServicesPreviewProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
   // #region agent log
@@ -125,6 +129,11 @@ export default function ServicesPreview() {
                   }}
                   // #endregion
                   onClick={(e) => {
+                    if (onSelect) {
+                      e.preventDefault();
+                      onSelect(service.id);
+                      return;
+                    }
                     // Use full page navigation to preserve hash
                     e.preventDefault();
                     if (typeof window !== 'undefined') {

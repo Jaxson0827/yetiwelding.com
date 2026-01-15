@@ -10,13 +10,16 @@ import TestimonialsSection from '@/components/TestimonialsSection';
 import AboutSection from '@/components/AboutSection';
 import PartnerLogos from '@/components/PartnerLogos';
 import Footer from '@/components/Footer';
+import ServiceModal from '@/components/ServiceModal';
 import SectionDivider from '@/components/ui/SectionDivider';
+import { services } from '@/lib/servicesData';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
 
   useEffect(() => {
     const updateScrollProgress = () => {
@@ -96,7 +99,7 @@ export default function Home() {
         <Header />
         <Hero />
         <SectionDivider />
-        <ServicesPreview />
+        <ServicesPreview onSelect={(serviceId) => setSelectedService(serviceId)} />
         <SectionDivider />
         <FeaturedProject />
         <SectionDivider />
@@ -111,6 +114,11 @@ export default function Home() {
         <PartnerLogos />
         <Footer />
       </main>
+
+      <ServiceModal
+        service={services.find((service) => service.id === selectedService) || null}
+        onClose={() => setSelectedService(null)}
+      />
 
       {/* Back to Top Button */}
       <AnimatePresence>
