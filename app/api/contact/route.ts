@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/contact/route.ts:module-init',message:'Contact route module init',data:{hasResendKey:!!process.env.RESEND_API_KEY,hasResendFrom:!!process.env.RESEND_FROM_EMAIL,hasBusinessEmail:!!process.env.BUSINESS_EMAIL},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1'})}).catch(()=>{});
+// #endregion
+let resend: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 export async function POST(request: NextRequest) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/contact/route.ts:POST',message:'Contact POST start',data:{hasResendKey:!!process.env.RESEND_API_KEY,hasResendFrom:!!process.env.RESEND_FROM_EMAIL,hasBusinessEmail:!!process.env.BUSINESS_EMAIL},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3'})}).catch(()=>{});
+  // #endregion
   try {
     const formData = await request.formData();
 
@@ -75,7 +91,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await resend.emails.send({
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/contact/route.ts:send',message:'Attempting to send contact email',data:{hasAttachments:!!attachments,hasBusinessEmail:!!businessEmail},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
+    const resendInstance = getResend();
+    if (!resendInstance) {
+      console.error('RESEND_API_KEY is not set in environment variables');
+      return NextResponse.json(
+        { error: 'Email service is not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    const { data, error } = await resendInstance.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'Yeti Welding Contact <onboarding@resend.dev>',
       to: [businessEmail],
       replyTo: email,
