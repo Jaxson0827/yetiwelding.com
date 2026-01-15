@@ -54,11 +54,6 @@ export default function Footer() {
     { label: 'Contact', href: '/contact' },
   ];
 
-  // Products
-  const products: FooterLink[] = [
-    { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
-  ];
-
   // Services
   const services: FooterLink[] = [
     { label: 'Custom Fabrication', href: '/services#custom-fabrication' },
@@ -91,7 +86,7 @@ export default function Footer() {
       <div className="container mx-auto relative z-10">
         {/* Main Footer Content */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 mb-8"
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
@@ -223,40 +218,7 @@ export default function Footer() {
             </ul>
           </motion.div>
 
-          {/* Column 3: Products */}
-          <motion.div variants={itemVariants}>
-            <h3 className="text-white uppercase text-sm font-semibold mb-4 tracking-wider">
-              PRODUCTS
-            </h3>
-            <ul className="space-y-3">
-              {products.map((link) => (
-                <li key={link.href}>
-                  <motion.a
-                    href={link.href}
-                    className="text-white/70 hover:text-accent-red transition-colors text-sm flex items-center group"
-                    whileHover={{ x: 5 }}
-                  >
-                    <span>{link.label}</span>
-                    <svg
-                      className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </motion.a>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* Column 4: Services */}
+          {/* Column 3: Services */}
           <motion.div variants={itemVariants}>
             <h3 className="text-white uppercase text-sm font-semibold mb-4 tracking-wider">
               SERVICES
@@ -289,7 +251,7 @@ export default function Footer() {
             </ul>
           </motion.div>
 
-          {/* Column 5: Company Info */}
+          {/* Column 4: Company Info */}
           <motion.div variants={itemVariants}>
             <h3 className="text-white uppercase text-sm font-semibold mb-4 tracking-wider">
               COMPANY
@@ -322,7 +284,7 @@ export default function Footer() {
             </ul>
           </motion.div>
 
-          {/* Column 6: Contact Info */}
+          {/* Column 5: Contact Info */}
           <motion.div variants={itemVariants}>
             <h3 className="text-white uppercase text-sm font-semibold mb-4 tracking-wider">
               CONTACT

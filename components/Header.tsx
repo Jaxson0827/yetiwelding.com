@@ -3,17 +3,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { useCart } from '@/contexts/CartContext';
-import Link from 'next/link';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isOrderDropdownOpen, setIsOrderDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [hoveredNavItem, setHoveredNavItem] = useState<string | null>(null);
   const pathname = usePathname();
-  const { getItemCount } = useCart();
-  const itemCount = getItemCount();
 
   // Increment this version number when you update the logo to force cache refresh
   const LOGO_VERSION = '4';
@@ -28,14 +23,6 @@ export default function Header() {
 
   const navItems = [
     { label: 'HOME', href: '/' },
-    { 
-      label: 'ORDER', 
-      href: '#',
-      dropdownItems: [
-        { label: 'Dumpster Gates', href: '/order/dumpster-gates' },
-        { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
-      ]
-    },
     { label: 'SERVICES', href: '/services' },
     { label: 'PROJECTS', href: '/projects' },
     { label: 'ABOUT', href: '/about' },
@@ -328,49 +315,11 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* Cart Button - Amazon Style */}
-        <Link
-          href="/cart"
-          className="relative flex items-center gap-2 px-3 py-2 hover:bg-white/5 rounded transition-colors group"
-        >
-          <div className="relative flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-white group-hover:text-white/90 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            {itemCount > 0 && (
-              <motion.span
-                className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 border-2 border-white"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              >
-                {itemCount > 99 ? '99+' : itemCount}
-              </motion.span>
-            )}
-          </div>
-          <span className="text-white text-xs font-medium group-hover:text-white/90 transition-colors">
-            Cart
-          </span>
-        </Link>
-
         {/* Mobile Menu Button */}
         <button
           className="lg:hidden text-white p-2"
           onClick={() => {
             setIsMenuOpen(!isMenuOpen);
-            if (isMenuOpen) {
-              setIsOrderDropdownOpen(false);
-            }
           }}
           aria-label="Toggle menu"
           aria-expanded={isMenuOpen}
@@ -413,7 +362,6 @@ export default function Header() {
               exit={{ opacity: 0 }}
               onClick={() => {
                 setIsMenuOpen(false);
-                setIsOrderDropdownOpen(false);
               }}
             />
             <motion.nav
@@ -432,102 +380,18 @@ export default function Header() {
               <div className="container mx-auto px-4 py-4 flex flex-col space-y-3">
                 {navItems.map((item, index) => (
                   <div key={item.label}>
-                    {item.dropdownItems ? (
-                      <>
-                        <motion.button
-                          className="w-full text-left text-white uppercase text-base font-semibold hover:text-red-200 transition-all py-2 flex items-center justify-between"
-                          onClick={() => setIsOrderDropdownOpen(!isOrderDropdownOpen)}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <span>{item.label}</span>
-                          <motion.svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            animate={{ rotate: isOrderDropdownOpen ? 180 : 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 9l-7 7-7-7"
-                            />
-                          </motion.svg>
-                        </motion.button>
-                        <AnimatePresence>
-                          {isOrderDropdownOpen && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="pl-4 pt-2 pb-2 space-y-2">
-                                {item.dropdownItems.map((dropdownItem, subIndex) => {
-                                  const isActive = pathname === dropdownItem.href;
-                                  return (
-                                    <motion.a
-                                      key={dropdownItem.href}
-                                      href={dropdownItem.href}
-                                      className={`block text-white/80 uppercase text-sm font-semibold hover:text-red-200 transition-all py-2 ${
-                                        isActive ? 'text-white' : ''
-                                      }`}
-                                      onClick={() => {
-                                        setIsMenuOpen(false);
-                                        setIsOrderDropdownOpen(false);
-                                      }}
-                                      initial={{ opacity: 0, x: -20 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{ delay: (index * 0.1) + (subIndex * 0.05) + 0.1 }}
-                                    >
-                                      {dropdownItem.label}
-                                    </motion.a>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </>
-                    ) : (
-                      <motion.a
-                        href={item.href}
-                        className="text-white uppercase text-base font-semibold hover:text-red-200 transition-all py-2 block"
-                        onClick={() => setIsMenuOpen(false)}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        {item.label}
-                      </motion.a>
-                    )}
+                    <motion.a
+                      href={item.href}
+                      className="text-white uppercase text-base font-semibold hover:text-red-200 transition-all py-2 block"
+                      onClick={() => setIsMenuOpen(false)}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      {item.label}
+                    </motion.a>
                   </div>
                 ))}
-                {/* Mobile Cart Link */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: navItems.length * 0.1 }}
-                  className="pt-4 border-t border-white/10 mt-4"
-                >
-                  <Link
-                    href="/cart"
-                    className="flex items-center justify-between text-white uppercase text-base font-semibold hover:text-red-200 transition-all py-2"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span>Cart</span>
-                    {itemCount > 0 && (
-                      <span className="bg-white text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                        {itemCount > 99 ? '99+' : itemCount}
-                      </span>
-                    )}
-                  </Link>
-                </motion.div>
               </div>
             </motion.nav>
           </>
