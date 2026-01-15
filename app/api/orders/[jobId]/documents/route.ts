@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { orders } from '../../steel-embeds/order-status/route';
+import { orders } from '../../../steel-embeds/order-status/route';
 import { generateShopPacket } from '@/lib/steelEmbeds/generateShopPacket';
 import { generateQuotePDF } from '@/lib/steelEmbeds/quoteExport';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
@@ -10,12 +10,12 @@ import { EmbedSpec } from '@/lib/steelEmbeds/types';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  context: { params: Promise<{ jobId: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
     const documentType = searchParams.get('type') || 'shop-packet';
-    const jobId = params.jobId;
+    const { jobId } = await context.params;
 
     if (!jobId) {
       return NextResponse.json(

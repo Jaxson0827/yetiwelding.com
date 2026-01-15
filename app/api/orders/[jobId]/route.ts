@@ -7,10 +7,10 @@ import { orders } from '../../steel-embeds/order-status/route';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  context: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const jobId = params.jobId;
+    const { jobId } = await context.params;
 
     if (!jobId) {
       return NextResponse.json(

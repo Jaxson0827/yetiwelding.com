@@ -47,7 +47,6 @@ const WEIGHT_ESTIMATES = {
 const SHIPPING_ZONES: Record<string, number> = {
   // Zone 1: Local/Regional (UT, ID, WY, CO, NV, AZ, NM)
   '84': 1, // Utah
-  '83': 1, // Utah
   '82': 1, // Utah
   '80': 1, // Colorado
   '81': 1, // Colorado

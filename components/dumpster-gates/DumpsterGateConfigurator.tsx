@@ -28,10 +28,13 @@ export default function DumpsterGateConfigurator() {
 
   // Calculate dimensions display
   const dimensions: DimensionDisplay = useMemo(() => {
-    const widthFt = config.isCustom ? config.widthFt : GATE_DIMENSIONS[config.size].widthFt;
-    const heightFt = config.isCustom ? config.heightFt : GATE_DIMENSIONS[config.size].heightFt;
-    const leafWidth = config.style === 'double-swing' 
-      ? widthFt / 2 
+    const presetDimensions = config.size in GATE_DIMENSIONS
+      ? GATE_DIMENSIONS[config.size as keyof typeof GATE_DIMENSIONS]
+      : null;
+    const widthFt = config.isCustom || !presetDimensions ? config.widthFt : presetDimensions.widthFt;
+    const heightFt = config.isCustom || !presetDimensions ? config.heightFt : presetDimensions.heightFt;
+    const leafWidth = config.style === 'double-swing'
+      ? widthFt / 2
       : widthFt;
     
     return {

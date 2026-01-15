@@ -154,8 +154,9 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
         return;
     }
 
-    if (!validationResult.isValid && validationResult.error) {
-      setErrors((prev) => ({ ...prev, [field]: validationResult.error }));
+    if (!validationResult.isValid) {
+      const errorMessage = validationResult.error || 'Invalid value';
+      setErrors((prev) => ({ ...prev, [field]: errorMessage }));
     }
   };
 

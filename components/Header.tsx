@@ -149,7 +149,7 @@ export default function Header() {
               }}
               onMouseLeave={(e) => {
                 // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:104',message:'Parent group mouse leave',data:{item:item.label,relatedTarget:e.relatedTarget?.tagName},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+                fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:104',message:'Parent group mouse leave',data:{item:item.label,relatedTarget:e.relatedTarget instanceof HTMLElement ? e.relatedTarget.tagName : null},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
                 // #endregion
                 if (item.dropdownItems) {
                   // Use a small delay to allow mouse to move to dropdown/bridge
@@ -186,7 +186,7 @@ export default function Header() {
                 }}
                 onMouseLeave={(e) => {
                   // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:105',message:'Link mouse leave',data:{item:item.label,relatedTarget:e.relatedTarget?.tagName},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
+                  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Header.tsx:105',message:'Link mouse leave',data:{item:item.label,relatedTarget:e.relatedTarget instanceof HTMLElement ? e.relatedTarget.tagName : null},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
                   // #endregion
                   // Don't clear state here - let parent group handle it
                   // This prevents clearing when moving to dropdown/bridge

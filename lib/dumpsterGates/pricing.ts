@@ -66,9 +66,10 @@ export function priceGate(config: DumpsterGateConfig): PriceBreakdown {
     basePrice += CUSTOM_FABRICATION_SURCHARGE;
   } else {
     // Preset size pricing: lookup table
-    basePrice = BASE_PRICES[config.size];
+    const presetSize = config.size as Exclude<GateSize, 'custom'>;
+    basePrice = BASE_PRICES[presetSize];
     lineItems.push({
-      label: `Base gate (${GATE_DIMENSIONS[config.size].widthFt}' × ${GATE_DIMENSIONS[config.size].heightFt}')`,
+      label: `Base gate (${GATE_DIMENSIONS[presetSize].widthFt}' × ${GATE_DIMENSIONS[presetSize].heightFt}')`,
       amount: basePrice,
     });
   }

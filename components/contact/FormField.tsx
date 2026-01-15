@@ -86,7 +86,7 @@ export default function FormField({
 
   // Character count for textarea
   const characterCount = type === 'textarea' && maxLength ? value.length : null;
-  const isNearLimit = characterCount !== null && characterCount > maxLength * 0.9;
+  const isNearLimit = characterCount !== null && typeof maxLength === 'number' && characterCount > maxLength * 0.9;
 
   return (
     <div className={`w-full ${className}`}>
