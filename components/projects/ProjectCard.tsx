@@ -79,7 +79,7 @@ export default function ProjectCard({ project, index, onSelect, isLarge = false,
         {/* Image (always visible, hidden when video is playing) */}
         <Image
           src={project.image}
-          alt={project.title || `${project.category} project`}
+          alt={project.title || `${project.categories[0]} project`}
           fill
           className={`object-cover transition-all duration-700 ${
             isHovered && project.video 
@@ -103,18 +103,6 @@ export default function ProjectCard({ project, index, onSelect, isLarge = false,
 
       {/* Content Overlay */}
       <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 transform translate-y-0 group-hover:translate-y-0 transition-transform duration-300">
-        {/* Category Badge */}
-        {project.category !== 'Miscellaneous' && (
-          <motion.div
-            className="inline-block px-3 py-1 mb-2 bg-[#DC143C]/90 backdrop-blur-sm text-white text-xs uppercase tracking-wider font-semibold"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 + 0.2 }}
-          >
-            {project.category}
-          </motion.div>
-        )}
-        
         {/* Title */}
         {project.title && (
           <motion.h3

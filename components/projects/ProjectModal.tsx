@@ -111,7 +111,7 @@ export default function ProjectModal({ project, onClose }: ProjectModalProps) {
                 >
                   <Image
                     src={project.image}
-                    alt={project.title || `${project.category} project`}
+                    alt={project.title || `${project.categories[0]} project`}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 90vw, 80vw"
@@ -126,9 +126,6 @@ export default function ProjectModal({ project, onClose }: ProjectModalProps) {
                   transition={{ delay: 0.2, duration: 0.6 }}
                 >
                   <div className="mb-6">
-                    <div className="inline-block px-3 py-1 mb-4 bg-[#DC143C]/90 backdrop-blur-sm text-white text-xs uppercase tracking-wider font-semibold">
-                      {project.category}
-                    </div>
                     {project.title && (
                       <>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white uppercase mb-2 leading-tight">

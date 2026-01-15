@@ -25,7 +25,7 @@ export default function ProjectsPage() {
 
     // Filter by category
     if (activeCategory !== 'All') {
-      filtered = filtered.filter((project) => project.category === activeCategory);
+      filtered = filtered.filter((project) => project.categories.includes(activeCategory));
     }
 
     // Filter by search query
@@ -36,7 +36,9 @@ export default function ProjectsPage() {
         const titleMatch = project.title?.toLowerCase().includes(query) || false;
         
         // Search in category
-        const categoryMatch = project.category.toLowerCase().includes(query);
+        const categoryMatch = project.categories.some((category) =>
+          category.toLowerCase().includes(query)
+        );
         
         // Search in materials
         const materialsMatch = project.materials?.some((material) =>
@@ -110,10 +112,12 @@ export default function ProjectsPage() {
                 position: index + 1,
                 item: {
                   '@type': 'CreativeWork',
-                  name: project.title || `${project.category} Project`,
-                  description: project.description || `A ${project.category.toLowerCase()} project by Yeti Welding`,
+                  name: project.title || `${project.categories[0]} Project`,
+                  description:
+                    project.description ||
+                    `A ${project.categories[0].toLowerCase()} project by Yeti Welding`,
                   image: `https://yetiwelding.com${project.image}`,
-                  category: project.category,
+                  category: project.categories.join(', '),
                 },
               })),
             },

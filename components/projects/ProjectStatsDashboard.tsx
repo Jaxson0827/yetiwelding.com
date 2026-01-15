@@ -69,7 +69,9 @@ interface ProjectStatsDashboardProps {
 export default function ProjectStatsDashboard({ projects }: ProjectStatsDashboardProps) {
   const stats = useMemo(() => {
     const totalProjects = projects.length;
-    const uniqueCategories = new Set(projects.map((p) => p.category)).size;
+    const uniqueCategories = new Set(
+      projects.flatMap((project) => project.categories)
+    ).size;
     const uniqueMaterials = getAllMaterials(projects).length;
     const yearsOfExperience = 15; // Static value or calculate from project dates
 
