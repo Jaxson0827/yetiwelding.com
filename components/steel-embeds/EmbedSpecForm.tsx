@@ -19,6 +19,9 @@ interface EmbedSpecFormProps {
 }
 
 type FormStep = 1 | 2 | 3 | 4 | 5;
+type EmbedSpecDraft = Omit<Partial<EmbedSpec>, 'plate'> & {
+  plate?: Partial<EmbedSpec['plate']>;
+};
 
 const MATERIAL_OPTIONS: DropdownOption[] = [
   { value: 'A36', label: 'A36' },
@@ -61,11 +64,8 @@ export default function EmbedSpecForm({
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [gridStep, setGridStep] = useState(1);
   
-  const getDefaultSpec = (): Partial<EmbedSpec> => ({
+  const getDefaultSpec = (): EmbedSpecDraft => ({
     plate: {
-      length: undefined as any,
-      width: undefined as any,
-      thickness: undefined as any,
       material: 'A36',
     },
     finish: 'none',
@@ -74,16 +74,12 @@ export default function EmbedSpecForm({
     leadTime: 'standard',
   });
 
-  const mergeWithDefaults = (incoming?: Partial<EmbedSpec>): Partial<EmbedSpec> => {
+  const mergeWithDefaults = (incoming?: Partial<EmbedSpec>): EmbedSpecDraft => {
     const defaults = getDefaultSpec();
     const merged: Partial<EmbedSpec> = {
       ...defaults,
       ...incoming,
-      plate: {
-        ...(defaults.plate ?? {}),
-        ...(incoming?.plate ?? {}),
-        material: (incoming?.plate?.material ?? defaults.plate?.material) as any,
-      },
+      plate: undefined as any, // overwritten below
       deliveryAddress: {
         ...(incoming?.deliveryAddress ?? {}),
       },
@@ -92,15 +88,22 @@ export default function EmbedSpecForm({
       },
     };
 
+    const mergedDraft: EmbedSpecDraft = merged as any;
+    mergedDraft.plate = {
+      ...(defaults.plate ?? {}),
+      ...(incoming?.plate ?? {}),
+      material: (incoming?.plate?.material ?? defaults.plate?.material ?? 'A36') as EmbedSpec['plate']['material'],
+    };
+
     // Preserve studs exactly if provided
     if (incoming?.studs) {
-      merged.studs = incoming.studs;
+      mergedDraft.studs = incoming.studs;
     }
 
-    return merged;
+    return mergedDraft;
   };
 
-  const [spec, setSpec] = useState<Partial<EmbedSpec>>(() => getDefaultSpec());
+  const [spec, setSpec] = useState<EmbedSpecDraft>(() => getDefaultSpec());
 
   // Re-initialize the form when parent requests a reset (e.g., switching New <-> Edit)
   useEffect(() => {
@@ -110,15 +113,16 @@ export default function EmbedSpecForm({
 
   // Update parent when spec changes
   useEffect(() => {
-    onSpecChange(spec);
+    onSpecChange(spec as Partial<EmbedSpec>);
   }, [spec, onSpecChange]);
 
   // Validate and calculate price
   const priceBreakdown = useMemo(() => {
-    if (isEmbedSpecComplete(spec)) {
-      const errors = validateEmbedSpec(spec);
+    const specForValidation = spec as Partial<EmbedSpec>;
+    if (isEmbedSpecComplete(specForValidation)) {
+      const errors = validateEmbedSpec(specForValidation);
       if (errors.length === 0) {
-        return priceEmbed(spec);
+        return priceEmbed(specForValidation as EmbedSpec);
       }
     }
     return null;
@@ -126,7 +130,7 @@ export default function EmbedSpecForm({
 
   // Validation errors
   useEffect(() => {
-    const errors = validateEmbedSpec(spec);
+    const errors = validateEmbedSpec(spec as Partial<EmbedSpec>);
     const errorMap: Record<string, string> = {};
     errors.forEach(err => {
       errorMap[err.field] = err.message;
@@ -134,7 +138,7 @@ export default function EmbedSpecForm({
     setValidationErrors(errorMap);
   }, [spec]);
 
-  const updateSpec = (updates: Partial<EmbedSpec>) => {
+  const updateSpec = (updates: Partial<EmbedSpecDraft>) => {
     setSpec(prev => ({ ...prev, ...updates }));
   };
 
@@ -244,8 +248,9 @@ export default function EmbedSpecForm({
   };
 
   const handleAddToCart = () => {
-    if (isEmbedSpecComplete(spec) && validateEmbedSpec(spec).length === 0) {
-      onAddToCart(spec);
+    const specForValidation = spec as Partial<EmbedSpec>;
+    if (isEmbedSpecComplete(specForValidation) && validateEmbedSpec(specForValidation).length === 0) {
+      onAddToCart(specForValidation as EmbedSpec);
     }
   };
 
@@ -434,8 +439,9 @@ export default function EmbedSpecForm({
                     <button
                       type="button"
                       onClick={() => {
-                        const length = spec.plate!.length;
-                        const width = spec.plate!.width;
+                        const length = spec.plate?.length;
+                        const width = spec.plate?.width;
+                        if (!length || !width) return;
                         const inset = Math.min(1, Math.max(0.25, Math.min(length, width) / 10));
                         const halfL = length / 2;
                         const halfW = width / 2;
@@ -453,7 +459,8 @@ export default function EmbedSpecForm({
                     <button
                       type="button"
                       onClick={() => {
-                        const length = spec.plate!.length;
+                        const length = spec.plate?.length;
+                        if (!length) return;
                         const inset = Math.min(1, Math.max(0.25, length / 10));
                         const halfL = length / 2;
                         addStuds([
@@ -946,11 +953,12 @@ export default function EmbedSpecForm({
               <button
                 type="button"
                 onClick={() => {
-                  if (isEmbedSpecComplete(spec) && validateEmbedSpec(spec).length === 0) {
-                    onExportQuote(spec);
+                  const specForValidation = spec as Partial<EmbedSpec>;
+                  if (isEmbedSpecComplete(specForValidation) && validateEmbedSpec(specForValidation).length === 0) {
+                    onExportQuote(specForValidation as EmbedSpec);
                   }
                 }}
-                disabled={!isEmbedSpecComplete(spec) || validateEmbedSpec(spec).length > 0}
+                disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
                 className="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
               >
                 Export Quote
@@ -959,7 +967,7 @@ export default function EmbedSpecForm({
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={!isEmbedSpecComplete(spec) || validateEmbedSpec(spec).length > 0}
+              disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
               className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#B01030] transition-colors flex-1"
             >
               {currentEmbedIndex !== null && currentEmbedIndex !== undefined ? 'Update Embed' : 'Add Embed'}
