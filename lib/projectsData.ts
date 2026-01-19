@@ -114,11 +114,6 @@ export const projects: Project[] = [
     image: '/projects/photo16.JPG',
   },
   {
-    id: '28',
-    categories: ['Gates'],
-    image: '/projects/photo17.JPG',
-  },
-  {
     id: '29',
     categories: ['Stairs', 'Railing'],
     image: '/projects/photo18.JPG',
