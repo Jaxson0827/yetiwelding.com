@@ -81,7 +81,7 @@ export default function SteelEmbedsConfigurator() {
           <div className="flex flex-col h-[500px]">
             <h3 className="text-white font-semibold mb-4 uppercase tracking-wider text-sm flex-shrink-0">3D Preview</h3>
             <div className="flex-1 h-full">
-              <EmbedPreview3D glbUrl={null} previewStatus="none" spec={spec} />
+              <EmbedPreview3D spec={spec} />
             </div>
           </div>
         </div>
