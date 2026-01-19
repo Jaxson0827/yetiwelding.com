@@ -85,18 +85,6 @@ button {
   background: #555;
 }
 
-/* Scroll Progress Indicator */
-.scroll-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 0%;
-  height: 3px;
-  background: linear-gradient(90deg, #DC143C, #8B3A3A);
-  z-index: 9999;
-  transition: width 0.1s ease-out;
-}
-
 /* Animation Utilities */
 @keyframes float {
   0%, 100% {
