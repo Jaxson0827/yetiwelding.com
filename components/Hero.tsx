@@ -57,7 +57,7 @@ export default function Hero() {
 
   // Character-by-character reveal for title
   const title = 'YETI WELDING';
-  const titleChars = title.split('');
+  const titleWords = title.split(' ');
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -192,19 +192,33 @@ export default function Hero() {
         
         {/* Character-by-character title reveal */}
         <motion.h1 
-          className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold mb-12 uppercase tracking-tight leading-none text-glow text-shadow-strong flex flex-wrap justify-center gap-1 md:gap-2"
+          className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold mb-12 uppercase tracking-tight leading-none text-glow text-shadow-strong flex flex-wrap justify-center gap-x-6 gap-y-2"
           variants={containerVariants}
         >
-          {titleChars.map((char, i) => (
-            <motion.span
-              key={i}
-              custom={i}
-              variants={charVariants}
-              style={{ display: 'inline-block' }}
-            >
-              {char === ' ' ? '\u00A0' : char}
-            </motion.span>
-          ))}
+          {titleWords.map((word, wordIndex) => {
+            // Preserve a small "beat" between words by counting the space in the index.
+            const startIndex = titleWords
+              .slice(0, wordIndex)
+              .reduce((acc, w) => acc + w.length + 1, 0);
+
+            return (
+              <span
+                key={`${word}-${wordIndex}`}
+                className="inline-flex whitespace-nowrap gap-1 md:gap-2"
+              >
+                {word.split('').map((char, charIndex) => (
+                  <motion.span
+                    key={`${wordIndex}-${charIndex}`}
+                    custom={startIndex + charIndex}
+                    variants={charVariants}
+                    style={{ display: 'inline-block' }}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+              </span>
+            );
+          })}
         </motion.h1>
         
         {/* Dual CTAs */}
