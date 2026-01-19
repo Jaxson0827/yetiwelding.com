@@ -5,7 +5,7 @@ import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 
 export default function AboutSection() {
-  const aboutPath = '/homepage/about.jpg';
+  const aboutPath = '/homepage/about.JPG';
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 

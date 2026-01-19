@@ -69,7 +69,7 @@ export const services: Service[] = [
     href: '/services#structural-welding',
     pricingHint: 'Project-based pricing',
     estimatedTimeline: '2-6 weeks (project dependent)',
-    image: '/services/structural-welding.jpg',
+    image: '/services/structural-welding.JPG',
     relatedServices: ['custom-fabrication'],
   },
   {

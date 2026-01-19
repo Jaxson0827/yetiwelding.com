@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
 
 export default function Hero() {
-  const heroPath = '/homepage/hero.jpg';
+  const heroPath = '/homepage/hero.JPG';
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
