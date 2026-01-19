@@ -1,14 +1,15 @@
 'use client';
 
 import { motion, useInView } from 'framer-motion';
+import Image from 'next/image';
 import { useRef } from 'react';
 
 interface ProcessStep {
   id: number;
   title: string;
   description: string;
-  icon: React.ReactNode;
-  timeline?: string;
+  imageSrc?: string;
+  imageAlt?: string;
   href?: string;
 }
 
@@ -17,46 +18,30 @@ const processSteps: ProcessStep[] = [
     id: 1,
     title: 'Consultation',
     description: 'We discuss your project requirements, vision, and budget to understand your needs.',
-    icon: (
-      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-    ),
-    timeline: '1-3 days',
+    imageSrc: '/homepage/consultation.png',
+    imageAlt: 'Consultation',
     href: '/contact',
   },
   {
     id: 2,
     title: 'Design & Planning',
     description: 'Our team creates detailed plans and designs tailored to your specifications.',
-    icon: (
-      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-    timeline: '1-2 weeks',
+    imageSrc: '/homepage/design-planning.png',
+    imageAlt: 'Design and planning',
   },
   {
     id: 3,
     title: 'Fabrication',
     description: 'Skilled craftsmen bring your project to life with precision and quality.',
-    icon: (
-      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-      </svg>
-    ),
-    timeline: '2-3 weeks',
+    imageSrc: '/homepage/fabrication-process.png',
+    imageAlt: 'Fabrication process',
   },
   {
     id: 4,
     title: 'Installation & Delivery',
     description: 'Professional installation ensures your project is completed to perfection.',
-    icon: (
-      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    ),
-    timeline: '1-3 days',
+    imageSrc: '/projects/photo16.JPG',
+    imageAlt: 'Installation and delivery',
   },
 ];
 
@@ -167,28 +152,27 @@ export default function ProcessSection() {
                 </div>
 
                 {/* Step Card */}
-                <div className="glass rounded-lg p-8 pt-12 h-full flex flex-col items-center text-center hover:border-accent-red/50 transition-all duration-300">
-                  {/* Icon */}
-                  <div className="text-accent-red mb-4">
-                    {step.icon}
-                  </div>
-                  
+                <div className="glass rounded-lg p-8 pt-12 min-h-[22rem] h-full flex flex-col items-center text-center hover:border-accent-red/50 transition-all duration-300 relative overflow-hidden">
+                  {step.imageSrc && (
+                    <Image
+                      src={step.imageSrc}
+                      alt={step.imageAlt || step.title}
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 1024px) 18rem, (min-width: 768px) 40vw, 80vw"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/55" />
+                  <div className="relative z-10 flex flex-col items-center justify-center text-center h-full w-full">
                   {/* Title */}
                   <h3 className="text-xl font-bold text-white uppercase mb-4 tracking-wide">
                     {step.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-white/70 text-sm leading-relaxed mb-4 flex-grow">
+                  <p className="text-white/70 text-sm leading-relaxed mb-4">
                     {step.description}
                   </p>
-                  
-                  {/* Timeline */}
-                  {step.timeline && (
-                    <p className="text-accent-red text-xs uppercase tracking-wide font-semibold">
-                      {step.timeline}
-                    </p>
-                  )}
                   
                   {/* Link if available */}
                   {step.href && (
@@ -199,6 +183,7 @@ export default function ProcessSection() {
                       Get Started →
                     </a>
                   )}
+                  </div>
                 </div>
 
                 {/* Arrow Connector (Desktop, between steps) */}
