@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useInView } from 'framer-motion';
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { services } from '@/lib/homepageData';
@@ -13,19 +13,6 @@ interface ServicesPreviewProps {
 export default function ServicesPreview({ onSelect }: ServicesPreviewProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServicesPreview.tsx:component-init',message:'ServicesPreview client render',data:{isClient:true,isInView},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'D'})}).catch(()=>{});
-  } else {
-    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServicesPreview.tsx:component-init',message:'ServicesPreview server render',data:{isClient:false},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'D'})}).catch(()=>{});
-  }
-  useEffect(() => {
-    const links = document.querySelectorAll('a[href*="/services#"]');
-    links.forEach((link, idx) => {
-      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServicesPreview.tsx:useEffect',message:'Service links after mount',data:{index:idx,href:link.getAttribute('href'),className:link.className,actualClassName:link.getAttribute('class')},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'E'})}).catch(()=>{});
-    });
-  }, []);
-  // #endregion
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -120,14 +107,6 @@ export default function ServicesPreview({ onSelect }: ServicesPreviewProps) {
                   href={service.href}
                   className="block h-full cursor-pointer"
                   scroll={false}
-                  // #region agent log
-                  ref={(el) => {
-                    if (el) {
-                      const actualEl = el as HTMLElement;
-                      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServicesPreview.tsx:link-ref',message:'Service link element rendered',data:{href:service.href,className:actualEl?.className,actualClassName:actualEl?.getAttribute('class'),isClient:typeof window !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'C'})}).catch(()=>{});
-                    }
-                  }}
-                  // #endregion
                   onClick={(e) => {
                     if (onSelect) {
                       e.preventDefault();

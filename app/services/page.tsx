@@ -15,10 +15,6 @@ export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/services/page.tsx:14',message:'ServicesPage mounted',data:{url:typeof window!=='undefined'?window.location.href:'SSR',hash:typeof window!=='undefined'?window.location.hash:'SSR'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
 
   useEffect(() => {
     const updateScrollProgress = () => {
@@ -38,19 +34,10 @@ export default function ServicesPage() {
   // Handle URL hash to open modal when navigating from homepage or other pages
   useEffect(() => {
     const handleHashChange = () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/services/page.tsx:36',message:'handleHashChange called',data:{url:window.location.href,hash:window.location.hash,hashWithoutHash:window.location.hash.slice(1)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       const hash = window.location.hash.slice(1); // Remove the # symbol
       if (hash) {
         const validServiceIds = services.map(s => s.id);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/services/page.tsx:40',message:'Hash validation check',data:{hash,validServiceIds,isValid:validServiceIds.includes(hash)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         if (validServiceIds.includes(hash)) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/services/page.tsx:41',message:'Setting selectedService',data:{hash},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-          // #endregion
           setSelectedService(hash);
           // Scroll to top to show the modal
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -63,17 +50,11 @@ export default function ServicesPage() {
 
     // Check hash on mount (with a small delay to ensure DOM is ready for client-side navigation)
     const timeoutId = setTimeout(() => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/services/page.tsx:52',message:'Timeout callback executing',data:{url:window.location.href,hash:window.location.hash},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       handleHashChange();
     }, 50);
 
     // Listen for hash changes
     const hashChangeHandler = () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/services/page.tsx:57',message:'hashchange event fired',data:{url:window.location.href,hash:window.location.hash},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       handleHashChange();
     };
     window.addEventListener('hashchange', hashChangeHandler);
@@ -174,13 +155,6 @@ export default function ServicesPage() {
       </main>
 
       {/* Service Modal */}
-      {/* #region agent log */}
-      {(() => {
-        const foundService = services.find(s => s.id === selectedService);
-        fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/services/page.tsx:155',message:'ServiceModal render check',data:{selectedService,foundService:foundService?foundService.name:null,willRender:!!foundService},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        return null;
-      })()}
-      {/* #endregion */}
       <ServiceModal
         service={services.find(s => s.id === selectedService) || null}
         onClose={() => setSelectedService(null)}

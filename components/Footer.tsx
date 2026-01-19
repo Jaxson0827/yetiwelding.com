@@ -12,13 +12,6 @@ export default function Footer() {
   // Increment this version number when you update the logo to force cache refresh
   const LOGO_VERSION = '4';
   const logoPath = `/Website Logo.png?v=${LOGO_VERSION}`;
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Footer.tsx:logoPath',message:'Footer client logo path',data:{logoPath,LOGO_VERSION,isClient:true},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'A'})}).catch(()=>{});
-  } else {
-    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Footer.tsx:logoPath',message:'Footer server logo path',data:{logoPath,LOGO_VERSION,isClient:false},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'A'})}).catch(()=>{});
-  }
-  // #endregion
   const footerRef = useRef<HTMLElement>(null);
   const isInView = useInView(footerRef, { once: true, margin: '-50px' });
 
@@ -115,13 +108,6 @@ export default function Footer() {
                 className="object-contain w-full h-full"
                 loading="lazy"
                 suppressHydrationWarning
-                // #region agent log
-                ref={(el) => {
-                  if (el) {
-                    fetch('http://127.0.0.1:7242/ingest/cd5489ff-eedc-4e2e-941b-60915ad9b8e0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Footer.tsx:img-ref',message:'Footer logo img rendered',data:{src:el.src,actualSrc:el.getAttribute('src'),computedSrc:logoPath,isClient:typeof window !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'hydration-debug',hypothesisId:'B'})}).catch(()=>{});
-                  }
-                }}
-                // #endregion
               />
             </motion.div>
             <p className="text-white/70 text-sm mb-4 max-w-xs">

@@ -61,8 +61,6 @@ export default function EmbedSpecForm({
 }: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [snapToGrid, setSnapToGrid] = useState(true);
-  const [gridStep, setGridStep] = useState(1);
   
   const getDefaultSpec = (): EmbedSpecDraft => ({
     plate: {
@@ -167,37 +165,6 @@ export default function EmbedSpecForm({
       x: roundToTwoDecimals(Math.max(-halfL, Math.min(halfL, x))) ?? x,
       y: roundToTwoDecimals(Math.max(-halfW, Math.min(halfW, y))) ?? y,
     };
-  };
-
-  const snapValue = (value: number) => {
-    if (!snapToGrid) return roundToTwoDecimals(value) ?? value;
-    const step = gridStep > 0 ? gridStep : 1;
-    return roundToTwoDecimals(Math.round(value / step) * step) ?? value;
-  };
-
-  const addStuds = (positions: Array<{ x: number; y: number }>) => {
-    const currentPositions = spec.studs?.positions || [];
-    if (currentPositions.length + positions.length > VALIDATION_CONSTRAINTS.studs.maxCount) {
-      alert(`Maximum ${VALIDATION_CONSTRAINTS.studs.maxCount} studs allowed`);
-      return;
-    }
-
-    const newStuds = positions.map(({ x, y }) => {
-      const clamped = clampToPlate(x, y);
-      return {
-        x: snapValue(clamped.x),
-        y: snapValue(clamped.y),
-        diameter: 0.5,
-        length: 4,
-        grade: 'A307' as const,
-      };
-    });
-
-    updateSpec({
-      studs: {
-        positions: [...currentPositions, ...newStuds],
-      },
-    });
   };
 
   const canProceedToNextStep = (step: FormStep): boolean => {
@@ -402,84 +369,6 @@ export default function EmbedSpecForm({
           >
             <h3 className="text-xl font-bold text-white mb-4">Studs</h3>
 
-            {/* Stud tools */}
-            {spec.plate?.length && spec.plate?.width && (
-              <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setSnapToGrid((v) => !v)}
-                      className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
-                        snapToGrid
-                          ? 'bg-[#DC143C]/20 border-[#DC143C]/50 text-white'
-                          : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'
-                      }`}
-                    >
-                      Snap to grid: {snapToGrid ? 'On' : 'Off'}
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      <label className="text-white/70 text-xs uppercase tracking-wider font-semibold">
-                        Grid (in)
-                      </label>
-                      <input
-                        type="number"
-                        min={0.25}
-                        step={0.25}
-                        value={gridStep}
-                        onChange={(e) => setGridStep(parseFloat(e.target.value) || 1)}
-                        className="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
-                        disabled={!snapToGrid}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const length = spec.plate?.length;
-                        const width = spec.plate?.width;
-                        if (!length || !width) return;
-                        const inset = Math.min(1, Math.max(0.25, Math.min(length, width) / 10));
-                        const halfL = length / 2;
-                        const halfW = width / 2;
-                        addStuds([
-                          { x: -halfL + inset, y: -halfW + inset },
-                          { x: halfL - inset, y: -halfW + inset },
-                          { x: halfL - inset, y: halfW - inset },
-                          { x: -halfL + inset, y: halfW - inset },
-                        ]);
-                      }}
-                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm rounded-lg transition-colors"
-                    >
-                      + 4 corners
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const length = spec.plate?.length;
-                        if (!length) return;
-                        const inset = Math.min(1, Math.max(0.25, length / 10));
-                        const halfL = length / 2;
-                        addStuds([
-                          { x: -halfL + inset, y: 0 },
-                          { x: halfL - inset, y: 0 },
-                        ]);
-                      }}
-                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm rounded-lg transition-colors"
-                    >
-                      + centered pair
-                    </button>
-                  </div>
-                </div>
-                <p className="text-white/50 text-xs">
-                  Tip: snapping helps keep layouts consistent. You can still fine-tune coordinates below.
-                </p>
-              </div>
-            )}
-
             {/* Coordinate Editor */}
             {spec.plate?.length && spec.plate?.width && (
               <div className="mb-6">
@@ -487,8 +376,6 @@ export default function EmbedSpecForm({
                   plateLength={spec.plate.length}
                   plateWidth={spec.plate.width}
                   studs={spec.studs?.positions || []}
-                  snapToGrid={snapToGrid}
-                  gridStep={gridStep}
                   onStudUpdate={(index, stud) => {
                     const newPositions = [...(spec.studs?.positions || [])];
                     newPositions[index] = stud;
@@ -501,11 +388,9 @@ export default function EmbedSpecForm({
                       return;
                     }
                     const clamped = clampToPlate(x, y);
-                    const snappedX = snapValue(clamped.x);
-                    const snappedY = snapValue(clamped.y);
                     const newStud = {
-                      x: snappedX,
-                      y: snappedY,
+                      x: clamped.x,
+                      y: clamped.y,
                       diameter: 0.5,
                       length: 4,
                       grade: 'A307' as const,
@@ -716,28 +601,30 @@ export default function EmbedSpecForm({
           >
             <h3 className="text-xl font-bold text-white mb-4">Quantity</h3>
 
-            <div>
-              <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
-                Quantity
-              </label>
-              <input
-                type="number"
-                min={VALIDATION_CONSTRAINTS.quantity.min}
-                value={spec.quantity || 1}
-                onChange={(e) => updateSpec({ quantity: parseInt(e.target.value) || 1 })}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#DC143C] transition-colors"
-              />
-              {validationErrors['quantity'] && (
-                <p className="mt-1 text-red-400 text-sm">{validationErrors['quantity']}</p>
-              )}
-            </div>
+            <div className="max-w-md mx-auto w-full">
+              <div>
+                <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 text-center">
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  min={VALIDATION_CONSTRAINTS.quantity.min}
+                  value={spec.quantity || 1}
+                  onChange={(e) => updateSpec({ quantity: parseInt(e.target.value) || 1 })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#DC143C] transition-colors text-center"
+                />
+                {validationErrors['quantity'] && (
+                  <p className="mt-1 text-red-400 text-sm text-center">{validationErrors['quantity']}</p>
+                )}
+              </div>
 
-            {/* Price Display */}
-            <div className="pt-6 border-t border-white/10">
-              <PriceDisplay
-                priceBreakdown={priceBreakdown}
-                quantity={spec.quantity || 1}
-              />
+              {/* Price Display */}
+              <div className="pt-6 border-t border-white/10 mt-6">
+                <PriceDisplay
+                  priceBreakdown={priceBreakdown}
+                  quantity={spec.quantity || 1}
+                />
+              </div>
             </div>
           </motion.div>
         )}
@@ -756,33 +643,34 @@ export default function EmbedSpecForm({
               Provide project details for order processing and delivery (optional but recommended).
             </p>
 
-            <div>
-              <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
-                Project Name
-              </label>
-              <input
-                type="text"
-                value={spec.projectName || ''}
-                onChange={(e) => updateSpec({ projectName: e.target.value })}
-                placeholder="e.g., Downtown Office Building"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-              />
-            </div>
+            <div className="max-w-2xl mx-auto w-full">
+              <div>
+                <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 text-center">
+                  Project Name
+                </label>
+                <input
+                  type="text"
+                  value={spec.projectName || ''}
+                  onChange={(e) => updateSpec({ projectName: e.target.value })}
+                  placeholder="e.g., Downtown Office Building"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                />
+              </div>
 
-            <div>
-              <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
-                Project Number
-              </label>
-              <input
-                type="text"
-                value={spec.projectNumber || ''}
-                onChange={(e) => updateSpec({ projectNumber: e.target.value })}
-                placeholder="e.g., PROJ-2024-001"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-              />
-            </div>
+              <div className="mt-4">
+                <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 text-center">
+                  Project Number
+                </label>
+                <input
+                  type="text"
+                  value={spec.projectNumber || ''}
+                  onChange={(e) => updateSpec({ projectNumber: e.target.value })}
+                  placeholder="e.g., PROJ-2024-001"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                />
+              </div>
 
-            <div className="space-y-3">
+              <div className="space-y-3 mt-6">
               <h4 className="text-white/80 font-semibold text-sm">Delivery Address</h4>
               <div>
                 <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
@@ -853,7 +741,7 @@ export default function EmbedSpecForm({
               </div>
             </div>
 
-            <div className="space-y-3">
+              <div className="space-y-3 mt-6">
               <h4 className="text-white/80 font-semibold text-sm">Contact Information</h4>
               <div>
                 <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
@@ -911,17 +799,18 @@ export default function EmbedSpecForm({
               </div>
             </div>
 
-            <div>
-              <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
-                Special Instructions
-              </label>
-              <textarea
-                value={spec.specialInstructions || ''}
-                onChange={(e) => updateSpec({ specialInstructions: e.target.value })}
-                placeholder="Any special requirements or notes for this order..."
-                rows={4}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors resize-none"
-              />
+              <div className="mt-6">
+                <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 text-center">
+                  Special Instructions
+                </label>
+                <textarea
+                  value={spec.specialInstructions || ''}
+                  onChange={(e) => updateSpec({ specialInstructions: e.target.value })}
+                  placeholder="Any special requirements or notes for this order..."
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors resize-none"
+                />
+              </div>
             </div>
           </motion.div>
         )}
