@@ -17,6 +17,8 @@ interface CoordinateEditorProps {
   onStudUpdate: (index: number, stud: StudPosition) => void;
   onStudAdd: (x: number, y: number) => void;
   onStudRemove: (index: number) => void;
+  snapToGrid?: boolean;
+  gridStep?: number;
 }
 
 export default function CoordinateEditor({
@@ -26,6 +28,8 @@ export default function CoordinateEditor({
   onStudUpdate,
   onStudAdd,
   onStudRemove,
+  snapToGrid = false,
+  gridStep = 1,
 }: CoordinateEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedStud, setSelectedStud] = useState<number | null>(null);
@@ -33,6 +37,12 @@ export default function CoordinateEditor({
   const roundToTwoDecimals = useCallback((value: number) => {
     return Math.round(value * 100) / 100;
   }, []);
+
+  const snapValue = useCallback((value: number) => {
+    if (!snapToGrid) return roundToTwoDecimals(value);
+    const step = gridStep > 0 ? gridStep : 1;
+    return roundToTwoDecimals(Math.round(value / step) * step);
+  }, [gridStep, roundToTwoDecimals, snapToGrid]);
 
   // Convert plate coordinates to SVG coordinates
   // Plate center is at (0, 0), SVG center is at (width/2, height/2)
@@ -69,9 +79,9 @@ export default function CoordinateEditor({
     
     // Check if click is within plate bounds
     if (Math.abs(x) <= plateLength / 2 && Math.abs(y) <= plateWidth / 2) {
-      onStudAdd(roundToTwoDecimals(x), roundToTwoDecimals(y));
+      onStudAdd(snapValue(x), snapValue(y));
     }
-  }, [svgToPlate, plateLength, plateWidth, onStudAdd, roundToTwoDecimals]);
+  }, [svgToPlate, plateLength, plateWidth, onStudAdd, snapValue]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || selectedStud === null || !svgRef.current) return;
@@ -82,10 +92,10 @@ export default function CoordinateEditor({
     const { x, y } = svgToPlate(svgX, svgY, rect.width, rect.height);
     
     // Constrain to plate bounds
-    const constrainedX = roundToTwoDecimals(
+    const constrainedX = snapValue(
       Math.max(-plateLength / 2, Math.min(plateLength / 2, x))
     );
-    const constrainedY = roundToTwoDecimals(
+    const constrainedY = snapValue(
       Math.max(-plateWidth / 2, Math.min(plateWidth / 2, y))
     );
     
@@ -101,7 +111,7 @@ export default function CoordinateEditor({
     plateWidth,
     studs,
     onStudUpdate,
-    roundToTwoDecimals,
+    snapValue,
   ]);
 
   const handleMouseUp = useCallback(() => {

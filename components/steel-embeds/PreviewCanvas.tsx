@@ -10,6 +10,8 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 interface PreviewCanvasProps {
   spec: Partial<EmbedSpec>;
+  fitRequest?: number;
+  resetRequest?: number;
 }
 
 function AutoFrame({
@@ -73,10 +75,24 @@ function AutoFrame({
   return null;
 }
 
-export default function PreviewCanvas({ spec }: PreviewCanvasProps) {
+export default function PreviewCanvas({ spec, fitRequest, resetRequest }: PreviewCanvasProps) {
   const objectRef = useRef<Object3D | null>(null);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [fitNonce, setFitNonce] = useState(0);
+
+  // When the parent requests a fit/reset, allow AutoFrame to run again.
+  React.useEffect(() => {
+    if (fitRequest === undefined) return;
+    setHasUserInteracted(false);
+    setFitNonce((n) => n + 1);
+  }, [fitRequest]);
+
+  React.useEffect(() => {
+    if (resetRequest === undefined) return;
+    setHasUserInteracted(false);
+    setFitNonce((n) => n + 1);
+  }, [resetRequest]);
 
   const plateKey = useMemo(() => {
     const plate = spec.plate;
@@ -93,7 +109,7 @@ export default function PreviewCanvas({ spec }: PreviewCanvasProps) {
       .join('|');
   }, [spec.studs?.positions]);
 
-  const fitKey = `${plateKey}::${studsKey}`;
+  const fitKey = `${plateKey}::${studsKey}::${fitNonce}`;
 
   return (
     <div style={{ width: '100%', height: '100%' }}>

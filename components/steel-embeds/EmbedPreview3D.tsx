@@ -1,13 +1,13 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import Three.js components to avoid SSR issues
 const PreviewCanvas = dynamic(() => import('./PreviewCanvas'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center">
+    <div className="w-full h-full min-h-[320px] sm:min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center">
       <div className="text-white/40 text-sm">Loading 3D preview...</div>
     </div>
   ),
@@ -20,6 +20,9 @@ interface EmbedPreview3DProps {
 }
 
 export default function EmbedPreview3D({ spec }: EmbedPreview3DProps) {
+  const [fitRequest, setFitRequest] = useState(0);
+  const [resetRequest, setResetRequest] = useState(0);
+
   // STRICT CHECK: Verify ALL THREE plate dimensions are defined and > 0
   const hasValidSpec =
     spec?.plate?.length &&
@@ -32,14 +35,47 @@ export default function EmbedPreview3D({ spec }: EmbedPreview3DProps) {
   // Show spec-based preview if valid spec exists
   if (hasValidSpec && spec) {
     return (
-      <div className="w-full bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative" style={{ height: '100%', minHeight: '500px', flex: '1 1 0%' }}>
+      <div
+        className="w-full bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative"
+        style={{ height: '100%', minHeight: '320px', flex: '1 1 0%' }}
+      >
         <Suspense fallback={
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-white/40 text-sm">Loading 3D preview...</div>
           </div>
         }>
-          <PreviewCanvas spec={spec} />
+          <PreviewCanvas spec={spec} fitRequest={fitRequest} resetRequest={resetRequest} />
         </Suspense>
+
+        {/* Controls */}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFitRequest((n) => n + 1)}
+            className="px-3 py-1.5 bg-black/60 hover:bg-black/75 border border-white/10 text-white/90 text-xs rounded transition-colors backdrop-blur-sm"
+            aria-label="Auto-fit view"
+          >
+            Auto-fit
+          </button>
+          <button
+            type="button"
+            onClick={() => setResetRequest((n) => n + 1)}
+            className="px-3 py-1.5 bg-black/60 hover:bg-black/75 border border-white/10 text-white/90 text-xs rounded transition-colors backdrop-blur-sm"
+            aria-label="Reset view"
+          >
+            Reset
+          </button>
+        </div>
+
+        {/* Interaction legend */}
+        <div className="absolute top-3 left-3">
+          <div className="bg-black/60 backdrop-blur-sm rounded px-3 py-2 border border-white/10">
+            <p className="text-white/70 text-[11px] leading-snug">
+              Drag: rotate • Scroll: zoom • Right-drag: pan
+            </p>
+          </div>
+        </div>
+
         <div className="absolute bottom-4 left-4 right-4 space-y-2">
           <div className="bg-black/60 backdrop-blur-sm rounded px-3 py-2">
             <p className="text-white/80 text-xs text-center font-semibold">
@@ -58,7 +94,7 @@ export default function EmbedPreview3D({ spec }: EmbedPreview3DProps) {
 
   // Default: no valid spec yet
   return (
-    <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center">
+    <div className="w-full h-full min-h-[320px] sm:min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center">
       <div className="text-center space-y-2">
         <p className="text-white/60 text-sm">Configure dimensions to see preview</p>
       </div>

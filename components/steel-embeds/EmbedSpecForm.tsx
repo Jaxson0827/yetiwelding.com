@@ -14,6 +14,8 @@ interface EmbedSpecFormProps {
   onAddToCart: (spec: EmbedSpec) => void;
   onExportQuote?: (spec: EmbedSpec) => void;
   currentEmbedIndex?: number | null;
+  initialSpec?: Partial<EmbedSpec>;
+  resetKey?: string;
 }
 
 type FormStep = 1 | 2 | 3 | 4 | 5;
@@ -46,11 +48,20 @@ const STUD_GRADE_OPTIONS: DropdownOption[] = [
   { value: 'A325', label: 'A325' },
 ];
 
-export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote, currentEmbedIndex }: EmbedSpecFormProps) {
+export default function EmbedSpecForm({
+  onSpecChange,
+  onAddToCart,
+  onExportQuote,
+  currentEmbedIndex,
+  initialSpec,
+  resetKey,
+}: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [gridStep, setGridStep] = useState(1);
   
-  const [spec, setSpec] = useState<Partial<EmbedSpec>>({
+  const getDefaultSpec = (): Partial<EmbedSpec> => ({
     plate: {
       length: undefined as any,
       width: undefined as any,
@@ -62,6 +73,40 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
     quantity: 1,
     leadTime: 'standard',
   });
+
+  const mergeWithDefaults = (incoming?: Partial<EmbedSpec>): Partial<EmbedSpec> => {
+    const defaults = getDefaultSpec();
+    const merged: Partial<EmbedSpec> = {
+      ...defaults,
+      ...incoming,
+      plate: {
+        ...(defaults.plate ?? {}),
+        ...(incoming?.plate ?? {}),
+        material: (incoming?.plate?.material ?? defaults.plate?.material) as any,
+      },
+      deliveryAddress: {
+        ...(incoming?.deliveryAddress ?? {}),
+      },
+      contactInfo: {
+        ...(incoming?.contactInfo ?? {}),
+      },
+    };
+
+    // Preserve studs exactly if provided
+    if (incoming?.studs) {
+      merged.studs = incoming.studs;
+    }
+
+    return merged;
+  };
+
+  const [spec, setSpec] = useState<Partial<EmbedSpec>>(() => getDefaultSpec());
+
+  // Re-initialize the form when parent requests a reset (e.g., switching New <-> Edit)
+  useEffect(() => {
+    setSpec(mergeWithDefaults(initialSpec));
+    setCurrentStep(1);
+  }, [resetKey]); // intentional: treat resetKey as the reset trigger
 
   // Update parent when spec changes
   useEffect(() => {
@@ -98,6 +143,57 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
       ...prev,
       plate: { ...prev.plate!, ...updates },
     }));
+  };
+
+  const canJumpToStep = (targetStep: FormStep): boolean => {
+    // To jump to step N, all prior steps must be valid.
+    for (let s: FormStep = 1; s < targetStep; s = (s + 1) as FormStep) {
+      if (!canProceedToNextStep(s)) return false;
+    }
+    return true;
+  };
+
+  const clampToPlate = (x: number, y: number) => {
+    const length = spec.plate?.length;
+    const width = spec.plate?.width;
+    if (!length || !width) return { x, y };
+    const halfL = length / 2;
+    const halfW = width / 2;
+    return {
+      x: roundToTwoDecimals(Math.max(-halfL, Math.min(halfL, x))) ?? x,
+      y: roundToTwoDecimals(Math.max(-halfW, Math.min(halfW, y))) ?? y,
+    };
+  };
+
+  const snapValue = (value: number) => {
+    if (!snapToGrid) return roundToTwoDecimals(value) ?? value;
+    const step = gridStep > 0 ? gridStep : 1;
+    return roundToTwoDecimals(Math.round(value / step) * step) ?? value;
+  };
+
+  const addStuds = (positions: Array<{ x: number; y: number }>) => {
+    const currentPositions = spec.studs?.positions || [];
+    if (currentPositions.length + positions.length > VALIDATION_CONSTRAINTS.studs.maxCount) {
+      alert(`Maximum ${VALIDATION_CONSTRAINTS.studs.maxCount} studs allowed`);
+      return;
+    }
+
+    const newStuds = positions.map(({ x, y }) => {
+      const clamped = clampToPlate(x, y);
+      return {
+        x: snapValue(clamped.x),
+        y: snapValue(clamped.y),
+        diameter: 0.5,
+        length: 4,
+        grade: 'A307' as const,
+      };
+    });
+
+    updateSpec({
+      studs: {
+        positions: [...currentPositions, ...newStuds],
+      },
+    });
   };
 
   const canProceedToNextStep = (step: FormStep): boolean => {
@@ -169,19 +265,32 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
       <div className="flex items-center justify-between mb-8">
         {[1, 2, 3, 4, 5].map((step) => (
           <React.Fragment key={step}>
+            {(() => {
+              const targetStep = step as FormStep;
+              const isReachable = canJumpToStep(targetStep);
+              return (
             <button
               type="button"
-              onClick={() => setCurrentStep(step as FormStep)}
+              onClick={() => {
+                if (!isReachable) return;
+                setCurrentStep(targetStep);
+              }}
+              disabled={!isReachable}
+              aria-disabled={!isReachable}
               className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
                 step === currentStep
                   ? 'bg-[#DC143C] text-white'
                   : step < currentStep
                   ? 'bg-white/20 text-white'
-                  : 'bg-white/5 text-white/40'
+                  : isReachable
+                  ? 'bg-white/5 text-white/40 hover:bg-white/10'
+                  : 'bg-white/5 text-white/30 opacity-60 cursor-not-allowed'
               }`}
             >
               {step}
             </button>
+              );
+            })()}
             {step < 5 && (
               <div
                 className={`flex-1 h-px mx-2 ${
@@ -288,6 +397,82 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
           >
             <h3 className="text-xl font-bold text-white mb-4">Studs</h3>
 
+            {/* Stud tools */}
+            {spec.plate?.length && spec.plate?.width && (
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSnapToGrid((v) => !v)}
+                      className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
+                        snapToGrid
+                          ? 'bg-[#DC143C]/20 border-[#DC143C]/50 text-white'
+                          : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'
+                      }`}
+                    >
+                      Snap to grid: {snapToGrid ? 'On' : 'Off'}
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <label className="text-white/70 text-xs uppercase tracking-wider font-semibold">
+                        Grid (in)
+                      </label>
+                      <input
+                        type="number"
+                        min={0.25}
+                        step={0.25}
+                        value={gridStep}
+                        onChange={(e) => setGridStep(parseFloat(e.target.value) || 1)}
+                        className="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
+                        disabled={!snapToGrid}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const length = spec.plate!.length;
+                        const width = spec.plate!.width;
+                        const inset = Math.min(1, Math.max(0.25, Math.min(length, width) / 10));
+                        const halfL = length / 2;
+                        const halfW = width / 2;
+                        addStuds([
+                          { x: -halfL + inset, y: -halfW + inset },
+                          { x: halfL - inset, y: -halfW + inset },
+                          { x: halfL - inset, y: halfW - inset },
+                          { x: -halfL + inset, y: halfW - inset },
+                        ]);
+                      }}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm rounded-lg transition-colors"
+                    >
+                      + 4 corners
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const length = spec.plate!.length;
+                        const inset = Math.min(1, Math.max(0.25, length / 10));
+                        const halfL = length / 2;
+                        addStuds([
+                          { x: -halfL + inset, y: 0 },
+                          { x: halfL - inset, y: 0 },
+                        ]);
+                      }}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm rounded-lg transition-colors"
+                    >
+                      + centered pair
+                    </button>
+                  </div>
+                </div>
+                <p className="text-white/50 text-xs">
+                  Tip: snapping helps keep layouts consistent. You can still fine-tune coordinates below.
+                </p>
+              </div>
+            )}
+
             {/* Coordinate Editor */}
             {spec.plate?.length && spec.plate?.width && (
               <div className="mb-6">
@@ -295,6 +480,8 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   plateLength={spec.plate.length}
                   plateWidth={spec.plate.width}
                   studs={spec.studs?.positions || []}
+                  snapToGrid={snapToGrid}
+                  gridStep={gridStep}
                   onStudUpdate={(index, stud) => {
                     const newPositions = [...(spec.studs?.positions || [])];
                     newPositions[index] = stud;
@@ -306,9 +493,12 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                       alert(`Maximum ${VALIDATION_CONSTRAINTS.studs.maxCount} studs allowed`);
                       return;
                     }
+                    const clamped = clampToPlate(x, y);
+                    const snappedX = snapValue(clamped.x);
+                    const snappedY = snapValue(clamped.y);
                     const newStud = {
-                      x,
-                      y,
+                      x: snappedX,
+                      y: snappedY,
                       diameter: 0.5,
                       length: 4,
                       grade: 'A307' as const,
@@ -366,12 +556,16 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                           <input
                             type="number"
                             step="0.01"
+                            min={spec.plate?.length ? -(spec.plate.length / 2) : undefined}
+                            max={spec.plate?.length ? spec.plate.length / 2 : undefined}
                             value={stud.x || ''}
                             onChange={(e) => {
                               const newPositions = [...spec.studs!.positions];
+                              const raw = roundToTwoDecimals(parseNumber(e.target.value)) ?? 0;
+                              const { x } = clampToPlate(raw, stud.y ?? 0);
                               newPositions[index] = {
                                 ...stud,
-                                x: roundToTwoDecimals(parseNumber(e.target.value)) || 0,
+                                x,
                               };
                               updateSpec({ studs: { positions: newPositions } });
                             }}
@@ -386,12 +580,16 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                           <input
                             type="number"
                             step="0.01"
+                            min={spec.plate?.width ? -(spec.plate.width / 2) : undefined}
+                            max={spec.plate?.width ? spec.plate.width / 2 : undefined}
                             value={stud.y || ''}
                             onChange={(e) => {
                               const newPositions = [...spec.studs!.positions];
+                              const raw = roundToTwoDecimals(parseNumber(e.target.value)) ?? 0;
+                              const { y } = clampToPlate(stud.x ?? 0, raw);
                               newPositions[index] = {
                                 ...stud,
-                                y: roundToTwoDecimals(parseNumber(e.target.value)) || 0,
+                                y,
                               };
                               updateSpec({ studs: { positions: newPositions } });
                             }}

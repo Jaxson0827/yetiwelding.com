@@ -78,7 +78,7 @@ export default function SteelEmbedsConfigurator() {
         {/* Left Column: Preview */}
         <div className="order-2 lg:order-1 w-full flex flex-col gap-6">
           {/* 3D Preview */}
-          <div className="flex flex-col h-[500px]">
+          <div className="flex flex-col h-[340px] sm:h-[420px] lg:h-[500px]">
             <h3 className="text-white font-semibold mb-4 uppercase tracking-wider text-sm flex-shrink-0">3D Preview</h3>
             <div className="flex-1 h-full">
               <EmbedPreview3D spec={spec} />
@@ -113,6 +113,8 @@ export default function SteelEmbedsConfigurator() {
               onSpecChange={handleSpecChange}
               onAddToCart={handleAddEmbed}
               currentEmbedIndex={currentEmbedIndex}
+              initialSpec={spec}
+              resetKey={`${currentEmbedIndex ?? 'new'}:${configuredEmbeds.length}`}
               onExportQuote={async (spec) => {
                 try {
                   const response = await fetch('/api/steel-embeds/export-quote', {
