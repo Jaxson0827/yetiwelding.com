@@ -1,8 +1,7 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import PreviewControlsOverlay, { type PreviewControlsApi } from './PreviewControlsOverlay';
 
 const PreviewCanvas = dynamic(() => import('./PreviewCanvas'), {
   ssr: false,
@@ -24,7 +23,6 @@ interface EmbedPreview3DProps {
 }
 
 export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlightedStudIndex, onStudHover }: EmbedPreview3DProps) {
-  const [previewApi, setPreviewApi] = useState<PreviewControlsApi | null>(null);
   const hasValidSpec =
     spec?.plate?.length &&
     spec?.plate?.width &&
@@ -36,16 +34,6 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
   const hasGlbPreview = !!(glbUrl && previewStatus === 'available');
   const hasSpecPreview = !!(hasValidSpec && spec);
   const showCanvas = hasGlbPreview || hasSpecPreview;
-  const statusLabel =
-    hasGlbPreview
-      ? 'Model preview'
-      : hasSpecPreview
-      ? 'Configured preview'
-      : previewStatus === 'loading'
-      ? 'Loading'
-      : previewStatus === 'unavailable'
-      ? 'Preview unavailable'
-      : 'Preview';
 
   if (previewStatus === 'loading') {
     return (
@@ -90,27 +78,17 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
             spec={spec}
             highlightedStudIndex={highlightedStudIndex}
             onStudHover={onStudHover}
-            onApiReady={setPreviewApi}
           />
         </Suspense>
 
-        <PreviewControlsOverlay api={previewApi} disabled={!hasSpecPreview && !hasGlbPreview} />
-
-        {/* Status / disclaimer bar (non-interactive) */}
-        <div className="pointer-events-none absolute bottom-3 left-3 right-3 flex items-end justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 rounded-md bg-black/45 backdrop-blur-md border border-white/10 text-white/85 text-xs font-semibold uppercase tracking-wider">
-              {statusLabel}
-            </span>
-            {highlightedStudIndex !== null && highlightedStudIndex !== undefined && (
-              <span className="px-3 py-1.5 rounded-md bg-black/35 backdrop-blur-md border border-white/10 text-white/70 text-xs">
-                Stud {highlightedStudIndex + 1}
-              </span>
-            )}
-          </div>
-          <div className="max-w-[60%] text-right text-[11px] leading-snug text-white/65 bg-black/30 backdrop-blur-md border border-white/10 rounded-md px-3 py-1.5">
+        {/* Single allowed button (disclaimer) */}
+        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-end">
+          <button
+            type="button"
+            className="pointer-events-auto w-full sm:w-auto sm:max-w-[70%] text-left sm:text-right text-[11px] leading-snug text-white/75 bg-black/35 hover:bg-black/50 backdrop-blur-md border border-white/10 rounded-md px-3 py-2 transition-colors"
+          >
             Preview is representative. Final layout per approved drawings.
-          </div>
+          </button>
         </div>
       </div>
     );

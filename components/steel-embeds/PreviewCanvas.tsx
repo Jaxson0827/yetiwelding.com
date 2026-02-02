@@ -3,18 +3,11 @@
 import React, { Suspense, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls, useGLTF } from '@react-three/drei';
-import { ACESFilmicToneMapping, Box3, MathUtils, Sphere, SRGBColorSpace, Vector3, type Object3D, type PerspectiveCamera } from 'three';
+import { ACESFilmicToneMapping, Box3, MathUtils, Sphere, SRGBColorSpace, Vector3, type Object3D } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { Bloom, EffectComposer, Outline, Selection, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import EmbedGeometry from './EmbedGeometry';
-
-export type PreviewCanvasApi = {
-  reset: () => void;
-  fit: () => void;
-  viewTop: () => void;
-  viewIso: () => void;
-};
 
 function AutoFrame({
   enabled,
@@ -110,15 +103,13 @@ interface PreviewCanvasProps {
   spec?: Partial<EmbedSpec>;
   highlightedStudIndex?: number | null;
   onStudHover?: (index: number | null) => void;
-  onApiReady?: (api: PreviewCanvasApi | null) => void;
 }
 
-export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onStudHover, onApiReady }: PreviewCanvasProps) {
+export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onStudHover }: PreviewCanvasProps) {
   const objectRef = useRef<Object3D | null>(null);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [glbLoaded, setGlbLoaded] = useState(false);
-  const cameraRef = useRef<PerspectiveCamera | null>(null);
   const invalidateRef = useRef<(() => void) | null>(null);
 
   const hasValidSpec =
@@ -162,68 +153,6 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
     invalidateRef.current?.();
   }, []);
 
-  const fitToDirection = useCallback(
-    (dir: Vector3) => {
-      if (!objectRef.current) return;
-      if (!controlsRef.current) return;
-      if (!cameraRef.current) return;
-
-      const box = new Box3().setFromObject(objectRef.current);
-      if (box.isEmpty()) return;
-
-      const center = box.getCenter(new Vector3());
-      const sphere = box.getBoundingSphere(new Sphere());
-      const radius = Math.max(sphere.radius, 0.0001);
-
-      const camera = cameraRef.current;
-      const aspect = (camera as any).aspect ?? 1;
-      const fovV = MathUtils.degToRad((camera as { fov?: number }).fov ?? 45);
-      const fovH = 2 * Math.atan(Math.tan(fovV / 2) * aspect);
-
-      const distV = radius / Math.tan(fovV / 2);
-      const distH = radius / Math.tan(fovH / 2);
-      const padding = 1.25;
-      const distance = Math.max(distV, distH) * padding;
-
-      camera.up.set(0, 0, 1);
-      controlsRef.current.target.copy(center);
-      camera.position.copy(center).addScaledVector(dir.clone().normalize(), distance);
-      camera.near = Math.max(0.01, distance / 100);
-      camera.far = distance * 100;
-      camera.lookAt(center);
-      camera.updateProjectionMatrix();
-      controlsRef.current.update();
-      requestRender();
-    },
-    [requestRender]
-  );
-
-  const api = useMemo<PreviewCanvasApi>(() => {
-    return {
-      reset: () => {
-        setHasUserInteracted(false);
-        fitToDirection(new Vector3(0.35, -0.2, 1.0));
-      },
-      fit: () => {
-        setHasUserInteracted(false);
-        fitToDirection(new Vector3(0.35, -0.2, 1.0));
-      },
-      viewTop: () => {
-        setHasUserInteracted(true);
-        fitToDirection(new Vector3(0.0, -0.05, 1.0));
-      },
-      viewIso: () => {
-        setHasUserInteracted(true);
-        fitToDirection(new Vector3(0.35, -0.2, 1.0));
-      },
-    };
-  }, [fitToDirection]);
-
-  React.useEffect(() => {
-    onApiReady?.(api);
-    return () => onApiReady?.(null);
-  }, [api, onApiReady]);
-
   // Keep demand-based rendering responsive to external hover/selection
   React.useEffect(() => {
     requestRender();
@@ -242,7 +171,6 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
           outputColorSpace: SRGBColorSpace,
         }}
         onCreated={(state) => {
-          cameraRef.current = state.camera as PerspectiveCamera;
           invalidateRef.current = state.invalidate;
         }}
         style={{ width: '100%', height: '100%' }}
