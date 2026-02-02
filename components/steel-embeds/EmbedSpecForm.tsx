@@ -18,6 +18,8 @@ interface EmbedSpecFormProps {
   resetKey?: string;
   highlightedStudIndex?: number | null;
   onStudHover?: (index: number | null) => void;
+  selectedStudIndex?: number | null;
+  onStudSelect?: (index: number | null) => void;
 }
 
 type FormStep = 1 | 2 | 3 | 4 | 5;
@@ -68,11 +70,23 @@ const DEFAULT_SPEC: Partial<EmbedSpec> = {
   leadTime: 'standard',
 };
 
-export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote, currentEmbedIndex, initialSpec, resetKey, highlightedStudIndex, onStudHover }: EmbedSpecFormProps) {
+export default function EmbedSpecForm({
+  onSpecChange,
+  onAddToCart,
+  onExportQuote,
+  currentEmbedIndex,
+  initialSpec,
+  resetKey,
+  highlightedStudIndex,
+  onStudHover,
+  selectedStudIndex: selectedStudIndexProp,
+  onStudSelect,
+}: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [defaultStud, setDefaultStud] = useState(DEFAULT_STUD);
   const [expandedStudIndex, setExpandedStudIndex] = useState<number | null>(null);
+  const [selectedStudIndexInternal, setSelectedStudIndexInternal] = useState<number | null>(null);
 
   const [spec, setSpec] = useState<Partial<EmbedSpec>>(DEFAULT_SPEC);
 
@@ -203,6 +217,22 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
   const roundToTwoDecimals = (value: number | undefined): number | undefined => {
     if (value === undefined) return undefined;
     return Math.round(value * 100) / 100;
+  };
+
+  const selectedStudIndex = selectedStudIndexProp ?? selectedStudIndexInternal;
+  const setSelectedStudIndex = onStudSelect ?? setSelectedStudIndexInternal;
+
+  const normalizeStudIndexAfterRemoval = (removedIndex: number) => {
+    // Expanded index adjustments (existing behavior)
+    if (expandedStudIndex === removedIndex) setExpandedStudIndex(null);
+    else if (expandedStudIndex !== null && expandedStudIndex > removedIndex) setExpandedStudIndex(expandedStudIndex - 1);
+
+    // Selected index adjustments (new)
+    let nextSelected = selectedStudIndex;
+    if (selectedStudIndex === removedIndex) nextSelected = null;
+    else if (selectedStudIndex !== null && selectedStudIndex > removedIndex) nextSelected = selectedStudIndex - 1;
+    setSelectedStudIndex(nextSelected);
+    return nextSelected;
   };
 
   return (
@@ -352,6 +382,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   plateWidth={spec.plate.width}
                   studs={spec.studs?.positions || []}
                   defaultStud={defaultStud}
+                  selectedStudIndex={selectedStudIndex ?? null}
                   onAddStudPositions={(positions) => {
                     let currentPositions = spec.studs?.positions || [];
                     for (const { x, y } of positions) {
@@ -362,6 +393,11 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                       ];
                     }
                     updateSpec({ studs: { positions: currentPositions } });
+                    if (currentPositions.length > 0) {
+                      const newIndex = currentPositions.length - 1;
+                      setSelectedStudIndex(newIndex);
+                      onStudHover?.(newIndex);
+                    }
                   }}
                   onStudUpdate={(index, stud) => {
                     const newPositions = [...(spec.studs?.positions || [])];
@@ -387,6 +423,9 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                         positions: [...currentPositions, newStud],
                       },
                     });
+                    const newIndex = currentPositions.length;
+                    setSelectedStudIndex(newIndex);
+                    onStudHover?.(newIndex);
                   }}
                   onStudRemove={(index) => {
                     const newPositions = spec.studs!.positions.filter((_, i) => i !== index);
@@ -395,8 +434,8 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                         ? { positions: newPositions }
                         : undefined,
                     });
-                    if (expandedStudIndex === index) setExpandedStudIndex(null);
-                    else if (expandedStudIndex !== null && expandedStudIndex > index) setExpandedStudIndex(expandedStudIndex - 1);
+                    const nextSelected = normalizeStudIndexAfterRemoval(index);
+                    onStudHover?.(nextSelected ?? null);
                   }}
                   highlightedStudIndex={highlightedStudIndex ?? undefined}
                   onStudHover={onStudHover}
@@ -454,38 +493,85 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     const fromLeft = plateLength ? (plateLength / 2 + stud.x).toFixed(1) : '—';
                     const fromBottom = plateWidth ? (plateWidth / 2 + stud.y).toFixed(1) : '—';
                     const isExpanded = expandedStudIndex === index;
+                    const isSelected = selectedStudIndex === index;
                     return (
-                      <div key={index} className="rounded-lg border border-white/20 overflow-hidden bg-white/5">
-                        <div className="flex items-center justify-between px-4 py-2 flex-wrap gap-2">
-                          <span className="text-white text-sm font-normal">
-                            Stud {index + 1}: {stud.diameter}{'"'} × {stud.length}{'"'} {stud.grade} • {fromLeft}{'"'} from left, {fromBottom}{'"'} from bottom
-                          </span>
+                      <div
+                        key={index}
+                        className={`rounded-lg border overflow-hidden bg-white/5 transition-colors ${
+                          isSelected || isExpanded
+                            ? 'border-[#DC143C]/60 ring-1 ring-[#DC143C]/25'
+                            : 'border-white/20'
+                        }`}
+                        onMouseEnter={() => onStudHover?.(index)}
+                        onMouseLeave={() => onStudHover?.(selectedStudIndex ?? null)}
+                        onClick={() => {
+                          setSelectedStudIndex(index);
+                          setExpandedStudIndex(isExpanded ? null : index);
+                          onStudHover?.(index);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedStudIndex(index);
+                            setExpandedStudIndex(isExpanded ? null : index);
+                            onStudHover?.(index);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between px-4 py-3 flex-wrap gap-3 cursor-pointer">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2 min-w-0">
+                              <span className="text-white text-sm font-semibold whitespace-nowrap">
+                                Stud {index + 1}
+                              </span>
+                              <span className="text-white/80 text-sm font-normal truncate">
+                                {stud.diameter}{'"'} × {stud.length}{'"'} {stud.grade}
+                              </span>
+                            </div>
+                            <div className="text-white/60 text-xs truncate mt-0.5">
+                              {fromLeft}{'"'} from left • {fromBottom}{'"'} from bottom
+                            </div>
+                          </div>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => setExpandedStudIndex(isExpanded ? null : index)}
-                              className="text-white/80 hover:text-white text-xs font-semibold uppercase tracking-wider"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedStudIndex(index);
+                                setExpandedStudIndex(isExpanded ? null : index);
+                                onStudHover?.(index);
+                              }}
+                              className="text-white/80 hover:text-white text-xs font-semibold tracking-wider"
                             >
-                              {isExpanded ? 'Hide' : 'Advanced: customize this stud'}
+                              {isExpanded ? 'Hide' : 'Edit'}
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const ok = window.confirm(`Remove Stud ${index + 1}?`);
+                                if (!ok) return;
                                 const newPositions = spec.studs!.positions.filter((_, i) => i !== index);
                                 updateSpec({
                                   studs: newPositions.length > 0 ? { positions: newPositions } : undefined,
                                 });
-                                if (expandedStudIndex === index) setExpandedStudIndex(null);
-                                else if (expandedStudIndex !== null && expandedStudIndex > index) setExpandedStudIndex(expandedStudIndex - 1);
+                                const nextSelected = normalizeStudIndexAfterRemoval(index);
+                                onStudHover?.(nextSelected ?? null);
                               }}
                               className="text-red-400 hover:text-red-300 text-xs"
+                              aria-label={`Remove stud ${index + 1}`}
                             >
-                              Remove stud
+                              Remove
                             </button>
                           </div>
                         </div>
                         {isExpanded && (
-                          <div className="px-4 pb-4 pt-2 border-t border-white/20 grid grid-cols-2 gap-3">
+                          <div
+                            className="px-4 pb-4 pt-2 border-t border-white/20 grid grid-cols-2 gap-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <div>
                               <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">X (inches)</label>
                               <input
@@ -496,6 +582,10 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   const newPositions = [...spec.studs!.positions];
                                   newPositions[index] = { ...stud, x: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
+                                }}
+                                onFocus={() => {
+                                  setSelectedStudIndex(index);
+                                  onStudHover?.(index);
                                 }}
                                 className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />
@@ -510,6 +600,10 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   const newPositions = [...spec.studs!.positions];
                                   newPositions[index] = { ...stud, y: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
+                                }}
+                                onFocus={() => {
+                                  setSelectedStudIndex(index);
+                                  onStudHover?.(index);
                                 }}
                                 className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />
@@ -527,6 +621,10 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   newPositions[index] = { ...stud, diameter: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
                                 }}
+                                onFocus={() => {
+                                  setSelectedStudIndex(index);
+                                  onStudHover?.(index);
+                                }}
                                 className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />
                             </div>
@@ -540,6 +638,10 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   const newPositions = [...spec.studs!.positions];
                                   newPositions[index] = { ...stud, length: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
+                                }}
+                                onFocus={() => {
+                                  setSelectedStudIndex(index);
+                                  onStudHover?.(index);
                                 }}
                                 className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />

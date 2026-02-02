@@ -28,6 +28,8 @@ interface CoordinateEditorProps {
   onAddStudPositions?: (positions: Array<{ x: number; y: number }>) => void;
   onStudHover?: (index: number | null) => void;
   highlightedStudIndex?: number | null;
+  /** When hover ends, we can fall back to the selected stud highlight (if any). */
+  selectedStudIndex?: number | null;
 }
 
 const EDGE_WARN_YELLOW = 1;   // inches - yellow ring
@@ -44,6 +46,7 @@ export default function CoordinateEditor({
   onAddStudPositions,
   onStudHover,
   highlightedStudIndex = null,
+  selectedStudIndex = null,
 }: CoordinateEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedStud, setSelectedStud] = useState<number | null>(null);
@@ -300,7 +303,7 @@ export default function CoordinateEditor({
               <g
                 key={index}
                 onMouseEnter={() => onStudHover?.(index)}
-                onMouseLeave={() => onStudHover?.(null)}
+                onMouseLeave={() => onStudHover?.(selectedStudIndex ?? null)}
               >
                 {/* Edge warning ring */}
                 {ringColor !== 'transparent' && (
