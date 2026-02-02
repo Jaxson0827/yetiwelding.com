@@ -274,7 +274,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   updatePlate({ length: roundToTwoDecimals(parseNumber(e.target.value)) })
                 }
                 placeholder='2" - 96"'
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
               />
               {validationErrors['plate.length'] && (
                 <p className="mt-1 text-red-400 text-sm">{validationErrors['plate.length']}</p>
@@ -295,7 +295,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   updatePlate({ width: roundToTwoDecimals(parseNumber(e.target.value)) })
                 }
                 placeholder='2" - 96"'
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
               />
               {validationErrors['plate.width'] && (
                 <p className="mt-1 text-red-400 text-sm">{validationErrors['plate.width']}</p>
@@ -316,7 +316,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   updatePlate({ thickness: roundToTwoDecimals(parseNumber(e.target.value)) })
                 }
                 placeholder='0.25" - 2.0"'
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
               />
               {validationErrors['plate.thickness'] && (
                 <p className="mt-1 text-red-400 text-sm">{validationErrors['plate.thickness']}</p>
@@ -407,7 +407,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
               {/* Right: Default Stud Settings + stud list */}
               <div className="order-1 lg:order-2 space-y-4">
                 {/* Default Stud Settings */}
-                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <div className="p-4 bg-white/5 rounded-lg border border-white/20">
                   <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Default Stud Settings</h4>
                   <p className="text-white/60 text-xs mb-3">Each new stud inherits these. Override per stud in Advanced below.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -420,7 +420,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                         max={VALIDATION_CONSTRAINTS.studs.diameter.max}
                         value={defaultStud.diameter}
                         onChange={(e) => setDefaultStud(prev => ({ ...prev, diameter: roundToTwoDecimals(parseNumber(e.target.value)) ?? prev.diameter }))}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
                       />
                     </div>
                     <div>
@@ -430,7 +430,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                         step="0.01"
                         value={defaultStud.length}
                         onChange={(e) => setDefaultStud(prev => ({ ...prev, length: roundToTwoDecimals(parseNumber(e.target.value)) ?? prev.length }))}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
                       />
                     </div>
                     <div>
@@ -455,9 +455,9 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     const fromBottom = plateWidth ? (plateWidth / 2 + stud.y).toFixed(1) : '—';
                     const isExpanded = expandedStudIndex === index;
                     return (
-                      <div key={index} className="rounded-lg border border-white/10 overflow-hidden bg-white/5">
+                      <div key={index} className="rounded-lg border border-white/20 overflow-hidden bg-white/5">
                         <div className="flex items-center justify-between px-4 py-2 flex-wrap gap-2">
-                          <span className="text-white text-sm">
+                          <span className="text-white text-sm font-normal">
                             Stud {index + 1}: {stud.diameter}{'"'} × {stud.length}{'"'} {stud.grade} • {fromLeft}{'"'} from left, {fromBottom}{'"'} from bottom
                           </span>
                           <div className="flex items-center gap-2">
@@ -480,12 +480,12 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                               }}
                               className="text-red-400 hover:text-red-300 text-xs"
                             >
-                              Remove
+                              Remove stud
                             </button>
                           </div>
                         </div>
                         {isExpanded && (
-                          <div className="px-4 pb-4 pt-2 border-t border-white/10 grid grid-cols-2 gap-3">
+                          <div className="px-4 pb-4 pt-2 border-t border-white/20 grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">X (inches)</label>
                               <input
@@ -497,7 +497,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   newPositions[index] = { ...stud, x: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
                                 }}
-                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />
                             </div>
                             <div>
@@ -511,7 +511,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   newPositions[index] = { ...stud, y: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
                                 }}
-                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />
                             </div>
                             <div>
@@ -527,7 +527,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   newPositions[index] = { ...stud, diameter: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
                                 }}
-                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />
                             </div>
                             <div>
@@ -541,7 +541,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                                   newPositions[index] = { ...stud, length: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
                                   updateSpec({ studs: { positions: newPositions } });
                                 }}
-                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
                               />
                             </div>
                             <div className="col-span-2">
@@ -630,7 +630,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   min={VALIDATION_CONSTRAINTS.quantity.min}
                   value={spec.quantity || 1}
                   onChange={(e) => updateSpec({ quantity: parseInt(e.target.value) || 1 })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#DC143C] transition-colors text-center"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#DC143C] transition-colors text-center"
                 />
                 {validationErrors['quantity'] && (
                   <p className="mt-1 text-red-400 text-sm text-center">{validationErrors['quantity']}</p>
@@ -638,7 +638,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
               </div>
 
               {/* Price Display */}
-              <div className="pt-6 border-t border-white/10 mt-6">
+              <div className="pt-6 border-t border-white/20 mt-6">
                 <PriceDisplay
                   priceBreakdown={priceBreakdown}
                   quantity={spec.quantity || 1}
@@ -661,7 +661,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
 
             {/* Final Review block — summary, thumbnail, PDF */}
             {isEmbedSpecComplete(spec) && validateEmbedSpec(spec).length === 0 && (
-              <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-4">
+              <div className="p-4 bg-white/5 rounded-lg border border-white/20 space-y-4">
                 <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Final review</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1 text-sm">
@@ -687,7 +687,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   </div>
                   {/* Mini 2D thumbnail */}
                   {spec.plate?.length && spec.plate?.width && (
-                    <div className="flex items-center justify-center p-2 bg-black/30 rounded border border-white/10">
+                    <div className="flex items-center justify-center p-2 bg-black/30 rounded border border-white/20">
                       <svg
                         viewBox={`${-spec.plate.length / 2 - 1} ${-spec.plate.width / 2 - 1} ${spec.plate.length + 2} ${spec.plate.width + 2}`}
                         className="w-full max-w-[160px] h-24 text-white"
@@ -747,7 +747,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   value={spec.projectName || ''}
                   onChange={(e) => updateSpec({ projectName: e.target.value })}
                   placeholder="e.g., Downtown Office Building"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                 />
               </div>
 
@@ -760,7 +760,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   value={spec.projectNumber || ''}
                   onChange={(e) => updateSpec({ projectNumber: e.target.value })}
                   placeholder="e.g., PROJ-2024-001"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                 />
               </div>
 
@@ -776,7 +776,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   onChange={(e) => updateSpec({
                     deliveryAddress: { ...spec.deliveryAddress, street: e.target.value }
                   })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -790,7 +790,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     onChange={(e) => updateSpec({
                       deliveryAddress: { ...spec.deliveryAddress, city: e.target.value }
                     })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                   />
                 </div>
                 <div>
@@ -803,7 +803,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     onChange={(e) => updateSpec({
                       deliveryAddress: { ...spec.deliveryAddress, state: e.target.value }
                     })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                   />
                 </div>
                 <div>
@@ -816,7 +816,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     onChange={(e) => updateSpec({
                       deliveryAddress: { ...spec.deliveryAddress, zip: e.target.value }
                     })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                   />
                 </div>
                 <div>
@@ -829,7 +829,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     onChange={(e) => updateSpec({
                       deliveryAddress: { ...spec.deliveryAddress, country: e.target.value }
                     })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                   />
                 </div>
               </div>
@@ -847,7 +847,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   onChange={(e) => updateSpec({
                     contactInfo: { ...spec.contactInfo, name: e.target.value }
                   })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -861,7 +861,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     onChange={(e) => updateSpec({
                       contactInfo: { ...spec.contactInfo, email: e.target.value }
                     })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                   />
                 </div>
                 <div>
@@ -874,7 +874,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     onChange={(e) => updateSpec({
                       contactInfo: { ...spec.contactInfo, phone: e.target.value }
                     })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                   />
                 </div>
                 <div className="col-span-2">
@@ -887,7 +887,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                     onChange={(e) => updateSpec({
                       contactInfo: { ...spec.contactInfo, company: e.target.value }
                     })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
                   />
                 </div>
               </div>
@@ -902,7 +902,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
                   onChange={(e) => updateSpec({ specialInstructions: e.target.value })}
                   placeholder="Any special requirements or notes for this order..."
                   rows={4}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors resize-none"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors resize-none"
                 />
               </div>
             </div>
@@ -911,12 +911,12 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
       </AnimatePresence>
 
       {/* Navigation Buttons */}
-      <div className="flex items-center justify-between pt-6 border-t border-white/10">
+      <div className="flex items-center justify-between pt-6 border-t border-white/20">
         <button
           type="button"
           onClick={handleBack}
           disabled={currentStep === 1}
-          className="px-6 py-3 bg-white/5 border border-white/10 rounded-lg text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          className="px-6 py-3 bg-white/5 border border-white/20 rounded-lg text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
         >
           Back
         </button>

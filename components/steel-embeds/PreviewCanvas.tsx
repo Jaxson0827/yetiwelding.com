@@ -137,8 +137,10 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
           onPointerDown={() => setAutoRotate(false)}
           onWheel={() => setAutoRotate(false)}
         >
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} />
+          <color attach="background" args={['#1a1a1a']} />
+          <ambientLight intensity={0.75} />
+          <pointLight position={[10, 10, 10]} intensity={1} />
+          <pointLight position={[-8, 8, 8]} intensity={0.6} />
           <directionalLight position={[-10, 10, -10]} intensity={0.5} />
           {renderFromGlb && glbUrl && <Model url={glbUrl} />}
           {renderFromSpec && spec && (

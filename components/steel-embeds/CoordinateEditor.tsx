@@ -269,8 +269,8 @@ export default function CoordinateEditor({
           {/* Plate dimension labels */}
           {showDimensions && (
             <g>
-              <text x={svgWidth / 2} y={plateSvgY - 8} fill="rgba(255,255,255,0.5)" fontSize="9" textAnchor="middle" fontFamily="monospace">{plateLength}"</text>
-              <text x={plateSvgX + plateSvgWidth + 16} y={svgHeight / 2} fill="rgba(255,255,255,0.5)" fontSize="9" textAnchor="middle" fontFamily="monospace">{plateWidth}"</text>
+              <text x={svgWidth / 2} y={plateSvgY - 8} fill="rgba(255,255,255,0.7)" fontSize="10" textAnchor="middle" fontFamily="monospace">{plateLength}"</text>
+              <text x={plateSvgX + plateSvgWidth + 16} y={svgHeight / 2} fill="rgba(255,255,255,0.7)" fontSize="10" textAnchor="middle" fontFamily="monospace">{plateWidth}"</text>
             </g>
           )}
 
@@ -280,7 +280,7 @@ export default function CoordinateEditor({
               <line x1={svgWidth / 2} y1={0} x2={svgWidth / 2} y2={svgHeight} stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1" strokeDasharray="4 4" />
               <line x1={0} y1={svgHeight / 2} x2={svgWidth} y2={svgHeight / 2} stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1" strokeDasharray="4 4" />
               <circle cx={svgWidth / 2} cy={svgHeight / 2} r="3" fill="rgba(255, 255, 255, 0.5)" />
-              <text x={svgWidth / 2 + 8} y={svgHeight / 2 - 8} fill="rgba(255, 255, 255, 0.5)" fontSize="9" fontFamily="monospace">(0, 0)</text>
+              <text x={svgWidth / 2 + 8} y={svgHeight / 2 - 8} fill="rgba(255, 255, 255, 0.7)" fontSize="10" fontFamily="monospace">(0, 0)</text>
             </>
           )}
 
@@ -326,11 +326,11 @@ export default function CoordinateEditor({
                   {index + 1}
                 </text>
                 {/* Edge-distance hints (primary) */}
-                <text x={svgX} y={svgY + displayRadius + 12} fill="rgba(255,255,255,0.85)" fontSize="8" textAnchor="middle" pointerEvents="none">
+                <text x={svgX} y={svgY + displayRadius + 12} fill="rgba(255,255,255,0.85)" fontSize="9" textAnchor="middle" pointerEvents="none">
                   {fromLeft}" from left, {fromBottom}" from bottom
                 </text>
                 {/* Coordinates (de-emphasized) */}
-                <text x={svgX} y={svgY + displayRadius + 24} fill="rgba(255,255,255,0.45)" fontSize="8" fontFamily="monospace" textAnchor="middle" pointerEvents="none">
+                <text x={svgX} y={svgY + displayRadius + 24} fill="rgba(255,255,255,0.55)" fontSize="9" fontFamily="monospace" textAnchor="middle" pointerEvents="none">
                   ({stud.x.toFixed(2)}, {stud.y.toFixed(2)})
                 </text>
               </g>
@@ -344,11 +344,11 @@ export default function CoordinateEditor({
         <div className="grid grid-cols-2 gap-4 text-xs">
           <div>
             <span className="text-white/60">Plate Size: </span>
-            <span className="text-white font-mono">{plateLength}" × {plateWidth}"</span>
+            <span className="text-white font-mono font-normal">{plateLength}" × {plateWidth}"</span>
           </div>
           <div>
             <span className="text-white/60">Studs: </span>
-            <span className="text-white font-mono">{studs.length}</span>
+            <span className="text-white font-mono font-normal">{studs.length}</span>
           </div>
         </div>
       </div>
