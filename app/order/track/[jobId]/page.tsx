@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import OrderDetails from '@/components/order/OrderDetails';
@@ -55,7 +55,9 @@ interface Order {
 
 export default function OrderTrackingPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const jobId = params.jobId as string;
+  const token = searchParams.get('token');
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,11 +67,10 @@ export default function OrderTrackingPage() {
     if (!jobId) return;
 
     try {
-      // Try unified API first, fallback to legacy API
-      let response = await fetch(`/api/orders/${jobId}`);
-      if (!response.ok) {
-        response = await fetch(`/api/steel-embeds/order-status?jobId=${jobId}`);
-      }
+      const url = token
+        ? `/api/orders/${jobId}?token=${encodeURIComponent(token)}`
+        : `/api/orders/${jobId}`;
+      const response = await fetch(url);
 
       const data = await response.json();
       
@@ -321,13 +322,12 @@ export default function OrderTrackingPage() {
                       <button
                         onClick={async () => {
                           try {
-                            const response = await fetch(`/api/orders/${jobId}/documents?type=shop-packet`);
-                            const data = await response.json();
-                            if (data.success && data.pdfUrl) {
-                              window.open(data.pdfUrl, '_blank');
-                            } else {
-                              alert('Document not available');
+                            if (!token) {
+                              alert('Missing access token for documents');
+                              return;
                             }
+                            const url = `/api/orders/${encodeURIComponent(jobId)}/documents?type=shop-packet&token=${encodeURIComponent(token)}`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
                           } catch (error) {
                             console.error('Document download error:', error);
                             alert('Failed to download document');
@@ -340,13 +340,12 @@ export default function OrderTrackingPage() {
                       <button
                         onClick={async () => {
                           try {
-                            const response = await fetch(`/api/orders/${jobId}/documents?type=quote`);
-                            const data = await response.json();
-                            if (data.success && data.pdfUrl) {
-                              window.open(data.pdfUrl, '_blank');
-                            } else {
-                              alert('Document not available');
+                            if (!token) {
+                              alert('Missing access token for documents');
+                              return;
                             }
+                            const url = `/api/orders/${encodeURIComponent(jobId)}/documents?type=quote&token=${encodeURIComponent(token)}`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
                           } catch (error) {
                             console.error('Document download error:', error);
                             alert('Failed to download document');

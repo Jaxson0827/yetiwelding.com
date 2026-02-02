@@ -1,9 +1,5 @@
 import { EmbedSpec } from './types';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
-
-const CAD_OUTPUT_DIR = join(process.cwd(), 'public', 'uploads', 'cad-files');
+import { blobPutBuffer } from '@/lib/storage/blob';
 
 // Generate DXF file content
 function generateDxf(spec: EmbedSpec): string {
@@ -136,29 +132,25 @@ function generateStep(spec: EmbedSpec): string {
 }
 
 export async function exportToDxf(spec: EmbedSpec, filename: string): Promise<string> {
-  // Ensure output directory exists
-  if (!existsSync(CAD_OUTPUT_DIR)) {
-    await mkdir(CAD_OUTPUT_DIR, { recursive: true });
-  }
-
   const dxfContent = generateDxf(spec);
-  const filePath = join(CAD_OUTPUT_DIR, `${filename}.dxf`);
-  await writeFile(filePath, dxfContent, 'utf-8');
-  
-  return `/uploads/cad-files/${filename}.dxf`;
+  const { url } = await blobPutBuffer({
+    path: `cad/${filename}.dxf`,
+    data: Buffer.from(dxfContent, 'utf-8'),
+    contentType: 'application/dxf',
+    cacheControlMaxAgeSeconds: 60 * 60, // 1 hour
+  });
+  return url;
 }
 
 export async function exportToStep(spec: EmbedSpec, filename: string): Promise<string> {
-  // Ensure output directory exists
-  if (!existsSync(CAD_OUTPUT_DIR)) {
-    await mkdir(CAD_OUTPUT_DIR, { recursive: true });
-  }
-
   const stepContent = generateStep(spec);
-  const filePath = join(CAD_OUTPUT_DIR, `${filename}.stp`);
-  await writeFile(filePath, stepContent, 'utf-8');
-  
-  return `/uploads/cad-files/${filename}.stp`;
+  const { url } = await blobPutBuffer({
+    path: `cad/${filename}.stp`,
+    data: Buffer.from(stepContent, 'utf-8'),
+    contentType: 'application/step',
+    cacheControlMaxAgeSeconds: 60 * 60, // 1 hour
+  });
+  return url;
 }
 
 

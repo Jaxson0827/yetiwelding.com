@@ -6,14 +6,11 @@ import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
 import CheckoutForm, { CustomerInfo } from '@/components/checkout/CheckoutForm';
 import OrderReview from '@/components/checkout/OrderReview';
-import PaymentForm from '@/components/checkout/PaymentForm';
-import StripeProvider from '@/components/checkout/StripeProvider';
 import ShippingMethodSelector from '@/components/checkout/ShippingMethodSelector';
 import { ShippingOption, ShippingMethod } from '@/lib/shipping/calculator';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { calculateTax } from '@/lib/tax/calculator';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCart();
@@ -21,17 +18,31 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [showPayment, setShowPayment] = useState(false);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'quote'>('online');
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingMethod>('standard');
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
-  const [taxAmount, setTaxAmount] = useState<number>(0);
-  const [taxRate, setTaxRate] = useState<number>(0);
-  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
-  const [isTaxExempt, setIsTaxExempt] = useState(false);
+  const [checkoutId, setCheckoutId] = useState<string>('');
+
+  const generateCheckoutId = () => {
+    // Prefer strong randomness; avoid Math.random fallbacks.
+    const webCrypto: Crypto | undefined =
+      typeof window !== 'undefined' && window.crypto ? window.crypto : undefined;
+
+    if (webCrypto?.randomUUID) {
+      return webCrypto.randomUUID();
+    }
+    if (webCrypto?.getRandomValues) {
+      const bytes = new Uint8Array(16);
+      webCrypto.getRandomValues(bytes);
+      return `chk_${Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')}`;
+    }
+    // Extremely old browsers only.
+    return `chk_${Date.now()}_${String(Date.now())}`;
+  };
 
   useEffect(() => {
     if (items.length === 0) {
@@ -91,6 +102,18 @@ export default function CheckoutPage() {
     setShippingCost(option?.cost || 0);
   };
 
+  // Persist a checkoutId so refreshes don't lose the reference
+  useEffect(() => {
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const fromUrl = params.get('checkoutId');
+    const existing = (typeof window !== 'undefined' && window.sessionStorage.getItem('yeti-checkout-id')) || '';
+    const id = fromUrl || existing || generateCheckoutId();
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('yeti-checkout-id', id);
+    }
+    setCheckoutId(id);
+  }, []);
+
   const handleCustomerInfoSubmit = async (info: CustomerInfo) => {
     setCustomerInfo(info);
     
@@ -102,8 +125,36 @@ export default function CheckoutPage() {
       // Skip payment, go directly to order submission
       await handleOrderSubmission(info, null);
     } else {
-      setShowPayment(true);
-      setError(null);
+      await startStripeCheckout(info);
+    }
+  };
+
+  const startStripeCheckout = async (info: CustomerInfo) => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/checkout/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          checkoutId,
+          items,
+          customerInfo: info,
+          selectedShippingMethod,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start Stripe Checkout');
+      }
+      if (!data.url) {
+        throw new Error('Stripe Checkout URL missing');
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('Stripe Checkout start error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start checkout');
+      setIsSubmitting(false);
     }
   };
 
@@ -113,7 +164,7 @@ export default function CheckoutPage() {
 
     try {
       const subtotal = getTotalPrice();
-      const total = subtotal + shippingCost + taxAmount;
+      const total = subtotal + shippingCost;
 
       const response = await fetch('/api/checkout', {
         method: 'POST',
@@ -127,9 +178,6 @@ export default function CheckoutPage() {
           subtotal,
           shippingCost,
           shippingMethod: selectedShippingMethod,
-          taxAmount,
-          taxRate,
-          isTaxExempt,
           paymentIntentId: paymentId,
         }),
       });
@@ -145,6 +193,9 @@ export default function CheckoutPage() {
       const params = new URLSearchParams({
         jobId: data.jobId || 'pending',
       });
+      if (data.trackingToken) {
+        params.set('token', data.trackingToken);
+      }
       if (paymentId) {
         params.set('paymentId', paymentId);
       }
@@ -156,42 +207,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePaymentSuccess = async (paymentIntentId: string) => {
-    if (!customerInfo) {
-      setError('Customer information is missing');
-      return;
-    }
-
-    setPaymentIntentId(paymentIntentId);
-    await handleOrderSubmission(customerInfo, paymentIntentId);
-  };
-
   // Store address for shipping/tax calculation (debounced)
   const [addressForShipping, setAddressForShipping] = useState<CustomerInfo['shippingAddress'] | null>(null);
-
-  // Calculate tax cost function
-  const calculateTaxCost = useCallback((address: CustomerInfo['shippingAddress']) => {
-    setIsCalculatingTax(true);
-    try {
-      const subtotal = getTotalPrice();
-      const hasCustomFabrication = items.some(item => item.isCustomFabrication);
-      const taxCalculation = calculateTax(
-        subtotal,
-        address,
-        isTaxExempt,
-        hasCustomFabrication
-      );
-
-      setTaxRate(taxCalculation.taxRate);
-      setTaxAmount(taxCalculation.taxAmount);
-    } catch (error) {
-      console.error('Tax calculation error:', error);
-      setTaxRate(0);
-      setTaxAmount(0);
-    } finally {
-      setIsCalculatingTax(false);
-    }
-  }, [getTotalPrice, items, isTaxExempt]);
 
   // Calculate shipping when address changes (debounced)
   useEffect(() => {
@@ -203,20 +220,13 @@ export default function CheckoutPage() {
 
     const timeoutId = setTimeout(() => {
       calculateShippingCost(addressForShipping);
-      // Also calculate tax when address changes
-      calculateTaxCost(addressForShipping);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [addressForShipping, calculateShippingCost, calculateTaxCost]);
+  }, [addressForShipping, calculateShippingCost]);
 
   const handleAddressChange = (address: CustomerInfo['shippingAddress']) => {
     setAddressForShipping(address);
-  };
-
-  const handlePaymentError = (errorMessage: string) => {
-    setError(errorMessage);
-    setIsSubmitting(false);
   };
 
   if (items.length === 0) {
@@ -247,8 +257,7 @@ export default function CheckoutPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Checkout Form & Payment */}
               <div className="lg:col-span-2 space-y-6">
-                {!showPayment ? (
-                  <>
+                <>
                     {/* Payment Method Selection */}
                     {items.some(item => item.isCustomFabrication) && (
                       <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6 mb-6">
@@ -303,50 +312,7 @@ export default function CheckoutPage() {
                         isLoading={isCalculatingShipping}
                       />
                     )}
-
-                    {/* Tax Exempt Checkbox */}
-                    {addressForShipping?.state && (
-                      <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-                        <div className="flex items-center mb-2">
-                          <input
-                            type="checkbox"
-                            id="taxExempt"
-                            checked={isTaxExempt}
-                            onChange={(e) => {
-                              setIsTaxExempt(e.target.checked);
-                              if (addressForShipping) {
-                                calculateTaxCost(addressForShipping);
-                              }
-                            }}
-                            className="w-4 h-4 text-[#DC143C] bg-white/10 border-white/20 rounded focus:ring-[#DC143C]"
-                          />
-                          <label htmlFor="taxExempt" className="ml-2 text-white/80 text-sm">
-                            I have a valid tax exemption certificate
-                          </label>
-                        </div>
-                        {taxRate > 0 && !isTaxExempt && addressForShipping && (
-                          <p className="text-white/60 text-xs mt-2">
-                            Sales tax ({addressForShipping.state}: {(taxRate * 100).toFixed(2)}%): ${taxAmount.toFixed(2)}
-                          </p>
-                        )}
-                        {isTaxExempt && (
-                          <p className="text-green-200 text-xs mt-2">
-                            ✓ Tax exempt - no sales tax will be charged
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <StripeProvider>
-                    <PaymentForm
-                      amount={getTotalPrice() + shippingCost + taxAmount}
-                      onPaymentSuccess={handlePaymentSuccess}
-                      onPaymentError={handlePaymentError}
-                      isProcessing={isSubmitting}
-                    />
-                  </StripeProvider>
-                )}
+                </>
               </div>
 
               {/* Order Review */}
@@ -355,20 +321,14 @@ export default function CheckoutPage() {
                   items={items} 
                   subtotal={getTotalPrice()}
                   shippingCost={shippingCost}
-                  taxAmount={taxAmount}
-                  total={getTotalPrice() + shippingCost + taxAmount}
+                  showTaxPlaceholder={true}
+                  total={getTotalPrice() + shippingCost}
                 />
-                {showPayment && customerInfo && (
+                {customerInfo && (
                   <div className="mt-4 bg-white/5 border-2 border-white/20 rounded-lg p-4">
                     <h4 className="text-white font-semibold mb-2">Customer Information</h4>
                     <p className="text-white/70 text-sm">{customerInfo.name}</p>
                     <p className="text-white/70 text-sm">{customerInfo.email}</p>
-                    <button
-                      onClick={() => setShowPayment(false)}
-                      className="mt-3 text-white/60 hover:text-white text-sm transition-colors"
-                    >
-                      ← Edit Information
-                    </button>
                   </div>
                 )}
                 <Link

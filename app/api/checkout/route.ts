@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
-import { generateShopPacket } from '@/lib/steelEmbeds/generateShopPacket';
-import { storeOrder } from '../steel-embeds/order-status/route';
 import { generateOrderConfirmationEmail } from '@/lib/emails/orderConfirmation';
 import { generateInternalNotificationEmail } from '@/lib/emails/internalNotification';
 import { sendEmail } from '@/lib/emails/sendEmail';
-import { storeFullOrder } from '../steel-embeds/order-status/route';
-import Stripe from 'stripe';
-
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-12-15.clover',
-    })
-  : null;
+import { priceEmbed } from '@/lib/steelEmbeds/pricing';
+import { priceGate } from '@/lib/dumpsterGates/pricing';
+import { calculateShipping } from '@/lib/shipping/calculator';
+import { kvRateLimitFixedWindow, kvSetJson, kvSetString, KvNotConfiguredError } from '@/lib/storage/kv';
+import { KV_KEYS } from '@/lib/storage/keys';
+import crypto from 'crypto';
 
 interface CartItem {
   id: string;
@@ -51,8 +47,20 @@ interface CustomerInfo {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit (best effort in dev; required in production)
+    try {
+      const xff = request.headers.get('x-forwarded-for');
+      const ip = xff ? xff.split(',')[0].trim() : request.headers.get('x-real-ip') || 'unknown';
+      const ok = await kvRateLimitFixedWindow(`rl:quote_checkout:${ip}`, 10, 10 * 60);
+      if (!ok) {
+        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
+    } catch (e) {
+      if (!(e instanceof KvNotConfiguredError)) throw e;
+    }
+
     const body = await request.json();
-    const { items, customerInfo, orderTotal, subtotal, shippingCost, shippingMethod, taxAmount, taxRate, isTaxExempt, paymentIntentId } = body;
+    const { items, customerInfo, shippingMethod } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -68,107 +76,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Separate items by product type
-    const steelEmbeds = items.filter(
-      (item: CartItem) => item.productType === 'steel-plate-embeds'
-    ) as CartItem[];
-    
-    const dumpsterGates = items.filter(
-      (item: CartItem) => item.productType === 'dumpster-gate'
-    ) as CartItem[];
+    // Quote/Manual flow only (no Stripe payment here). Recompute totals server-side.
+    const embedSpecs: EmbedSpec[] = items
+      .filter((it: CartItem) => it.productType === 'steel-plate-embeds')
+      .map((it: CartItem) => it.configuration as EmbedSpec);
 
-    // Verify payment if paymentIntentId is provided
-    if (paymentIntentId) {
-      if (!stripe) {
-        return NextResponse.json(
-          { error: 'Stripe is not configured' },
-          { status: 500 }
-        );
-      }
+    const gateConfigs: DumpsterGateConfig[] = items
+      .filter((it: CartItem) => it.productType === 'dumpster-gate')
+      .map((it: CartItem) => it.configuration as DumpsterGateConfig);
 
-      try {
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        
-        if (paymentIntent.status !== 'succeeded') {
-          return NextResponse.json(
-            { error: 'Payment not completed' },
-            { status: 400 }
-          );
-        }
+    const embedsSubtotal = embedSpecs.reduce((sum, spec) => {
+      const bd = priceEmbed(spec);
+      return sum + bd.unitPrice * (spec.quantity || 1);
+    }, 0);
 
-        // Verify payment amount matches order total
-        const paidAmount = paymentIntent.amount / 100; // Convert from cents
-        if (Math.abs(paidAmount - orderTotal) > 0.01) {
-          return NextResponse.json(
-            { error: 'Payment amount mismatch' },
-            { status: 400 }
-          );
-        }
-      } catch (error) {
-        console.error('Payment verification error:', error);
-        return NextResponse.json(
-          { error: 'Failed to verify payment' },
-          { status: 500 }
-        );
-      }
-    }
+    const gatesSubtotal = gateConfigs.reduce((sum, cfg) => {
+      const bd = priceGate(cfg);
+      return sum + bd.totalPrice;
+    }, 0);
 
-    // Generate unique job ID
+    const subtotalComputed = Math.round((embedsSubtotal + gatesSubtotal) * 100) / 100;
+
+    const shippingCalc = customerInfo?.shippingAddress?.zip
+      ? calculateShipping(items as any, customerInfo.shippingAddress as any, shippingMethod)
+      : { options: [], selectedMethod: shippingMethod || null };
+    const chosen = shippingCalc.options?.find((o: any) => o.method === shippingMethod) || shippingCalc.options?.[0];
+    const shippingCostComputed = chosen?.cost || 0;
+    const totalComputed = Math.round((subtotalComputed + shippingCostComputed) * 100) / 100;
+
     const jobId = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-
-    // Process steel embeds if any
-    let embedSpecs: EmbedSpec[] = [];
-    let pdfUrl: string | null = null;
-
-    if (steelEmbeds.length > 0) {
-      embedSpecs = steelEmbeds.map(item => item.configuration as EmbedSpec);
-      
-      // Store order for tracking
-      storeOrder(jobId, embedSpecs, customerInfo);
-
-      // Generate PDF shop packet for steel embeds
-      try {
-        pdfUrl = await generateShopPacket(jobId, embedSpecs);
-      } catch (error) {
-        console.error('PDF generation error:', error);
-        // Continue even if PDF generation fails
-      }
-    }
-
-    // Process dumpster gates if any
-    const gateConfigs: DumpsterGateConfig[] = [];
-    if (dumpsterGates.length > 0) {
-      gateConfigs.push(...dumpsterGates.map(item => item.configuration as DumpsterGateConfig));
-      
-      // Store dumpster gate orders (you may want to create a separate store function for gates)
-      // For now, we'll store them together
-      if (steelEmbeds.length === 0) {
-        // Only store if no steel embeds (to avoid duplicate storage)
-        storeOrder(jobId, gateConfigs as any, customerInfo);
-      }
-    }
+    const orderId = crypto.randomUUID();
+    const trackingToken = crypto.randomBytes(32).toString('hex');
 
     // Prepare order data
     const orderData = {
+      orderId,
       jobId,
       items: items as CartItem[],
       steelEmbeds: embedSpecs,
       dumpsterGates: gateConfigs,
       customerInfo: customerInfo as CustomerInfo,
-      orderTotal,
-      subtotal: subtotal || orderTotal,
-      shippingCost: shippingCost || 0,
-      shippingMethod: shippingMethod || null,
-      taxAmount: taxAmount || 0,
-      taxRate: taxRate || 0,
-      isTaxExempt: isTaxExempt || false,
-      paymentIntentId: paymentIntentId || null,
-      paymentStatus: paymentIntentId ? 'paid' : 'pending',
+      orderTotal: totalComputed,
+      subtotal: subtotalComputed,
+      shippingCost: shippingCostComputed,
+      shippingMethod: shippingMethod || shippingCalc.selectedMethod || null,
+      taxAmount: null,
+      taxRate: null,
+      isTaxExempt: false,
+      paymentIntentId: null,
+      paymentStatus: 'quote_requested',
+      trackingToken,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'pending',
     };
 
-    // Store full order for tracking
-    storeFullOrder(orderData);
+    // Store in KV (required for serverless reliability)
+    await kvSetJson(KV_KEYS.order(orderId), orderData);
+    await kvSetString(KV_KEYS.orderByJob(jobId), orderId, 365 * 24 * 60 * 60);
 
     // Send emails (non-blocking - don't fail order if email fails)
     const emailResults = {
@@ -182,7 +147,10 @@ export async function POST(request: NextRequest) {
         jobId,
         items as CartItem[],
         customerInfo as CustomerInfo,
-        orderTotal
+        totalComputed,
+        {
+          trackingUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${encodeURIComponent(jobId)}?token=${encodeURIComponent(trackingToken)}`,
+        }
       );
 
       const customerEmailResult = await sendEmail({
@@ -215,7 +183,10 @@ export async function POST(request: NextRequest) {
           jobId,
           items as CartItem[],
           customerInfo as CustomerInfo,
-          orderTotal
+          totalComputed,
+          {
+            trackingUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${encodeURIComponent(jobId)}?token=${encodeURIComponent(trackingToken)}`,
+          }
         );
 
         const internalEmailResult = await sendEmail({
@@ -252,8 +223,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       jobId,
+      trackingToken,
       orderData,
-      pdfUrl, // Only for steel embeds currently
       emails: emailResults, // Include email status for debugging
     });
   } catch (error) {

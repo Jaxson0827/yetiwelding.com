@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { kvRateLimitFixedWindow, KvNotConfiguredError } from '@/lib/storage/kv';
 let resend: Resend | null = null;
 
 function getResend(): Resend | null {
@@ -12,11 +13,38 @@ function getResend(): Resend | null {
   return resend;
 }
 
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getClientIp(request: NextRequest): string {
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) return xff.split(',')[0].trim();
+  return request.headers.get('x-real-ip') || 'unknown';
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit (best effort in dev; required in production)
+    try {
+      const ip = getClientIp(request);
+      const ok = await kvRateLimitFixedWindow(`rl:contact:${ip}`, 5, 10 * 60); // 5 requests / 10 minutes
+      if (!ok) {
+        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
+    } catch (e) {
+      if (!(e instanceof KvNotConfiguredError)) throw e;
+    }
+
     const formData = await request.formData();
 
     // Extract form fields
+    const honeypot = (formData.get('companyWebsite') as string) || '';
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
     const phone = formData.get('phone') as string;
@@ -27,12 +55,29 @@ export async function POST(request: NextRequest) {
     const urgency = formData.get('urgency') as string;
     const file = formData.get('file') as File | null;
 
+    // Honeypot triggered: pretend success to avoid tipping off bots
+    if (honeypot && honeypot.trim().length > 0) {
+      return NextResponse.json(
+        { success: true, message: "Your message has been received. We'll get back to you within 24 hours." },
+        { status: 200 }
+      );
+    }
+
     // Basic validation
     if (!name || !email || !message) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
+    }
+
+    if (name.length > 100 || email.length > 254 || message.length > 2000) {
+      return NextResponse.json({ error: 'Invalid form input' }, { status: 400 });
+    }
+
+    // Very basic email format check (server-side)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
     }
 
     // Validate Resend API key
@@ -66,12 +111,37 @@ export async function POST(request: NextRequest) {
     };
 
     // Prepare attachments if file is present
-    const attachments = file ? [
-      {
-        filename: file.name,
-        content: Buffer.from(await file.arrayBuffer()),
-      },
-    ] : undefined;
+    let attachments: { filename: string; content: Buffer }[] | undefined;
+    if (file) {
+      const maxBytes = 10 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
+      }
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+      }
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120);
+      attachments = [
+        {
+          filename: safeName,
+          content: Buffer.from(await file.arrayBuffer()),
+        },
+      ];
+    }
+
+    const safe = {
+      name: escapeHtml(name.trim()),
+      email: escapeHtml(email.trim()),
+      phone: phone ? escapeHtml(phone.trim()) : '',
+      inquiryType: escapeHtml(inquiryType || ''),
+      projectType: escapeHtml(projectType || ''),
+      preferredContact: escapeHtml(preferredContact || ''),
+      urgency: escapeHtml(urgency || ''),
+      messageHtml: escapeHtml(message).replace(/\n/g, '<br>'),
+      messageText: message.trim(),
+      fileName: file ? escapeHtml(file.name) : '',
+    };
 
     // Send email to business email
     const businessEmail = process.env.BUSINESS_EMAIL || process.env.RESEND_FROM_EMAIL;
@@ -122,50 +192,50 @@ export async function POST(request: NextRequest) {
               <div class="content">
                 <div class="field">
                   <div class="label">Name:</div>
-                  <div class="value">${name}</div>
+                  <div class="value">${safe.name}</div>
                 </div>
                 <div class="field">
                   <div class="label">Email:</div>
-                  <div class="value"><a href="mailto:${email}">${email}</a></div>
+                  <div class="value"><a href="mailto:${safe.email}">${safe.email}</a></div>
                 </div>
                 ${phone ? `
                 <div class="field">
                   <div class="label">Phone:</div>
-                  <div class="value"><a href="tel:${phone}">${phone}</a></div>
+                  <div class="value"><a href="tel:${safe.phone}">${safe.phone}</a></div>
                 </div>
                 ` : ''}
                 <div class="field">
                   <div class="label">Inquiry Type:</div>
-                  <div class="value">${inquiryTypeLabels[inquiryType] || inquiryType}</div>
+                  <div class="value">${escapeHtml(inquiryTypeLabels[inquiryType] || inquiryType)}</div>
                 </div>
                 ${projectType ? `
                 <div class="field">
                   <div class="label">Project Type:</div>
-                  <div class="value">${projectType}</div>
+                  <div class="value">${safe.projectType}</div>
                 </div>
                 ` : ''}
                 <div class="field">
                   <div class="label">Preferred Contact Method:</div>
-                  <div class="value">${preferredContactLabels[preferredContact] || preferredContact}</div>
+                  <div class="value">${escapeHtml(preferredContactLabels[preferredContact] || preferredContact)}</div>
                 </div>
                 <div class="field">
                   <div class="label">Urgency:</div>
-                  <div class="value">${urgencyLabels[urgency] || urgency}</div>
+                  <div class="value">${escapeHtml(urgencyLabels[urgency] || urgency)}</div>
                 </div>
                 ${file ? `
                 <div class="field">
                   <div class="label">Attachment:</div>
-                  <div class="value">${file.name} (${(file.size / 1024).toFixed(2)} KB)</div>
+                  <div class="value">${safe.fileName} (${(file.size / 1024).toFixed(2)} KB)</div>
                 </div>
                 ` : ''}
                 <div class="field">
                   <div class="label">Message:</div>
-                  <div class="message-box">${message.replace(/\n/g, '<br>')}</div>
+                  <div class="message-box">${safe.messageHtml}</div>
                 </div>
               </div>
               <div class="footer">
                 <p>This email was sent from the Yeti Welding contact form.</p>
-                <p>You can reply directly to this email to respond to ${name}.</p>
+                <p>You can reply directly to this email to respond to ${safe.name}.</p>
               </div>
             </div>
           </body>
@@ -184,7 +254,7 @@ Urgency: ${urgencyLabels[urgency] || urgency}
 ${file ? `Attachment: ${file.name} (${(file.size / 1024).toFixed(2)} KB)` : ''}
 
 Message:
-${message}
+${safe.messageText}
       `.trim(),
       attachments,
     });
@@ -198,13 +268,6 @@ ${message}
         { status: 500 }
       );
     }
-
-    console.log('Contact form submission sent successfully:', {
-      name,
-      email,
-      inquiryType,
-      messageId: data?.id,
-    });
 
     return NextResponse.json(
       {
@@ -222,18 +285,6 @@ ${message}
       { status: 500 }
     );
   }
-}
-
-// Handle OPTIONS for CORS if needed
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }
 
 

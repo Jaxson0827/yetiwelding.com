@@ -10,13 +10,15 @@ import { EmbedSpec } from '@/lib/steelEmbeds/types';
 
 interface EmbedGeometryProps {
   spec: Partial<EmbedSpec>;
+  highlightedStudIndex?: number | null;
+  onStudHover?: (index: number | null) => void;
 }
 
 const STUD_SEGMENTS = 32;
 const HEAD_DIAMETER_MULTIPLIER = 1.6; // visual-only: headed stud look
 const MIN_HEAD_THICKNESS_IN = 0.125;
 
-export default function EmbedGeometry({ spec }: EmbedGeometryProps) {
+export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover }: EmbedGeometryProps) {
   const { plate, studs } = spec;
 
   // Strict check: ALL THREE plate dimensions must be present and > 0
@@ -46,6 +48,18 @@ export default function EmbedGeometry({ spec }: EmbedGeometryProps) {
         color: 0x808080,
         metalness: 0.7,
         roughness: 0.3,
+      }),
+    []
+  );
+
+  // Highlighted stud material (crimson tint, emissive)
+  const studHighlightMaterial = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: 0xdc143c,
+        metalness: 0.7,
+        roughness: 0.3,
+        emissive: 0x330808,
       }),
     []
   );
@@ -95,34 +109,32 @@ export default function EmbedGeometry({ spec }: EmbedGeometryProps) {
       {studPositions.map((stud, index) => {
         const rodRadius = stud.diameter / 2;
         const rodLength = stud.length;
+        const isHighlighted = highlightedStudIndex === index;
+        const mat = isHighlighted ? studHighlightMaterial : studMaterial;
 
         // Visual-only head proportions derived from diameter
         const headDiameter = stud.diameter * HEAD_DIAMETER_MULTIPLIER;
         const headRadius = headDiameter / 2;
         const headThickness = Math.max(MIN_HEAD_THICKNESS_IN, stud.diameter * 0.25);
 
-        // Position stud on top surface of plate
-        // CylinderGeometry is oriented along Y-axis by default, so we rotate 90° around X-axis to make it vertical (Z-axis)
-        // The base of the stud should be at the top of the plate (z = thickness/2)
-        // Since the cylinder extends from -studLength/2 to +studLength/2 along its axis (now Z after rotation),
-        // we position the center at thickness/2 + studLength/2
         const rodZ = thickness / 2 + rodLength / 2;
         const headZ = thickness / 2 + rodLength + headThickness / 2;
 
         return (
-          <group key={`stud-${index}`}>
-            {/* Rod */}
+          <group
+            key={`stud-${index}`}
+            onPointerOver={() => onStudHover?.(index)}
+            onPointerOut={() => onStudHover?.(null)}
+          >
             <mesh
               geometry={getRodGeometry(rodRadius, rodLength)}
-              material={studMaterial}
+              material={mat}
               position={[stud.x, stud.y, rodZ]}
-              rotation={[Math.PI / 2, 0, 0]} // Rotate 90° around X-axis to make cylinder vertical (Z-axis aligned)
+              rotation={[Math.PI / 2, 0, 0]}
             />
-
-            {/* Head (disc) */}
             <mesh
               geometry={getHeadGeometry(headRadius, headThickness)}
-              material={studMaterial}
+              material={mat}
               position={[stud.x, stud.y, headZ]}
               rotation={[Math.PI / 2, 0, 0]}
             />

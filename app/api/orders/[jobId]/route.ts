@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { orders } from '../../steel-embeds/order-status/route';
+import { kvGetJson, kvGetString, KvNotConfiguredError } from '@/lib/storage/kv';
+import { KV_KEYS } from '@/lib/storage/keys';
 
 /**
  * Unified order API endpoint
@@ -11,6 +12,8 @@ export async function GET(
 ) {
   try {
     const { jobId } = await context.params;
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get('token');
 
     if (!jobId) {
       return NextResponse.json(
@@ -19,14 +22,17 @@ export async function GET(
       );
     }
 
-    const order = orders.get(jobId);
-
-    if (!order) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
+    const orderId = await kvGetString(KV_KEYS.orderByJob(jobId));
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
+
+    const order = await kvGetJson<any>(KV_KEYS.order(orderId));
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    const tokenOk = Boolean(token && order.trackingToken && token === order.trackingToken);
 
     return NextResponse.json({
       success: true,
@@ -35,25 +41,24 @@ export async function GET(
         status: order.status,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
-        items: order.items,
-        steelEmbeds: order.steelEmbeds,
-        dumpsterGates: order.dumpsterGates,
-        customerInfo: order.customerInfo,
+        items: tokenOk ? order.items : undefined,
+        customerInfo: tokenOk ? order.customerInfo : undefined,
         orderTotal: order.orderTotal,
         subtotal: order.subtotal,
         shippingCost: order.shippingCost,
         shippingMethod: order.shippingMethod,
         taxAmount: order.taxAmount,
-        taxRate: order.taxRate,
-        isTaxExempt: order.isTaxExempt,
-        paymentIntentId: order.paymentIntentId,
+        paymentIntentId: tokenOk ? order.paymentIntentId : undefined,
         paymentStatus: order.paymentStatus,
         estimatedDeliveryDate: order.estimatedDeliveryDate,
-        trackingNumber: order.trackingNumber,
-        notes: order.notes,
+        trackingNumber: tokenOk ? order.trackingNumber : undefined,
+        notes: tokenOk ? order.notes : undefined,
       },
     });
   } catch (error) {
+    if (error instanceof KvNotConfiguredError) {
+      return NextResponse.json({ error: 'Order tracking is not configured' }, { status: 500 });
+    }
     console.error('Order fetch error:', error);
     return NextResponse.json(
       { error: 'An error occurred while fetching order' },

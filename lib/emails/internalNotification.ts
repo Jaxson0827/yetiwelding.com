@@ -29,7 +29,8 @@ export function generateInternalNotificationEmail(
   jobId: string,
   items: CartItem[],
   customerInfo: CustomerInfo,
-  orderTotal: number
+  orderTotal: number,
+  opts?: { trackingUrl?: string }
 ) {
   const hasCustomFabrication = items.some(item => item.isCustomFabrication);
   const steelEmbedsCount = items.filter(item => item.productType === 'steel-plate-embeds').length;
@@ -339,7 +340,7 @@ export function generateInternalNotificationEmail(
               ` : ''}
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}" class="action-button">
+                <a href="${opts?.trackingUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}`}" class="action-button">
                   View Order Details
                 </a>
               </div>
@@ -393,7 +394,7 @@ ${items.map((item, index) => {
 
 Total: $${orderTotal.toFixed(2)}
 
-${customerInfo.specialInstructions ? `SPECIAL INSTRUCTIONS:\n${customerInfo.specialInstructions}\n\n` : ''}${hasCustomFabrication ? '⚠️ CUSTOM FABRICATION REQUIRED - Please review specifications carefully.\n\n' : ''}View order: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}
+${customerInfo.specialInstructions ? `SPECIAL INSTRUCTIONS:\n${customerInfo.specialInstructions}\n\n` : ''}${hasCustomFabrication ? '⚠️ CUSTOM FABRICATION REQUIRED - Please review specifications carefully.\n\n' : ''}View order: ${opts?.trackingUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}`}
 
 Order received at: ${new Date().toLocaleString()}
     `.trim(),

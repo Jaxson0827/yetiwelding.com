@@ -21,7 +21,8 @@ export function generateOrderConfirmationEmail(
   jobId: string,
   items: CartItem[],
   customerInfo: CustomerInfo,
-  orderTotal: number
+  orderTotal: number,
+  opts?: { trackingUrl?: string }
 ) {
   const renderItemDetails = (item: CartItem, index: number) => {
     if (item.productType === 'steel-plate-embeds') {
@@ -276,7 +277,7 @@ export function generateOrderConfirmationEmail(
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}" class="button">
+                <a href="${opts?.trackingUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}`}" class="button">
                   Track Your Order
                 </a>
               </div>
@@ -341,7 +342,7 @@ ${customerInfo.specialInstructions ? `SPECIAL INSTRUCTIONS:\n${customerInfo.spec
 - Our team will review your order and contact you if any clarification is needed
 - Standard lead time is 2-3 weeks
 - You'll receive updates as your order progresses
-- Track your order: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}
+- Track your order: ${opts?.trackingUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}`}
 
 If you have any questions, please contact us.
 

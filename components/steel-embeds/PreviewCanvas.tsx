@@ -1,146 +1,162 @@
 'use client';
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Environment } from '@react-three/drei';
+import React, { useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Environment } from '@react-three/drei';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { Group } from 'three';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import EmbedGeometry from './EmbedGeometry';
-import { Box3, MathUtils, Sphere, Vector3, type Object3D } from 'three';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
-interface PreviewCanvasProps {
-  spec: Partial<EmbedSpec>;
-  fitRequest?: number;
-  resetRequest?: number;
-}
+const VIEW_PRESETS = {
+  isometric: { position: [6, 6, 6] as [number, number, number], label: 'Isometric' },
+  top: { position: [0, 0, 12] as [number, number, number], label: 'Top' },
+  side: { position: [12, 0, 4] as [number, number, number], label: 'Side' },
+} as const;
 
-function AutoFrame({
-  enabled,
-  objectRef,
-  controlsRef,
-  fitKey,
+type ViewPresetKey = keyof typeof VIEW_PRESETS;
+
+function CameraController({
+  viewPreset,
+  autoRotate,
+  onUserInteract,
 }: {
-  enabled: boolean;
-  objectRef: React.RefObject<Object3D | null>;
-  controlsRef: React.RefObject<OrbitControlsImpl | null>;
-  fitKey: string;
+  viewPreset: ViewPresetKey;
+  autoRotate: boolean;
+  onUserInteract: () => void;
 }) {
-  const { camera, size } = useThree();
+  const { camera } = useThree();
+  const lerpRef = useRef(1);
+  const thetaRef = useRef(0);
 
-  useLayoutEffect(() => {
-    if (!enabled) return;
-    if (!objectRef.current) return;
-    if (!controlsRef.current) return;
+  useFrame((_, delta) => {
+    const target = VIEW_PRESETS[viewPreset].position;
+    const speed = 2 * delta;
 
-    // Wait a frame so geometry updates are reflected in world matrices.
-    const raf = window.requestAnimationFrame(() => {
-      if (!objectRef.current || !controlsRef.current) return;
-
-      const box = new Box3().setFromObject(objectRef.current);
-      if (box.isEmpty()) return;
-
-      const center = box.getCenter(new Vector3());
-      const sphere = box.getBoundingSphere(new Sphere());
-      const radius = Math.max(sphere.radius, 0.0001);
-
-      const aspect = size.width / Math.max(size.height, 1);
-      const fovV = MathUtils.degToRad((camera as any).fov ?? 50);
-      const fovH = 2 * Math.atan(Math.tan(fovV / 2) * aspect);
-
-      const distV = radius / Math.tan(fovV / 2);
-      const distH = radius / Math.tan(fovH / 2);
-
-      // Slight padding so it feels breathable.
-      const padding = 1.25;
-      const distance = Math.max(distV, distH) * padding;
-
-      // Scene uses Z as "up" (plate thickness axis). Make camera + controls agree.
-      camera.up.set(0, 0, 1);
-
-      // Top-slight-tilt direction (mostly above the plate, with a gentle diagonal).
-      const dir = new Vector3(0.35, -0.2, 1.0).normalize();
-
-      controlsRef.current.target.copy(center);
-      camera.position.copy(center).addScaledVector(dir, distance);
-      camera.near = Math.max(0.01, distance / 100);
-      camera.far = distance * 100;
-      camera.lookAt(center);
+    if (autoRotate) {
+      thetaRef.current += 0.15 * delta;
+      const r = 10;
+      camera.position.x = r * Math.sin(thetaRef.current);
+      camera.position.y = 4;
+      camera.position.z = r * Math.cos(thetaRef.current);
+      camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
-      controlsRef.current.update();
-    });
+      return;
+    }
 
-    return () => window.cancelAnimationFrame(raf);
-  }, [enabled, fitKey, size.width, size.height, camera, objectRef, controlsRef]);
+    lerpRef.current = Math.min(1, lerpRef.current + speed);
+    camera.position.x += (target[0] - camera.position.x) * 0.08;
+    camera.position.y += (target[1] - camera.position.y) * 0.08;
+    camera.position.z += (target[2] - camera.position.z) * 0.08;
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  });
 
   return null;
 }
 
-export default function PreviewCanvas({ spec, fitRequest, resetRequest }: PreviewCanvasProps) {
-  const objectRef = useRef<Object3D | null>(null);
-  const controlsRef = useRef<OrbitControlsImpl | null>(null);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
-  const [fitNonce, setFitNonce] = useState(0);
-
-  // When the parent requests a fit/reset, allow AutoFrame to run again.
-  React.useEffect(() => {
-    if (fitRequest === undefined) return;
-    setHasUserInteracted(false);
-    setFitNonce((n) => n + 1);
-  }, [fitRequest]);
+function Model({ url }: { url: string }) {
+  const groupRef = useRef<Group>(null);
+  const [model, setModel] = React.useState<Group | null>(null);
 
   React.useEffect(() => {
-    if (resetRequest === undefined) return;
-    setHasUserInteracted(false);
-    setFitNonce((n) => n + 1);
-  }, [resetRequest]);
+    const loader = new GLTFLoader();
+    loader.load(url, (gltf) => {
+      setModel(gltf.scene);
+    }, undefined, (error) => {
+      console.error('Error loading GLB:', error);
+    });
+  }, [url]);
 
-  const plateKey = useMemo(() => {
-    const plate = spec.plate;
-    if (!plate) return 'no-plate';
-    return `${plate.length ?? ''}:${plate.width ?? ''}:${plate.thickness ?? ''}`;
-  }, [spec.plate]);
+  useFrame(() => {
+    if (groupRef.current && model) {
+      groupRef.current.rotation.y += 0.005;
+    }
+  });
 
-  const studsKey = useMemo(() => {
-    const studs = spec.studs?.positions;
-    if (!studs || studs.length === 0) return 'no-studs';
-    // Keep this stable and compact; include the geometry-affecting fields.
-    return studs
-      .map((s) => `${s.x},${s.y},${s.diameter},${s.length}`)
-      .join('|');
-  }, [spec.studs?.positions]);
-
-  const fitKey = `${plateKey}::${studsKey}::${fitNonce}`;
+  if (!model) {
+    return null;
+  }
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <Canvas camera={{ position: [5, 5, 5], fov: 50 }} style={{ width: '100%', height: '100%' }}>
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} />
-        <directionalLight position={[-10, 10, -10]} intensity={0.5} />
-
-        <group ref={objectRef}>
-          <EmbedGeometry spec={spec} />
-        </group>
-
-        <OrbitControls
-          ref={controlsRef}
-          enableZoom={true}
-          enablePan={true}
-          enableRotate={true}
-          onStart={() => setHasUserInteracted(true)}
-        />
-
-        <AutoFrame
-          enabled={!hasUserInteracted}
-          objectRef={objectRef}
-          controlsRef={controlsRef}
-          fitKey={fitKey}
-        />
-
-        <Environment preset="warehouse" />
-      </Canvas>
-    </div>
+    <group ref={groupRef}>
+      <primitive object={model} />
+    </group>
   );
 }
 
+interface PreviewCanvasProps {
+  glbUrl?: string | null;
+  spec?: Partial<EmbedSpec>;
+  highlightedStudIndex?: number | null;
+  onStudHover?: (index: number | null) => void;
+}
 
+export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onStudHover }: PreviewCanvasProps) {
+  const [viewPreset, setViewPreset] = useState<ViewPresetKey>('isometric');
+  const [autoRotate, setAutoRotate] = useState(true);
+
+  const hasValidSpec =
+    spec?.plate?.length &&
+    spec?.plate?.width &&
+    spec?.plate?.thickness &&
+    spec.plate.length > 0 &&
+    spec.plate.width > 0 &&
+    spec.plate.thickness > 0;
+
+  const renderFromGlb = !!glbUrl;
+  const renderFromSpec = hasValidSpec && !glbUrl;
+
+  const handleViewClick = (preset: ViewPresetKey) => {
+    setViewPreset(preset);
+    setAutoRotate(false);
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col" style={{ minHeight: '400px' }}>
+      <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+        <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">View:</span>
+        {(Object.keys(VIEW_PRESETS) as ViewPresetKey[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => handleViewClick(key)}
+            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+              viewPreset === key
+                ? 'bg-[#DC143C] text-white'
+                : 'bg-white/10 text-white/80 hover:bg-white/20'
+            }`}
+          >
+            {VIEW_PRESETS[key].label}
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 min-h-0" style={{ width: '100%' }}>
+        <Canvas
+          camera={{ position: [6, 6, 6], fov: 50 }}
+          style={{ width: '100%', height: '100%' }}
+          onPointerDown={() => setAutoRotate(false)}
+          onWheel={() => setAutoRotate(false)}
+        >
+          <ambientLight intensity={0.5} />
+          <pointLight position={[10, 10, 10]} />
+          <directionalLight position={[-10, 10, -10]} intensity={0.5} />
+          {renderFromGlb && glbUrl && <Model url={glbUrl} />}
+          {renderFromSpec && spec && (
+            <EmbedGeometry
+              spec={spec}
+              highlightedStudIndex={highlightedStudIndex ?? undefined}
+              onStudHover={onStudHover}
+            />
+          )}
+          <CameraController
+            viewPreset={viewPreset}
+            autoRotate={autoRotate}
+            onUserInteract={() => setAutoRotate(false)}
+          />
+          <Environment preset="warehouse" />
+        </Canvas>
+      </div>
+    </div>
+  );
+}

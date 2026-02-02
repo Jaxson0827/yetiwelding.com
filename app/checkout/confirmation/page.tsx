@@ -12,13 +12,60 @@ function ConfirmationContent() {
   const router = useRouter();
   const jobId = searchParams.get('jobId');
   const paymentId = searchParams.get('paymentId');
+  const checkoutId = searchParams.get('checkoutId');
+  const token = searchParams.get('token');
   const [orderData, setOrderData] = useState<any>(null);
+  const [resolvedJobId, setResolvedJobId] = useState<string | null>(jobId);
+  const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!jobId) {
-      router.push('/');
+    // Legacy path: if jobId present, keep current behavior.
+    if (jobId) {
+      setResolvedJobId(jobId);
+      if (token) {
+        setTrackingUrl(`/order/track/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`);
+      }
+      return;
     }
-  }, [jobId, router]);
+    // New Checkout Session path: poll by checkoutId until webhook creates order.
+    if (!checkoutId) {
+      router.push('/');
+      return;
+    }
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/orders/by-checkout?checkoutId=${encodeURIComponent(checkoutId)}`, {
+          cache: 'no-store',
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+        if (cancelled) return;
+
+        if (data?.status === 'ready' && data?.order?.jobId) {
+          setResolvedJobId(data.order.jobId);
+          const token = data.order.trackingToken;
+          if (token) {
+            setTrackingUrl(`/order/track/${encodeURIComponent(data.order.jobId)}?token=${encodeURIComponent(token)}`);
+          } else {
+            setTrackingUrl(`/order/track/${encodeURIComponent(data.order.jobId)}`);
+          }
+          return;
+        }
+      } catch {
+        // ignore; we'll retry
+      }
+      if (!cancelled) {
+        setTimeout(poll, 1500);
+      }
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId, checkoutId, router]);
 
   return (
     <main className="min-h-screen bg-black">
@@ -64,12 +111,12 @@ function ConfirmationContent() {
               Thank you for your order. We've received it and will begin processing shortly.
             </p>
 
-            {jobId && (
+            {resolvedJobId && (
               <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6 mb-8">
                 <h2 className="text-white text-xl font-semibold mb-2">Order Details</h2>
                 <p className="text-white/70 mb-1">
                   <span className="font-medium">Job ID:</span>{' '}
-                  <span className="text-[#DC143C] font-mono">{jobId}</span>
+                  <span className="text-[#DC143C] font-mono">{resolvedJobId}</span>
                 </p>
                 {paymentId && (
                   <div className="mt-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
@@ -81,6 +128,13 @@ function ConfirmationContent() {
                 )}
                 <p className="text-white/60 text-sm mt-4">
                   Please save this Job ID for your records. You can use it to track your order status.
+                </p>
+              </div>
+            )}
+            {!resolvedJobId && checkoutId && (
+              <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6 mb-8">
+                <p className="text-white/70">
+                  Finalizing your order… this usually takes a few seconds.
                 </p>
               </div>
             )}
@@ -117,7 +171,7 @@ function ConfirmationContent() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href={`/order/track/${jobId || ''}`}
+                href={trackingUrl || `/order/track/${resolvedJobId || ''}`}
                 className="inline-block bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
               >
                 Track Order

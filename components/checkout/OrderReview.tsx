@@ -11,9 +11,17 @@ interface OrderReviewProps {
   shippingCost?: number;
   taxAmount?: number;
   total?: number;
+  showTaxPlaceholder?: boolean;
 }
 
-export default function OrderReview({ items, subtotal, shippingCost = 0, taxAmount = 0, total }: OrderReviewProps) {
+export default function OrderReview({
+  items,
+  subtotal,
+  shippingCost = 0,
+  taxAmount = 0,
+  total,
+  showTaxPlaceholder = false,
+}: OrderReviewProps) {
   const renderItemDetails = (item: CartItem) => {
     if (item.productType === 'steel-plate-embeds') {
       const config = item.configuration as EmbedSpec;
@@ -79,15 +87,27 @@ export default function OrderReview({ items, subtotal, shippingCost = 0, taxAmou
             <span>${shippingCost.toFixed(2)}</span>
           </div>
         )}
-        {taxAmount > 0 && (
+        {showTaxPlaceholder ? (
           <div className="flex justify-between text-white/80">
             <span>Tax</span>
-            <span>${taxAmount.toFixed(2)}</span>
+            <span className="text-white/50">Calculated at checkout</span>
           </div>
+        ) : (
+          taxAmount > 0 && (
+            <div className="flex justify-between text-white/80">
+              <span>Tax</span>
+              <span>${taxAmount.toFixed(2)}</span>
+            </div>
+          )
         )}
         <div className="flex justify-between text-white font-bold text-xl pt-2 border-t border-white/20">
           <span>Total</span>
-          <span>${total !== undefined ? total.toFixed(2) : items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}</span>
+          <span>
+            $
+            {total !== undefined
+              ? total.toFixed(2)
+              : items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+          </span>
         </div>
       </div>
     </div>

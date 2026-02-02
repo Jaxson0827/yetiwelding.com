@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// In-memory storage for orders (in production, use a database)
+// Legacy endpoint (previous in-memory implementation).
+// IMPORTANT: This is intentionally disabled for public use in production to avoid
+// serverless reliability issues and unauthenticated status updates.
 export const orders = new Map<string, {
   jobId: string;
   status: 'pending' | 'in_review' | 'in_production' | 'ready' | 'shipped' | 'delivered';
@@ -28,108 +30,17 @@ export const orders = new Map<string, {
 }>();
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const jobId = searchParams.get('jobId');
-
-    if (!jobId) {
-      return NextResponse.json(
-        { error: 'jobId is required' },
-        { status: 400 }
-      );
-    }
-
-    const order = orders.get(jobId);
-
-    if (!order) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      order: {
-        jobId: order.jobId,
-        status: order.status,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt,
-        // Include full order details
-        items: order.items,
-        steelEmbeds: order.steelEmbeds,
-        dumpsterGates: order.dumpsterGates,
-        customerInfo: order.customerInfo,
-        orderTotal: order.orderTotal,
-        subtotal: order.subtotal,
-        shippingCost: order.shippingCost,
-        shippingMethod: order.shippingMethod,
-        taxAmount: order.taxAmount,
-        taxRate: order.taxRate,
-        isTaxExempt: order.isTaxExempt,
-        paymentIntentId: order.paymentIntentId,
-        paymentStatus: order.paymentStatus,
-        estimatedDeliveryDate: order.estimatedDeliveryDate,
-        trackingNumber: order.trackingNumber,
-        notes: order.notes,
-      },
-    });
-  } catch (error) {
-    console.error('Order status error:', error);
-    return NextResponse.json(
-      { error: 'An error occurred while fetching order status' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { error: 'Legacy endpoint disabled. Use /api/orders/[jobId] instead.' },
+    { status: 410 }
+  );
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { jobId, status } = body;
-
-    if (!jobId) {
-      return NextResponse.json(
-        { error: 'jobId is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!status || !['pending', 'in_review', 'in_production', 'ready', 'shipped', 'delivered'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Valid status is required' },
-        { status: 400 }
-      );
-    }
-
-    const order = orders.get(jobId);
-
-    if (!order) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
-    }
-
-    order.status = status;
-    order.updatedAt = new Date().toISOString();
-    orders.set(jobId, order);
-
-    return NextResponse.json({
-      success: true,
-      order: {
-        jobId: order.jobId,
-        status: order.status,
-        updatedAt: order.updatedAt,
-      },
-    });
-  } catch (error) {
-    console.error('Order status update error:', error);
-    return NextResponse.json(
-      { error: 'An error occurred while updating order status' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { error: 'Legacy endpoint disabled. Use admin endpoint instead.' },
+    { status: 410 }
+  );
 }
 
 // Helper function to store order (called from process-order route)

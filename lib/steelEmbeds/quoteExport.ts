@@ -1,29 +1,19 @@
 import PDFDocument from 'pdfkit';
 import { EmbedSpec, PriceBreakdown } from './types';
 import { priceEmbed } from './pricing';
-import { writeFile, mkdir } from 'fs/promises';
-import { createWriteStream } from 'fs';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { blobPutBuffer } from '@/lib/storage/blob';
 
-const QUOTE_OUTPUT_DIR = join(process.cwd(), 'public', 'uploads', 'quotes');
-
-export async function generateQuotePDF(
+export async function generateQuotePDFBuffer(
   quoteId: string,
   embedSpecs: EmbedSpec[],
   expiresAt?: Date
-): Promise<string> {
-  // Ensure output directory exists
-  if (!existsSync(QUOTE_OUTPUT_DIR)) {
-    await mkdir(QUOTE_OUTPUT_DIR, { recursive: true });
-  }
-
-  const pdfPath = join(QUOTE_OUTPUT_DIR, `${quoteId}.pdf`);
-  
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
-    const stream = createWriteStream(pdfPath);
-    doc.pipe(stream);
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
 
     const pageWidth = doc.page.width - 100;
 
@@ -113,17 +103,23 @@ export async function generateQuotePDF(
     }
 
     doc.end();
-
-    stream.on('finish', () => {
-      resolve(`/uploads/quotes/${quoteId}.pdf`);
-    });
-
-    stream.on('error', (error: Error) => {
-      reject(error);
-    });
   });
 }
 
+export async function generateQuotePDF(
+  quoteId: string,
+  embedSpecs: EmbedSpec[],
+  expiresAt?: Date
+): Promise<string> {
+  const pdfBuffer = await generateQuotePDFBuffer(quoteId, embedSpecs, expiresAt);
+  const { url } = await blobPutBuffer({
+    path: `orders/${quoteId}/quote.pdf`,
+    data: pdfBuffer,
+    contentType: 'application/pdf',
+    cacheControlMaxAgeSeconds: 60 * 60, // 1 hour
+  });
+  return url;
+}
 
 
 

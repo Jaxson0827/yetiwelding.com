@@ -209,6 +209,8 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
     try {
       // Prepare form data
       const submitData = new FormData();
+      // Honeypot field (should stay empty). Helps block simple bots.
+      submitData.append('companyWebsite', '');
       submitData.append('name', sanitizeInput(formData.name || ''));
       submitData.append('email', sanitizeInput(formData.email || ''));
       submitData.append('phone', sanitizeInput(formData.phone || ''));
@@ -268,6 +270,22 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
   return (
     <div className="w-full">
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
+        {/* Honeypot (keep empty). Hidden from humans but visible to basic bots. */}
+        <div
+          style={{
+            position: 'absolute',
+            left: '-10000px',
+            top: 'auto',
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+          }}
+          aria-hidden="true"
+        >
+          <label htmlFor="companyWebsite">Company Website</label>
+          <input id="companyWebsite" name="companyWebsite" type="text" tabIndex={-1} autoComplete="off" />
+        </div>
+
         {/* Name */}
         <FormField
           label="Name"

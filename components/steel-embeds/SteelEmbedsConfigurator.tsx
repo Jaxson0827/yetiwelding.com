@@ -13,6 +13,7 @@ export default function SteelEmbedsConfigurator() {
   const [configuredEmbeds, setConfiguredEmbeds] = useState<EmbedSpec[]>([]);
   const [currentEmbedIndex, setCurrentEmbedIndex] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [highlightedStudIndex, setHighlightedStudIndex] = useState<number | null>(null);
   const { addItem } = useCart();
 
   const handleSpecChange = useCallback((newSpec: Partial<EmbedSpec>) => {
@@ -81,7 +82,13 @@ export default function SteelEmbedsConfigurator() {
           <div className="flex flex-col h-[340px] sm:h-[420px] lg:h-[500px]">
             <h3 className="text-white font-semibold mb-4 uppercase tracking-wider text-sm flex-shrink-0">3D Preview</h3>
             <div className="flex-1 h-full">
-              <EmbedPreview3D spec={spec} />
+              <EmbedPreview3D
+                glbUrl={null}
+                previewStatus="none"
+                spec={spec}
+                highlightedStudIndex={highlightedStudIndex}
+                onStudHover={setHighlightedStudIndex}
+              />
             </div>
           </div>
         </div>
@@ -98,23 +105,33 @@ export default function SteelEmbedsConfigurator() {
               border: '1px solid rgba(220, 20, 60, 0.3)',
             }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-white uppercase tracking-tight">
-                {currentEmbedIndex !== null ? `Edit Embed ${currentEmbedIndex + 1}` : 'Configure Steel Embed'}
-              </h2>
-              {configuredEmbeds.length > 0 && (
-                <span className="text-white/60 text-sm">
-                  {configuredEmbeds.length} embed{configuredEmbeds.length !== 1 ? 's' : ''} configured
-                </span>
-              )}
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold text-white uppercase tracking-tight">
+                  {currentEmbedIndex !== null ? `Edit Embed Plate ${currentEmbedIndex + 1}` : 'Design Your Embed Plate'}
+                </h2>
+                {configuredEmbeds.length > 0 && (
+                  <span className="text-white/60 text-sm">
+                    {configuredEmbeds.length} embed{configuredEmbeds.length !== 1 ? 's' : ''} configured
+                  </span>
+                )}
+              </div>
+              <p className="text-white/70 text-sm mt-2">
+                Create a custom steel embed plate in minutes—no drawings required.
+              </p>
             </div>
 
             <EmbedSpecForm
               onSpecChange={handleSpecChange}
               onAddToCart={handleAddEmbed}
               currentEmbedIndex={currentEmbedIndex}
+<<<<<<< HEAD
               initialSpec={spec}
               resetKey={`${currentEmbedIndex ?? 'new'}:${configuredEmbeds.length}`}
+=======
+              highlightedStudIndex={highlightedStudIndex}
+              onStudHover={setHighlightedStudIndex}
+>>>>>>> 08f2aa6 (Steel embed page upgrade: Design Your Embed Plate, default studs, visual editor hero, 3D presets, trust signals, final review)
               onExportQuote={async (spec) => {
                 try {
                   const response = await fetch('/api/steel-embeds/export-quote', {

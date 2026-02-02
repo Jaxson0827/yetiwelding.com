@@ -1,11 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { EmbedSpec } from './types';
-import { writeFile, mkdir } from 'fs/promises';
-import { createWriteStream } from 'fs';
-import { join } from 'path';
-import { existsSync } from 'fs';
-
-const PDF_OUTPUT_DIR = join(process.cwd(), 'public', 'uploads', 'shop-packets');
+import { blobPutBuffer } from '@/lib/storage/blob';
 
 // Helper function to draw dimension line
 function drawDimensionLine(
@@ -179,18 +174,13 @@ function drawSideView(doc: PDFKit.PDFDocument, spec: EmbedSpec, startY: number, 
   return centerY + plateThickness / 2 + 50;
 }
 
-export async function generateShopPacket(jobId: string, embedSpecs: EmbedSpec[]): Promise<string> {
-  // Ensure output directory exists
-  if (!existsSync(PDF_OUTPUT_DIR)) {
-    await mkdir(PDF_OUTPUT_DIR, { recursive: true });
-  }
-
-  const pdfPath = join(PDF_OUTPUT_DIR, `${jobId}.pdf`);
-  
+export async function generateShopPacketBuffer(jobId: string, embedSpecs: EmbedSpec[]): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
-    const stream = createWriteStream(pdfPath);
-    doc.pipe(stream);
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
 
     const pageWidth = doc.page.width - 100; // Account for margins
 
@@ -324,15 +314,17 @@ export async function generateShopPacket(jobId: string, embedSpecs: EmbedSpec[])
     });
 
     doc.end();
-
-    stream.on('finish', () => {
-      // Return relative path for URL access
-      resolve(`/uploads/shop-packets/${jobId}.pdf`);
-    });
-
-    stream.on('error', (error: Error) => {
-      reject(error);
-    });
   });
+}
+
+export async function generateShopPacket(jobId: string, embedSpecs: EmbedSpec[]): Promise<string> {
+  const pdfBuffer = await generateShopPacketBuffer(jobId, embedSpecs);
+  const { url } = await blobPutBuffer({
+    path: `orders/${jobId}/shop-packet.pdf`,
+    data: pdfBuffer,
+    contentType: 'application/pdf',
+    cacheControlMaxAgeSeconds: 60 * 60, // 1 hour
+  });
+  return url;
 }
 

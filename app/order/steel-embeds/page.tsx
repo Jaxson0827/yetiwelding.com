@@ -80,8 +80,7 @@ export default function SteelEmbedsPage() {
             className="text-white/80 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto"
             variants={itemVariants}
           >
-            Configure your custom steel plate embed with our ordering system.
-            Specify dimensions and get an instant quote.
+            Create a custom steel embed plate in minutes—no drawings required.
           </motion.p>
 
           <motion.div
@@ -112,6 +111,24 @@ export default function SteelEmbedsPage() {
 
         {/* Decorative Elements */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      </section>
+
+      {/* Contractor Trust Signals */}
+      <section className="w-full py-6 px-4 border-b border-white/10">
+        <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-white/80 text-sm md:text-base">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-[#DC143C] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Reviewed by our shop before fabrication.</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-[#DC143C] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            <span>Questions? We&apos;ll call you before cutting steel.</span>
+          </div>
+        </div>
       </section>
 
       {/* Configurator Section */}

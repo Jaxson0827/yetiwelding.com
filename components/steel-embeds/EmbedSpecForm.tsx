@@ -14,8 +14,8 @@ interface EmbedSpecFormProps {
   onAddToCart: (spec: EmbedSpec) => void;
   onExportQuote?: (spec: EmbedSpec) => void;
   currentEmbedIndex?: number | null;
-  initialSpec?: Partial<EmbedSpec>;
-  resetKey?: string;
+  highlightedStudIndex?: number | null;
+  onStudHover?: (index: number | null) => void;
 }
 
 type FormStep = 1 | 2 | 3 | 4 | 5;
@@ -51,19 +51,19 @@ const STUD_GRADE_OPTIONS: DropdownOption[] = [
   { value: 'A325', label: 'A325' },
 ];
 
-export default function EmbedSpecForm({
-  onSpecChange,
-  onAddToCart,
-  onExportQuote,
-  currentEmbedIndex,
-  initialSpec,
-  resetKey,
-}: EmbedSpecFormProps) {
+const DEFAULT_STUD: { diameter: number; length: number; grade: 'A307' | 'A325' } = { diameter: 0.5, length: 4, grade: 'A307' };
+
+export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote, currentEmbedIndex, highlightedStudIndex, onStudHover }: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  
-  const getDefaultSpec = (): EmbedSpecDraft => ({
+  const [defaultStud, setDefaultStud] = useState(DEFAULT_STUD);
+  const [expandedStudIndex, setExpandedStudIndex] = useState<number | null>(null);
+
+  const [spec, setSpec] = useState<Partial<EmbedSpec>>({
     plate: {
+      length: undefined as any,
+      width: undefined as any,
+      thickness: undefined as any,
       material: 'A36',
     },
     finish: 'none',
@@ -72,46 +72,9 @@ export default function EmbedSpecForm({
     leadTime: 'standard',
   });
 
-  const mergeWithDefaults = (incoming?: Partial<EmbedSpec>): EmbedSpecDraft => {
-    const defaults = getDefaultSpec();
-    const merged: Partial<EmbedSpec> = {
-      ...defaults,
-      ...incoming,
-      plate: undefined as any, // overwritten below
-      deliveryAddress: {
-        ...(incoming?.deliveryAddress ?? {}),
-      },
-      contactInfo: {
-        ...(incoming?.contactInfo ?? {}),
-      },
-    };
-
-    const mergedDraft: EmbedSpecDraft = merged as any;
-    mergedDraft.plate = {
-      ...(defaults.plate ?? {}),
-      ...(incoming?.plate ?? {}),
-      material: (incoming?.plate?.material ?? defaults.plate?.material ?? 'A36') as EmbedSpec['plate']['material'],
-    };
-
-    // Preserve studs exactly if provided
-    if (incoming?.studs) {
-      mergedDraft.studs = incoming.studs;
-    }
-
-    return mergedDraft;
-  };
-
-  const [spec, setSpec] = useState<EmbedSpecDraft>(() => getDefaultSpec());
-
-  // Re-initialize the form when parent requests a reset (e.g., switching New <-> Edit)
-  useEffect(() => {
-    setSpec(mergeWithDefaults(initialSpec));
-    setCurrentStep(1);
-  }, [resetKey]); // intentional: treat resetKey as the reset trigger
-
   // Update parent when spec changes
   useEffect(() => {
-    onSpecChange(spec as Partial<EmbedSpec>);
+    onSpecChange(spec);
   }, [spec, onSpecChange]);
 
   // Validate and calculate price
@@ -358,24 +321,37 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 2: Features */}
+        {/* Step 2: Studs — editor hero (left), sidebar (right) */}
         {currentStep === 2 && (
           <motion.div
             key="step2"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
+            className="space-y-4"
           >
             <h3 className="text-xl font-bold text-white mb-4">Studs</h3>
 
-            {/* Coordinate Editor */}
-            {spec.plate?.length && spec.plate?.width && (
-              <div className="mb-6">
-                <CoordinateEditor
+            <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 lg:gap-8 items-start">
+              {/* Left: Visual editor (hero) */}
+              {spec.plate?.length && spec.plate?.width && (
+                <div className="order-2 lg:order-1 w-full min-w-0">
+                  <CoordinateEditor
                   plateLength={spec.plate.length}
                   plateWidth={spec.plate.width}
                   studs={spec.studs?.positions || []}
+                  defaultStud={defaultStud}
+                  onAddStudPositions={(positions) => {
+                    let currentPositions = spec.studs?.positions || [];
+                    for (const { x, y } of positions) {
+                      if (currentPositions.length >= VALIDATION_CONSTRAINTS.studs.maxCount) break;
+                      currentPositions = [
+                        ...currentPositions,
+                        { x, y, diameter: defaultStud.diameter, length: defaultStud.length, grade: defaultStud.grade },
+                      ];
+                    }
+                    updateSpec({ studs: { positions: currentPositions } });
+                  }}
                   onStudUpdate={(index, stud) => {
                     const newPositions = [...(spec.studs?.positions || [])];
                     newPositions[index] = stud;
@@ -391,9 +367,9 @@ export default function EmbedSpecForm({
                     const newStud = {
                       x: clamped.x,
                       y: clamped.y,
-                      diameter: 0.5,
-                      length: 4,
-                      grade: 'A307' as const,
+                      diameter: defaultStud.diameter,
+                      length: defaultStud.length,
+                      grade: defaultStud.grade,
                     };
                     updateSpec({
                       studs: {
@@ -408,153 +384,185 @@ export default function EmbedSpecForm({
                         ? { positions: newPositions }
                         : undefined,
                     });
+                    if (expandedStudIndex === index) setExpandedStudIndex(null);
+                    else if (expandedStudIndex !== null && expandedStudIndex > index) setExpandedStudIndex(expandedStudIndex - 1);
                   }}
+                  highlightedStudIndex={highlightedStudIndex ?? undefined}
+                  onStudHover={onStudHover}
                 />
-              </div>
-            )}
-
-            {/* Studs List */}
-            <div className="space-y-4">
-              <p className="text-white/60 text-sm">
-                Configure each stud's properties below, or use the visual editor above to position them.
-              </p>
-              
-              {spec.studs?.positions && spec.studs.positions.length > 0 && (
-                <div className="space-y-3">
-                  {spec.studs.positions.map((stud, index) => (
-                    <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-white font-semibold">Stud {index + 1}</h4>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newPositions = spec.studs!.positions.filter((_, i) => i !== index);
-                            updateSpec({
-                              studs: newPositions.length > 0
-                                ? { positions: newPositions }
-                                : undefined,
-                            });
-                          }}
-                          className="text-red-400 hover:text-red-300 text-sm"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
-                            X (inches)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min={spec.plate?.length ? -(spec.plate.length / 2) : undefined}
-                            max={spec.plate?.length ? spec.plate.length / 2 : undefined}
-                            value={stud.x || ''}
-                            onChange={(e) => {
-                              const newPositions = [...spec.studs!.positions];
-                              const raw = roundToTwoDecimals(parseNumber(e.target.value)) ?? 0;
-                              const { x } = clampToPlate(raw, stud.y ?? 0);
-                              newPositions[index] = {
-                                ...stud,
-                                x,
-                              };
-                              updateSpec({ studs: { positions: newPositions } });
-                            }}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
-                            Y (inches)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min={spec.plate?.width ? -(spec.plate.width / 2) : undefined}
-                            max={spec.plate?.width ? spec.plate.width / 2 : undefined}
-                            value={stud.y || ''}
-                            onChange={(e) => {
-                              const newPositions = [...spec.studs!.positions];
-                              const raw = roundToTwoDecimals(parseNumber(e.target.value)) ?? 0;
-                              const { y } = clampToPlate(stud.x ?? 0, raw);
-                              newPositions[index] = {
-                                ...stud,
-                                y,
-                              };
-                              updateSpec({ studs: { positions: newPositions } });
-                            }}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
-                            Diameter (inches)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min={VALIDATION_CONSTRAINTS.studs.diameter.min}
-                            max={VALIDATION_CONSTRAINTS.studs.diameter.max}
-                            value={stud.diameter || ''}
-                            onChange={(e) => {
-                              const newPositions = [...spec.studs!.positions];
-                              newPositions[index] = {
-                                ...stud,
-                                diameter: roundToTwoDecimals(parseNumber(e.target.value)) || 0,
-                              };
-                              updateSpec({ studs: { positions: newPositions } });
-                            }}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
-                            Length (inches)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={stud.length || ''}
-                            onChange={(e) => {
-                              const newPositions = [...spec.studs!.positions];
-                              newPositions[index] = {
-                                ...stud,
-                                length: roundToTwoDecimals(parseNumber(e.target.value)) || 0,
-                              };
-                              updateSpec({ studs: { positions: newPositions } });
-                            }}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <ConfigDropdown
-                            label="Grade"
-                            options={STUD_GRADE_OPTIONS}
-                            value={stud.grade || 'A307'}
-                            onChange={(value) => {
-                              const newPositions = [...spec.studs!.positions];
-                              newPositions[index] = { ...stud, grade: value as 'A307' | 'A325' };
-                              updateSpec({ studs: { positions: newPositions } });
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
 
-              {(!spec.studs?.positions || spec.studs.positions.length === 0) && spec.plate?.length && spec.plate?.width && (
-                <p className="text-white/40 text-sm text-center py-4">
-                  Click on the plate in the visual editor above to add your first stud
-                </p>
-              )}
+              {/* Right: Default Stud Settings + stud list */}
+              <div className="order-1 lg:order-2 space-y-4">
+                {/* Default Stud Settings */}
+                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                  <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Default Stud Settings</h4>
+                  <p className="text-white/60 text-xs mb-3">Each new stud inherits these. Override per stud in Advanced below.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Diameter (in)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={VALIDATION_CONSTRAINTS.studs.diameter.min}
+                        max={VALIDATION_CONSTRAINTS.studs.diameter.max}
+                        value={defaultStud.diameter}
+                        onChange={(e) => setDefaultStud(prev => ({ ...prev, diameter: roundToTwoDecimals(parseNumber(e.target.value)) ?? prev.diameter }))}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Length (in)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={defaultStud.length}
+                        onChange={(e) => setDefaultStud(prev => ({ ...prev, length: roundToTwoDecimals(parseNumber(e.target.value)) ?? prev.length }))}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <ConfigDropdown
+                        label="Grade"
+                        options={STUD_GRADE_OPTIONS}
+                        value={defaultStud.grade}
+                        onChange={(value) => setDefaultStud(prev => ({ ...prev, grade: value as 'A307' | 'A325' }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Studs List — one line per stud, Advanced expandable */}
+                <div className="space-y-2">
+                  {spec.studs?.positions && spec.studs.positions.length > 0 && (
+                    <div className="space-y-2">
+                      {spec.studs.positions.map((stud, index) => {
+                    const plateLength = spec.plate?.length ?? 0;
+                    const plateWidth = spec.plate?.width ?? 0;
+                    const fromLeft = plateLength ? (plateLength / 2 + stud.x).toFixed(1) : '—';
+                    const fromBottom = plateWidth ? (plateWidth / 2 + stud.y).toFixed(1) : '—';
+                    const isExpanded = expandedStudIndex === index;
+                    return (
+                      <div key={index} className="rounded-lg border border-white/10 overflow-hidden bg-white/5">
+                        <div className="flex items-center justify-between px-4 py-2 flex-wrap gap-2">
+                          <span className="text-white text-sm">
+                            Stud {index + 1}: {stud.diameter}{'"'} × {stud.length}{'"'} {stud.grade} • {fromLeft}{'"'} from left, {fromBottom}{'"'} from bottom
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedStudIndex(isExpanded ? null : index)}
+                              className="text-white/80 hover:text-white text-xs font-semibold uppercase tracking-wider"
+                            >
+                              {isExpanded ? 'Hide' : 'Advanced: customize this stud'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPositions = spec.studs!.positions.filter((_, i) => i !== index);
+                                updateSpec({
+                                  studs: newPositions.length > 0 ? { positions: newPositions } : undefined,
+                                });
+                                if (expandedStudIndex === index) setExpandedStudIndex(null);
+                                else if (expandedStudIndex !== null && expandedStudIndex > index) setExpandedStudIndex(expandedStudIndex - 1);
+                              }}
+                              className="text-red-400 hover:text-red-300 text-xs"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="px-4 pb-4 pt-2 border-t border-white/10 grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">X (inches)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={stud.x ?? ''}
+                                onChange={(e) => {
+                                  const newPositions = [...spec.studs!.positions];
+                                  newPositions[index] = { ...stud, x: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
+                                  updateSpec({ studs: { positions: newPositions } });
+                                }}
+                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Y (inches)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={stud.y ?? ''}
+                                onChange={(e) => {
+                                  const newPositions = [...spec.studs!.positions];
+                                  newPositions[index] = { ...stud, y: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
+                                  updateSpec({ studs: { positions: newPositions } });
+                                }}
+                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Diameter (inches)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min={VALIDATION_CONSTRAINTS.studs.diameter.min}
+                                max={VALIDATION_CONSTRAINTS.studs.diameter.max}
+                                value={stud.diameter ?? ''}
+                                onChange={(e) => {
+                                  const newPositions = [...spec.studs!.positions];
+                                  newPositions[index] = { ...stud, diameter: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
+                                  updateSpec({ studs: { positions: newPositions } });
+                                }}
+                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Length (inches)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={stud.length ?? ''}
+                                onChange={(e) => {
+                                  const newPositions = [...spec.studs!.positions];
+                                  newPositions[index] = { ...stud, length: roundToTwoDecimals(parseNumber(e.target.value)) ?? 0 };
+                                  updateSpec({ studs: { positions: newPositions } });
+                                }}
+                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <ConfigDropdown
+                                label="Grade"
+                                options={STUD_GRADE_OPTIONS}
+                                value={stud.grade ?? 'A307'}
+                                onChange={(value) => {
+                                  const newPositions = [...spec.studs!.positions];
+                                  newPositions[index] = { ...stud, grade: value as 'A307' | 'A325' };
+                                  updateSpec({ studs: { positions: newPositions } });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      );
+                    })}
+                    </div>
+                  )}
+
+                  {(!spec.studs?.positions || spec.studs.positions.length === 0) && spec.plate?.length && spec.plate?.width && (
+                    <p className="text-white/40 text-sm text-center py-4">
+                      Use the visual editor to add studs, or use snap presets (4-stud square, 2-stud inline).
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
 
         {/* Step 3: Finish & Tolerance */}
         {currentStep === 3 && (
@@ -629,17 +637,92 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 5: Project Information */}
+        {/* Step 5: Project Information + Final Review */}
         {currentStep === 5 && (
           <motion.div
             key="step5"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-4"
+            className="space-y-6"
           >
-            <h3 className="text-xl font-bold text-white mb-4">Project Information</h3>
-            <p className="text-white/60 text-sm mb-6">
+            <h3 className="text-xl font-bold text-white mb-4">Project Information & Review</h3>
+
+            {/* Final Review block — summary, thumbnail, PDF */}
+            {isEmbedSpecComplete(spec) && validateEmbedSpec(spec).length === 0 && (
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-4">
+                <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Final review</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1 text-sm">
+                    <p className="text-white font-medium">
+                      Plate: {spec.plate!.length}{'"'} × {spec.plate!.width}{'"'} × {spec.plate!.thickness}{'"'}
+                    </p>
+                    <p className="text-white/80">
+                      {spec.plate!.material} • {spec.studs?.positions?.length ?? 0} studs
+                    </p>
+                    {spec.studs?.positions && spec.studs.positions.length > 0 && (
+                      <p className="text-white/70 text-xs">
+                        Studs: {(() => {
+                          const first = spec.studs.positions[0];
+                          const allSame = spec.studs.positions.every(
+                            s => s.diameter === first.diameter && s.length === first.length && s.grade === first.grade
+                          );
+                          return allSame
+                            ? `${spec.studs.positions.length} × ${first.diameter}" × ${first.length}" ${first.grade}`
+                            : `${spec.studs.positions.length} studs (mixed)`;
+                        })()}
+                      </p>
+                    )}
+                  </div>
+                  {/* Mini 2D thumbnail */}
+                  {spec.plate?.length && spec.plate?.width && (
+                    <div className="flex items-center justify-center p-2 bg-black/30 rounded border border-white/10">
+                      <svg
+                        viewBox={`${-spec.plate.length / 2 - 1} ${-spec.plate.width / 2 - 1} ${spec.plate.length + 2} ${spec.plate.width + 2}`}
+                        className="w-full max-w-[160px] h-24 text-white"
+                        preserveAspectRatio="xMidYMid meet"
+                      >
+                        <rect
+                          x={-spec.plate.length / 2}
+                          y={-spec.plate.width / 2}
+                          width={spec.plate.length}
+                          height={spec.plate.width}
+                          fill="rgba(128,128,128,0.3)"
+                          stroke="rgba(255,255,255,0.4)"
+                          strokeWidth="0.2"
+                        />
+                        {spec.studs?.positions?.map((stud, i) => (
+                          <circle
+                            key={i}
+                            cx={stud.x}
+                            cy={stud.y}
+                            r={Math.max(stud.diameter / 2, 0.15)}
+                            fill="rgba(220,20,60,0.8)"
+                            stroke="rgba(255,255,255,0.5)"
+                            strokeWidth="0.1"
+                          />
+                        ))}
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {onExportQuote && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isEmbedSpecComplete(spec) && validateEmbedSpec(spec).length === 0) {
+                        onExportQuote(spec);
+                      }
+                    }}
+                    className="px-4 py-2 bg-white/10 border border-white/20 text-white text-sm rounded-lg font-medium hover:bg-white/20 transition-colors"
+                  >
+                    Download PDF summary
+                  </button>
+                )}
+              </div>
+            )}
+
+            <p className="text-white/60 text-sm">
               Provide project details for order processing and delivery (optional but recommended).
             </p>
 

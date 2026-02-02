@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { orders } from '../../../steel-embeds/order-status/route';
-import { generateShopPacket } from '@/lib/steelEmbeds/generateShopPacket';
-import { generateQuotePDF } from '@/lib/steelEmbeds/quoteExport';
-import { EmbedSpec } from '@/lib/steelEmbeds/types';
+import { kvGetJson, kvGetString, KvNotConfiguredError } from '@/lib/storage/kv';
+import { KV_KEYS } from '@/lib/storage/keys';
+import { generateShopPacketBuffer } from '@/lib/steelEmbeds/generateShopPacket';
+import { generateQuotePDFBuffer } from '@/lib/steelEmbeds/quoteExport';
+import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 
 /**
  * Get order documents (PDFs)
@@ -15,6 +16,7 @@ export async function GET(
   try {
     const { searchParams } = new URL(request.url);
     const documentType = searchParams.get('type') || 'shop-packet';
+    const token = searchParams.get('token');
     const { jobId } = await context.params;
 
     if (!jobId) {
@@ -24,56 +26,58 @@ export async function GET(
       );
     }
 
-    const order = orders.get(jobId);
+    const orderId = await kvGetString(KV_KEYS.orderByJob(jobId));
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
 
+    const order = await kvGetJson<any>(KV_KEYS.order(orderId));
     if (!order) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    let pdfUrl: string | null = null;
+    if (!token || token !== order.trackingToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (documentType === 'shop-packet' && order.steelEmbeds && order.steelEmbeds.length > 0) {
-      try {
-        pdfUrl = await generateShopPacket(jobId, order.steelEmbeds);
-      } catch (error) {
-        console.error('Shop packet generation error:', error);
-        return NextResponse.json(
-          { error: 'Failed to generate shop packet' },
-          { status: 500 }
-        );
-      }
+    // Generate on-demand and stream PDF after token validation.
+    const embedSpecs: EmbedSpec[] = Array.isArray(order.items)
+      ? order.items
+          .filter((it: any) => it?.productType === 'steel-plate-embeds')
+          .map((it: any) => it.configuration as EmbedSpec)
+      : [];
+
+    if (embedSpecs.length === 0) {
+      return NextResponse.json({ error: 'No steel embed specs available for documents' }, { status: 404 });
+    }
+
+    let pdfBuffer: Buffer;
+    let filename: string;
+    if (documentType === 'shop-packet') {
+      pdfBuffer = await generateShopPacketBuffer(jobId, embedSpecs);
+      filename = `${jobId}-shop-packet.pdf`;
     } else if (documentType === 'quote') {
-      const embedSpecs = order.steelEmbeds || order.embedSpecs || [];
-      if (embedSpecs.length > 0) {
-        try {
-          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-          pdfUrl = await generateQuotePDF(jobId, embedSpecs, expiresAt);
-        } catch (error) {
-          console.error('Quote generation error:', error);
-          return NextResponse.json(
-            { error: 'Failed to generate quote' },
-            { status: 500 }
-          );
-        }
-      }
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      pdfBuffer = await generateQuotePDFBuffer(jobId, embedSpecs, expiresAt);
+      filename = `${jobId}-quote.pdf`;
+    } else {
+      return NextResponse.json({ error: 'Unsupported document type' }, { status: 400 });
     }
 
-    if (!pdfUrl) {
-      return NextResponse.json(
-        { error: 'Document not available for this order type' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      pdfUrl,
-      documentType,
+    // NextResponse expects web BodyInit types; use Uint8Array (Buffer isn't typed as BodyInit)
+    const body = new Uint8Array(pdfBuffer);
+    return new NextResponse(body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${filename}"`,
+        'Cache-Control': 'private, no-store, max-age=0',
+      },
     });
   } catch (error) {
+    if (error instanceof KvNotConfiguredError) {
+      return NextResponse.json({ error: 'Order documents are not configured' }, { status: 500 });
+    }
     console.error('Document fetch error:', error);
     return NextResponse.json(
       { error: 'An error occurred while fetching document' },
