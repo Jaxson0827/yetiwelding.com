@@ -2,7 +2,7 @@
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Environment } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Group } from 'three';
 import { Box3, MathUtils, Sphere, Vector3, type Object3D } from 'three';
@@ -170,8 +170,6 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
           controlsRef={controlsRef}
           fitKey={fitKey}
         />
-
-        <Environment preset="warehouse" />
       </Canvas>
     </div>
   );
