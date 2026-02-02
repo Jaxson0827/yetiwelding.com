@@ -14,6 +14,8 @@ interface EmbedSpecFormProps {
   onAddToCart: (spec: EmbedSpec) => void;
   onExportQuote?: (spec: EmbedSpec) => void;
   currentEmbedIndex?: number | null;
+  initialSpec?: Partial<EmbedSpec>;
+  resetKey?: string;
   highlightedStudIndex?: number | null;
   onStudHover?: (index: number | null) => void;
 }
@@ -53,24 +55,33 @@ const STUD_GRADE_OPTIONS: DropdownOption[] = [
 
 const DEFAULT_STUD: { diameter: number; length: number; grade: 'A307' | 'A325' } = { diameter: 0.5, length: 4, grade: 'A307' };
 
-export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote, currentEmbedIndex, highlightedStudIndex, onStudHover }: EmbedSpecFormProps) {
+const DEFAULT_SPEC: Partial<EmbedSpec> = {
+  plate: {
+    length: undefined as any,
+    width: undefined as any,
+    thickness: undefined as any,
+    material: 'A36',
+  },
+  finish: 'none',
+  tolerance: 'standard',
+  quantity: 1,
+  leadTime: 'standard',
+};
+
+export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote, currentEmbedIndex, initialSpec, resetKey, highlightedStudIndex, onStudHover }: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [defaultStud, setDefaultStud] = useState(DEFAULT_STUD);
   const [expandedStudIndex, setExpandedStudIndex] = useState<number | null>(null);
 
-  const [spec, setSpec] = useState<Partial<EmbedSpec>>({
-    plate: {
-      length: undefined as any,
-      width: undefined as any,
-      thickness: undefined as any,
-      material: 'A36',
-    },
-    finish: 'none',
-    tolerance: 'standard',
-    quantity: 1,
-    leadTime: 'standard',
-  });
+  const [spec, setSpec] = useState<Partial<EmbedSpec>>(DEFAULT_SPEC);
+
+  // Sync form when initialSpec / resetKey changes (e.g. switching embed or new embed)
+  useEffect(() => {
+    if (resetKey !== undefined && initialSpec !== undefined) {
+      setSpec({ ...DEFAULT_SPEC, ...initialSpec });
+    }
+  }, [resetKey]);
 
   // Update parent when spec changes
   useEffect(() => {
@@ -100,7 +111,7 @@ export default function EmbedSpecForm({ onSpecChange, onAddToCart, onExportQuote
   }, [spec]);
 
   const updateSpec = (updates: Partial<EmbedSpecDraft>) => {
-    setSpec(prev => ({ ...prev, ...updates }));
+    setSpec(prev => ({ ...prev, ...updates } as Partial<EmbedSpec>));
   };
 
   const updatePlate = (updates: Partial<EmbedSpec['plate']>) => {
