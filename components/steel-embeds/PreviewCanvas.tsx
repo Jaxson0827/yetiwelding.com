@@ -277,12 +277,12 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
 
         {/* Grounding shadow */}
         <ContactShadows
-          opacity={0.35}
-          blur={2.8}
+          opacity={0.18}
+          blur={3.4}
           resolution={1024}
           frames={1}
-          scale={80}
-          far={40}
+          scale={70}
+          far={28}
           position={[0, 0, -0.001]}
         />
 
@@ -291,9 +291,9 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
             <SMAA />
             <SSAO
               samples={12}
-              radius={1.25}
-              intensity={6}
-              luminanceInfluence={0.35}
+              radius={0.85}
+              intensity={2.6}
+              luminanceInfluence={0.22}
               worldDistanceThreshold={60}
               worldDistanceFalloff={8}
             />
