@@ -89,7 +89,6 @@ export function isEmbedSpecComplete(spec: Partial<EmbedSpec>): spec is EmbedSpec
     spec.plate?.thickness &&
     spec.plate?.material &&
     spec.finish &&
-    spec.tolerance &&
     spec.quantity &&
     spec.leadTime
   );

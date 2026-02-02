@@ -268,11 +268,10 @@ export async function generateShopPacketBuffer(jobId: string, embedSpecs: EmbedS
         doc.moveDown();
       }
 
-      // Finish & Tolerance
-      doc.fontSize(12).text('FINISH & TOLERANCE', { underline: true });
+      // Finish
+      doc.fontSize(12).text('FINISH', { underline: true });
       doc.fontSize(10);
       doc.text(`Finish: ${spec.finish.toUpperCase()}`);
-      doc.text(`Tolerance: ${spec.tolerance.toUpperCase()}`);
       doc.moveDown();
 
       // Quantity & Lead Time

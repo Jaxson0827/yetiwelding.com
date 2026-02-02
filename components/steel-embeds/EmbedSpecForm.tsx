@@ -23,7 +23,6 @@ import {
 interface EmbedSpecFormProps {
   onSpecChange: (spec: Partial<EmbedSpec>) => void;
   onAddToCart: (spec: EmbedSpec) => void;
-  onExportQuote?: (spec: EmbedSpec) => void;
   currentEmbedIndex?: number | null;
   initialSpec?: Partial<EmbedSpec>;
   resetKey?: string;
@@ -50,11 +49,6 @@ const FINISH_OPTIONS: DropdownOption[] = [
   { value: 'galv', label: 'Galvanized' },
 ];
 
-const TOLERANCE_OPTIONS: DropdownOption[] = [
-  { value: 'standard', label: 'Standard' },
-  { value: 'tight', label: 'Tight' },
-];
-
 const STUD_GRADE_OPTIONS: DropdownOption[] = [
   { value: 'A307', label: 'A307' },
   { value: 'A325', label: 'A325' },
@@ -70,7 +64,6 @@ const DEFAULT_SPEC: Partial<EmbedSpec> = {
     material: 'A36',
   },
   finish: 'none',
-  tolerance: 'standard',
   quantity: 1,
   // Lead time is not configurable in the UI; keep as standard for all embeds.
   leadTime: 'standard',
@@ -79,7 +72,6 @@ const DEFAULT_SPEC: Partial<EmbedSpec> = {
 export default function EmbedSpecForm({
   onSpecChange,
   onAddToCart,
-  onExportQuote,
   currentEmbedIndex,
   initialSpec,
   resetKey,
@@ -205,7 +197,6 @@ export default function EmbedSpecForm({
       case 3:
         return !!(
           spec.finish &&
-          spec.tolerance &&
           spec.quantity &&
           spec.quantity >= VALIDATION_CONSTRAINTS.quantity.min &&
           !validationErrors['quantity']
@@ -1048,7 +1039,7 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 3: Finish, Tolerance & Quantity */}
+        {/* Step 3: Finish & Quantity */}
         {currentStep === 3 && (
           <motion.div
             key="step3"
@@ -1064,13 +1055,6 @@ export default function EmbedSpecForm({
               options={FINISH_OPTIONS}
               value={spec.finish || 'none'}
               onChange={(value) => updateSpec({ finish: value as EmbedSpec['finish'] })}
-            />
-
-            <ConfigDropdown
-              label="Tolerance"
-              options={TOLERANCE_OPTIONS}
-              value={spec.tolerance || 'standard'}
-              onChange={(value) => updateSpec({ tolerance: value as EmbedSpec['tolerance'] })}
             />
 
             <div className="max-w-md mx-auto w-full">
@@ -1340,23 +1324,8 @@ export default function EmbedSpecForm({
               disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
               className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#B01030] transition-colors"
             >
-              {currentEmbedIndex !== null && currentEmbedIndex !== undefined ? 'Update Embed' : 'Add Embed'}
+              Add to cart
             </button>
-            {onExportQuote && (
-              <button
-                type="button"
-                onClick={() => {
-                  const specForValidation = spec as Partial<EmbedSpec>;
-                  if (isEmbedSpecComplete(specForValidation) && validateEmbedSpec(specForValidation).length === 0) {
-                    onExportQuote(specForValidation as EmbedSpec);
-                  }
-                }}
-                disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
-                className="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
-              >
-                Download PDF summary
-              </button>
-            )}
           </div>
         ) : null}
       </div>

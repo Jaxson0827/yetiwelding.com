@@ -15,7 +15,6 @@ export interface EmbedSpec {
     }>;
   };
   finish: 'none' | 'primer' | 'galv';
-  tolerance: 'standard' | 'tight';
   quantity: number;      // validated: >= 1
   leadTime: 'standard' | 'rush';
   // Project information

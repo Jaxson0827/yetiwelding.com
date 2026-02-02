@@ -124,22 +124,6 @@ export default function SteelEmbedsConfigurator() {
               currentEmbedIndex={currentEmbedIndex}
               initialSpec={spec}
               resetKey={`${currentEmbedIndex ?? 'new'}:${configuredEmbeds.length}`}
-              onExportQuote={async (spec) => {
-                try {
-                  const response = await fetch('/api/steel-embeds/export-quote', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ embedSpecs: [spec] }),
-                  });
-                  const data = await response.json();
-                  if (data.success && data.pdfUrl) {
-                    window.open(data.pdfUrl, '_blank');
-                  }
-                } catch (error) {
-                  console.error('Failed to export quote:', error);
-                  alert('Failed to export quote. Please try again.');
-                }
-              }}
             />
 
             {/* Configured Embeds List */}

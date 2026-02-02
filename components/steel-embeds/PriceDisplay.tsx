@@ -50,25 +50,6 @@ export default function PriceDisplay({ priceBreakdown, quantity }: PriceDisplayP
           </p>
         )}
       </div>
-
-      {/* Confidence Badge */}
-      <div className="pt-2">
-        {priceBreakdown.confidence === 'high' ? (
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-500/20 border border-green-500/50">
-            <svg className="w-4 h-4 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-green-200 text-xs font-medium">Instant Quote</span>
-          </div>
-        ) : (
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/50">
-            <svg className="w-4 h-4 text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-yellow-200 text-xs font-medium">Review may be required</span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

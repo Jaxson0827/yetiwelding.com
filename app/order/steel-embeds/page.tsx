@@ -146,7 +146,7 @@ export default function SteelEmbedsPage() {
             {[
               { title: '1) Plate', body: 'Enter plate length, width, thickness, and material.' },
               { title: '2) Studs', body: 'Choose a stud layout and set edge dimensions like your drawings.' },
-              { title: '3) Finish & Quantity', body: 'Choose finish and tolerance, then set quantity and review pricing.' },
+              { title: '3) Finish & Quantity', body: 'Choose finish, set quantity, and review pricing.' },
               { title: '4) Project Info', body: 'Add optional job details to help us process faster.' },
             ].map((item) => (
               <div
@@ -183,18 +183,11 @@ export default function SteelEmbedsPage() {
         </div>
       </section>
 
-      {/* Lead Time & Tolerances */}
+      {/* Lead Time */}
       <section className="w-full py-20 px-4 bg-white/5">
         <div className="container mx-auto max-w-5xl">
-          <h2 className="text-white text-3xl font-bold mb-8 text-center">Lead Time &amp; Tolerances</h2>
+          <h2 className="text-white text-3xl font-bold mb-8 text-center">Lead Time</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-2">Standard vs Tight</h3>
-              <p className="text-white/80">
-                Tight tolerance may require additional setup or verification. If you’re not sure, select Standard and
-                include notes in Special Instructions.
-              </p>
-            </div>
             <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
               <h3 className="text-white text-lg font-semibold mb-2">Standard vs Rush</h3>
               <p className="text-white/80">

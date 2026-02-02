@@ -162,17 +162,16 @@ export function priceOrder(embedSpecs: EmbedSpec[]): OrderPriceBreakdown {
  * Calculate confidence level for pricing
  */
 function calculateConfidence(spec: EmbedSpec): 'high' | 'review' {
-  const { plate, studs, finish, tolerance } = spec;
+  const { plate, studs, finish } = spec;
 
   // High confidence conditions
   const isRectangular = plate.length / plate.width >= 0.5 && plate.length / plate.width <= 2.0;
   const isStandardThickness = plate.thickness >= 0.25 && plate.thickness <= 2.0;
   const isLowStudCount = !studs || !studs.positions || studs.positions.length < 20;
   const isStandardFinish = finish === 'none' || finish === 'primer';
-  const isStandardTolerance = tolerance === 'standard';
 
   // All conditions must be true for high confidence
-  if (isRectangular && isStandardThickness && isLowStudCount && isStandardFinish && isStandardTolerance) {
+  if (isRectangular && isStandardThickness && isLowStudCount && isStandardFinish) {
     return 'high';
   }
 

@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { kvGetJson, kvGetString, KvNotConfiguredError } from '@/lib/storage/kv';
 import { KV_KEYS } from '@/lib/storage/keys';
 import { generateShopPacketBuffer } from '@/lib/steelEmbeds/generateShopPacket';
-import { generateQuotePDFBuffer } from '@/lib/steelEmbeds/quoteExport';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 
 /**
  * Get order documents (PDFs)
- * GET /api/orders/[jobId]/documents?type=shop-packet|quote
+ * GET /api/orders/[jobId]/documents?type=shop-packet
  */
 export async function GET(
   request: NextRequest,
@@ -56,10 +55,6 @@ export async function GET(
     if (documentType === 'shop-packet') {
       pdfBuffer = await generateShopPacketBuffer(jobId, embedSpecs);
       filename = `${jobId}-shop-packet.pdf`;
-    } else if (documentType === 'quote') {
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      pdfBuffer = await generateQuotePDFBuffer(jobId, embedSpecs, expiresAt);
-      filename = `${jobId}-quote.pdf`;
     } else {
       return NextResponse.json({ error: 'Unsupported document type' }, { status: 400 });
     }
