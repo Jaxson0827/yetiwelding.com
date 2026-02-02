@@ -125,13 +125,10 @@ export default function SteelEmbedsConfigurator() {
               onSpecChange={handleSpecChange}
               onAddToCart={handleAddEmbed}
               currentEmbedIndex={currentEmbedIndex}
-<<<<<<< HEAD
               initialSpec={spec}
               resetKey={`${currentEmbedIndex ?? 'new'}:${configuredEmbeds.length}`}
-=======
               highlightedStudIndex={highlightedStudIndex}
               onStudHover={setHighlightedStudIndex}
->>>>>>> 08f2aa6 (Steel embed page upgrade: Design Your Embed Plate, default studs, visual editor hero, 3D presets, trust signals, final review)
               onExportQuote={async (spec) => {
                 try {
                   const response = await fetch('/api/steel-embeds/export-quote', {
