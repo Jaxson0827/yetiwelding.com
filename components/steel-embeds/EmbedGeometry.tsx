@@ -30,12 +30,12 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
   const width = plate.width;
   const thickness = plate.thickness;
 
-  // Plate material (steel: neutral gray, metallic)
+  // Plate material (steel: lighter gray, reduced metalness for visibility without env map)
   const plateMaterial = useMemo(
     () =>
       new MeshStandardMaterial({
-        color: 0x808080,
-        metalness: 0.8,
+        color: 0xa8a8a8,
+        metalness: 0.55,
         roughness: 0.3,
       }),
     []
@@ -45,8 +45,8 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
   const studMaterial = useMemo(
     () =>
       new MeshStandardMaterial({
-        color: 0x808080,
-        metalness: 0.8,
+        color: 0xa8a8a8,
+        metalness: 0.55,
         roughness: 0.3,
       }),
     []
@@ -57,7 +57,7 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
     () =>
       new MeshStandardMaterial({
         color: 0xdc143c,
-        metalness: 0.8,
+        metalness: 0.55,
         roughness: 0.3,
         emissive: 0x330808,
       }),

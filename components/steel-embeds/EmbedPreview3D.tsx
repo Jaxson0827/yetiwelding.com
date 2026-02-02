@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 const PreviewCanvas = dynamic(() => import('./PreviewCanvas'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center">
+    <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 rounded-lg overflow-hidden relative flex items-center justify-center">
       <div className="text-white/40 text-sm">Loading 3D preview...</div>
     </div>
   ),
@@ -35,7 +35,7 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
   // Show uploaded model preview (highest priority)
   if (glbUrl && previewStatus === 'available') {
     return (
-      <div className="w-full bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative" style={{ height: '100%', minHeight: '500px', flex: '1 1 0%' }}>
+      <div className="w-full bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 rounded-lg overflow-hidden relative" style={{ height: '100%', minHeight: '500px', flex: '1 1 0%' }}>
         <Suspense fallback={
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-white/40 text-sm">Loading 3D model...</div>
@@ -61,7 +61,7 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
 
   if (previewStatus === 'loading') {
     return (
-      <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center">
+      <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 rounded-lg overflow-hidden relative flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-white/20 border-t-[#DC143C] rounded-full animate-spin mx-auto"></div>
           <p className="text-white/60 text-sm">Loading preview...</p>
@@ -74,7 +74,7 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
     // If file preview is unavailable but we have valid spec, show spec-based preview
     if (hasValidSpec && spec) {
       return (
-        <div className="w-full bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative" style={{ height: '100%', minHeight: '500px', flex: '1 1 0%' }}>
+        <div className="w-full bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 rounded-lg overflow-hidden relative" style={{ height: '100%', minHeight: '500px', flex: '1 1 0%' }}>
           <Suspense fallback={
             <div className="w-full h-full flex items-center justify-center">
               <div className="text-white/40 text-sm">Loading 3D preview...</div>
@@ -99,7 +99,7 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
     }
 
     return (
-      <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center border border-yellow-500/30">
+      <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 rounded-lg overflow-hidden relative flex items-center justify-center border border-yellow-500/30">
         <div className="text-center space-y-2 max-w-md px-4">
           <svg className="w-12 h-12 text-yellow-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -116,7 +116,7 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
 
   if (hasValidSpec && spec) {
     return (
-      <div className="w-full bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative" style={{ height: '100%', minHeight: '500px', flex: '1 1 0%' }}>
+      <div className="w-full bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 rounded-lg overflow-hidden relative" style={{ height: '100%', minHeight: '500px', flex: '1 1 0%' }}>
         <Suspense fallback={
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-white/40 text-sm">Loading 3D preview...</div>
@@ -142,7 +142,7 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
 
   if (previewStatus === 'none' && !hasValidSpec) {
     return (
-      <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-black via-gray-900 to-black rounded-lg overflow-hidden relative flex items-center justify-center">
+      <div className="w-full h-full min-h-[500px] bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 rounded-lg overflow-hidden relative flex items-center justify-center">
         <div className="text-center space-y-2">
           <p className="text-white/60 text-sm">Configure dimensions to see preview</p>
         </div>

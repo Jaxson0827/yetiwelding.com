@@ -139,11 +139,12 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
   return (
     <div style={{ width: '100%', height: '100%', minHeight: '400px' }}>
       <Canvas camera={{ position: [5, 5, 5], fov: 50 }} style={{ width: '100%', height: '100%' }}>
-        <color attach="background" args={['#1a1a1a']} />
-        <ambientLight intensity={0.6} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
-        <pointLight position={[-8, 8, 8]} intensity={0.5} />
-        <directionalLight position={[-10, 10, -10]} intensity={0.5} />
+        <color attach="background" args={['#3a3a3a']} />
+        <ambientLight intensity={0.85} />
+        <hemisphereLight color={0xe0e0e0} groundColor={0x606060} intensity={0.6} />
+        <pointLight position={[10, 10, 10]} intensity={1.5} />
+        <pointLight position={[-8, 8, 8]} intensity={0.8} />
+        <directionalLight position={[-10, 10, -10]} intensity={0.7} />
 
         <group ref={objectRef}>
           {renderFromGlb && glbUrl && <Model url={glbUrl} onLoaded={() => setGlbLoaded(true)} />}
