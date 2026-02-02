@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Group } from 'three';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
@@ -154,7 +153,6 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
             autoRotate={autoRotate}
             onUserInteract={() => setAutoRotate(false)}
           />
-          <Environment preset="warehouse" />
         </Canvas>
       </div>
     </div>
