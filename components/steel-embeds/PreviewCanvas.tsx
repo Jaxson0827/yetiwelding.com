@@ -1,14 +1,20 @@
 'use client';
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { Group } from 'three';
-import { Box3, MathUtils, Sphere, Vector3, type Object3D } from 'three';
+import { ContactShadows, Environment, Lightformer, OrbitControls, useGLTF } from '@react-three/drei';
+import { ACESFilmicToneMapping, Box3, MathUtils, Sphere, SRGBColorSpace, Vector3, type Object3D, type PerspectiveCamera } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { Bloom, EffectComposer, Outline, Selection, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import EmbedGeometry from './EmbedGeometry';
+
+export type PreviewCanvasApi = {
+  reset: () => void;
+  fit: () => void;
+  viewTop: () => void;
+  viewIso: () => void;
+};
 
 function AutoFrame({
   enabled,
@@ -21,7 +27,7 @@ function AutoFrame({
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   fitKey: string;
 }) {
-  const { camera, size } = useThree();
+  const { camera, size, invalidate } = useThree();
 
   useLayoutEffect(() => {
     if (!enabled) return;
@@ -59,6 +65,7 @@ function AutoFrame({
       camera.lookAt(center);
       camera.updateProjectionMatrix();
       controlsRef.current.update();
+      invalidate();
     });
 
     return () => window.cancelAnimationFrame(raf);
@@ -67,29 +74,35 @@ function AutoFrame({
   return null;
 }
 
-function Model({ url, onLoaded }: { url: string; onLoaded?: () => void }) {
-  const [model, setModel] = React.useState<Group | null>(null);
+function GLBModel({ url, onLoaded }: { url: string; onLoaded?: () => void }) {
+  const gltf = useGLTF(url);
 
   React.useEffect(() => {
-    const loader = new GLTFLoader();
-    loader.load(
-      url,
-      (gltf) => {
-        setModel(gltf.scene);
-        onLoaded?.();
-      },
-      undefined,
-      (error) => {
-        console.error('Error loading GLB:', error);
+    onLoaded?.();
+  }, [url, gltf, onLoaded]);
+
+  React.useLayoutEffect(() => {
+    gltf.scene.traverse((obj) => {
+      const anyObj = obj as any;
+      if (anyObj.isMesh) {
+        anyObj.castShadow = true;
+        anyObj.receiveShadow = true;
+        if (anyObj.material) {
+          const materials = Array.isArray(anyObj.material) ? anyObj.material : [anyObj.material];
+          for (const mat of materials) {
+            if (mat && typeof (mat as any).envMapIntensity === 'number') {
+              (mat as any).envMapIntensity = 1.0;
+            }
+            if (mat && typeof (mat as any).needsUpdate === 'boolean') {
+              (mat as any).needsUpdate = true;
+            }
+          }
+        }
       }
-    );
-  }, [url]);
+    });
+  }, [gltf.scene]);
 
-  if (!model) {
-    return null;
-  }
-
-  return <primitive object={model} />;
+  return <primitive object={gltf.scene} />;
 }
 
 interface PreviewCanvasProps {
@@ -97,13 +110,16 @@ interface PreviewCanvasProps {
   spec?: Partial<EmbedSpec>;
   highlightedStudIndex?: number | null;
   onStudHover?: (index: number | null) => void;
+  onApiReady?: (api: PreviewCanvasApi | null) => void;
 }
 
-export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onStudHover }: PreviewCanvasProps) {
+export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onStudHover, onApiReady }: PreviewCanvasProps) {
   const objectRef = useRef<Object3D | null>(null);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [glbLoaded, setGlbLoaded] = useState(false);
+  const cameraRef = useRef<PerspectiveCamera | null>(null);
+  const invalidateRef = useRef<(() => void) | null>(null);
 
   const hasValidSpec =
     spec?.plate?.length &&
@@ -136,33 +152,204 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
     if (glbUrl) setGlbLoaded(false);
   }, [glbUrl]);
 
+  React.useEffect(() => {
+    if (!glbUrl) return;
+    // Hint the loader cache early for quicker first render
+    useGLTF.preload(glbUrl);
+  }, [glbUrl]);
+
+  const requestRender = useCallback(() => {
+    invalidateRef.current?.();
+  }, []);
+
+  const fitToDirection = useCallback(
+    (dir: Vector3) => {
+      if (!objectRef.current) return;
+      if (!controlsRef.current) return;
+      if (!cameraRef.current) return;
+
+      const box = new Box3().setFromObject(objectRef.current);
+      if (box.isEmpty()) return;
+
+      const center = box.getCenter(new Vector3());
+      const sphere = box.getBoundingSphere(new Sphere());
+      const radius = Math.max(sphere.radius, 0.0001);
+
+      const camera = cameraRef.current;
+      const aspect = (camera as any).aspect ?? 1;
+      const fovV = MathUtils.degToRad((camera as { fov?: number }).fov ?? 45);
+      const fovH = 2 * Math.atan(Math.tan(fovV / 2) * aspect);
+
+      const distV = radius / Math.tan(fovV / 2);
+      const distH = radius / Math.tan(fovH / 2);
+      const padding = 1.25;
+      const distance = Math.max(distV, distH) * padding;
+
+      camera.up.set(0, 0, 1);
+      controlsRef.current.target.copy(center);
+      camera.position.copy(center).addScaledVector(dir.clone().normalize(), distance);
+      camera.near = Math.max(0.01, distance / 100);
+      camera.far = distance * 100;
+      camera.lookAt(center);
+      camera.updateProjectionMatrix();
+      controlsRef.current.update();
+      requestRender();
+    },
+    [requestRender]
+  );
+
+  const api = useMemo<PreviewCanvasApi>(() => {
+    return {
+      reset: () => {
+        setHasUserInteracted(false);
+        fitToDirection(new Vector3(0.35, -0.2, 1.0));
+      },
+      fit: () => {
+        setHasUserInteracted(false);
+        fitToDirection(new Vector3(0.35, -0.2, 1.0));
+      },
+      viewTop: () => {
+        setHasUserInteracted(true);
+        fitToDirection(new Vector3(0.0, -0.05, 1.0));
+      },
+      viewIso: () => {
+        setHasUserInteracted(true);
+        fitToDirection(new Vector3(0.35, -0.2, 1.0));
+      },
+    };
+  }, [fitToDirection]);
+
+  React.useEffect(() => {
+    onApiReady?.(api);
+    return () => onApiReady?.(null);
+  }, [api, onApiReady]);
+
+  // Keep demand-based rendering responsive to external hover/selection
+  React.useEffect(() => {
+    requestRender();
+  }, [highlightedStudIndex, requestRender]);
+
   return (
     <div style={{ width: '100%', height: '100%', minHeight: '400px' }}>
-      <Canvas camera={{ position: [5, 5, 5], fov: 50 }} style={{ width: '100%', height: '100%' }}>
-        <color attach="background" args={['#3a3a3a']} />
-        <ambientLight intensity={0.85} />
-        <hemisphereLight color={0xe0e0e0} groundColor={0x606060} intensity={0.6} />
-        <pointLight position={[10, 10, 10]} intensity={1.5} />
-        <pointLight position={[-8, 8, 8]} intensity={0.8} />
-        <directionalLight position={[-10, 10, -10]} intensity={0.7} />
+      <Canvas
+        shadows
+        frameloop="demand"
+        dpr={[1, 2]}
+        camera={{ position: [5, 5, 5], fov: 45 }}
+        gl={{
+          antialias: true,
+          toneMapping: ACESFilmicToneMapping,
+          outputColorSpace: SRGBColorSpace,
+        }}
+        onCreated={(state) => {
+          cameraRef.current = state.camera as PerspectiveCamera;
+          invalidateRef.current = state.invalidate;
+        }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <color attach="background" args={['#0b0b0c']} />
 
-        <group ref={objectRef}>
-          {renderFromGlb && glbUrl && <Model url={glbUrl} onLoaded={() => setGlbLoaded(true)} />}
-          {renderFromSpec && spec && (
-            <EmbedGeometry
-              spec={spec}
-              highlightedStudIndex={highlightedStudIndex ?? undefined}
-              onStudHover={onStudHover}
+        {/* Studio-style environment lighting (key/fill/rim) */}
+        <ambientLight intensity={0.15} />
+        <Environment resolution={256}>
+          <Lightformer
+            form="rect"
+            intensity={4.5}
+            position={[8, -6, 10]}
+            rotation={[0.35, 0.65, 0]}
+            scale={[18, 8, 1]}
+          />
+          <Lightformer
+            form="rect"
+            intensity={2.5}
+            position={[-10, 4, 7]}
+            rotation={[0.1, -0.75, 0]}
+            scale={[14, 6, 1]}
+          />
+          <Lightformer
+            form="ring"
+            intensity={1.2}
+            position={[0, 14, 10]}
+            rotation={[Math.PI / 2, 0, 0]}
+            scale={[12, 12, 1]}
+          />
+        </Environment>
+
+        {/* Grounding shadow */}
+        <ContactShadows
+          opacity={0.35}
+          blur={2.8}
+          resolution={1024}
+          frames={1}
+          scale={80}
+          far={40}
+          position={[0, 0, -0.001]}
+        />
+
+        <Selection>
+          <EffectComposer multisampling={0}>
+            <SMAA />
+            <SSAO
+              samples={12}
+              radius={1.25}
+              intensity={6}
+              luminanceInfluence={0.35}
+              worldDistanceThreshold={60}
+              worldDistanceFalloff={8}
             />
-          )}
-        </group>
+            <Bloom
+              intensity={0.18}
+              luminanceThreshold={0.82}
+              luminanceSmoothing={0.22}
+            />
+            <Outline
+              blur
+              edgeStrength={2.1}
+              width={900}
+              visibleEdgeColor={0xdc143c}
+              hiddenEdgeColor={0x2a060c}
+            />
+            <Vignette eskil={false} offset={0.1} darkness={0.42} />
+          </EffectComposer>
+
+          <group ref={objectRef}>
+            {renderFromGlb && glbUrl && (
+              <Suspense fallback={null}>
+                <GLBModel
+                  url={glbUrl}
+                  onLoaded={() => {
+                    setGlbLoaded(true);
+                    requestRender();
+                  }}
+                />
+              </Suspense>
+            )}
+            {renderFromSpec && spec && (
+              <EmbedGeometry
+                spec={spec}
+                highlightedStudIndex={highlightedStudIndex ?? undefined}
+                onStudHover={onStudHover}
+              />
+            )}
+          </group>
+        </Selection>
 
         <OrbitControls
           ref={controlsRef}
           enableZoom
           enablePan
           enableRotate
+          enableDamping
+          dampingFactor={0.08}
+          rotateSpeed={0.8}
+          zoomSpeed={0.9}
+          panSpeed={0.75}
+          minPolarAngle={0.25}
+          maxPolarAngle={Math.PI * 0.88}
+          minDistance={1}
+          maxDistance={250}
           onStart={() => setHasUserInteracted(true)}
+          onChange={() => requestRender()}
         />
 
         <AutoFrame

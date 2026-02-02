@@ -5,7 +5,8 @@
 // Placement is illustrative only - does not represent exact field locations
 
 import React, { useMemo } from 'react';
-import { BoxGeometry, CylinderGeometry, MeshStandardMaterial } from 'three';
+import { BoxGeometry, CylinderGeometry, MeshPhysicalMaterial } from 'three';
+import { Select } from '@react-three/postprocessing';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 
 interface EmbedGeometryProps {
@@ -30,36 +31,46 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
   const width = plate.width;
   const thickness = plate.thickness;
 
-  // Plate material (steel: lighter gray, reduced metalness for visibility without env map)
+  // Plate material (steel look: relies on environment reflections)
   const plateMaterial = useMemo(
     () =>
-      new MeshStandardMaterial({
-        color: 0xa8a8a8,
-        metalness: 0.55,
-        roughness: 0.3,
+      new MeshPhysicalMaterial({
+        color: 0x6f7377, // darker, more realistic base steel
+        metalness: 0.98,
+        roughness: 0.34,
+        clearcoat: 0.15,
+        clearcoatRoughness: 0.2,
+        envMapIntensity: 1.05,
       }),
     []
   );
 
-  // Stud material (same steel look as plate)
+  // Stud material (same steel look as plate, slightly different roughness for readability)
   const studMaterial = useMemo(
     () =>
-      new MeshStandardMaterial({
-        color: 0xa8a8a8,
-        metalness: 0.55,
-        roughness: 0.3,
+      new MeshPhysicalMaterial({
+        color: 0x7a7f84,
+        metalness: 0.98,
+        roughness: 0.28,
+        clearcoat: 0.12,
+        clearcoatRoughness: 0.22,
+        envMapIntensity: 1.05,
       }),
     []
   );
 
-  // Highlighted stud material (crimson for selection feedback)
+  // Highlighted stud material (crimson tint + subtle emissive; outline will be added via post-processing)
   const studHighlightMaterial = useMemo(
     () =>
-      new MeshStandardMaterial({
+      new MeshPhysicalMaterial({
         color: 0xdc143c,
-        metalness: 0.55,
-        roughness: 0.3,
-        emissive: 0x330808,
+        metalness: 0.85,
+        roughness: 0.32,
+        clearcoat: 0.18,
+        clearcoatRoughness: 0.25,
+        envMapIntensity: 1.05,
+        emissive: 0x220306,
+        emissiveIntensity: 0.65,
       }),
     []
   );
@@ -103,7 +114,7 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
   return (
     <group>
       {/* Plate */}
-      <mesh geometry={plateGeometry} material={plateMaterial} position={[0, 0, 0]} />
+      <mesh geometry={plateGeometry} material={plateMaterial} position={[0, 0, 0]} castShadow receiveShadow />
 
       {/* Studs - protruding cylinders from top surface, with headed-stud disc */}
       {studPositions.map((stud, index) => {
@@ -121,24 +132,32 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
         const headZ = thickness / 2 + rodLength + headThickness / 2;
 
         return (
-          <group
+          <Select
             key={`stud-${index}`}
-            onPointerOver={() => onStudHover?.(index)}
-            onPointerOut={() => onStudHover?.(null)}
+            enabled={!!isHighlighted}
           >
-            <mesh
-              geometry={getRodGeometry(rodRadius, rodLength)}
-              material={mat}
-              position={[stud.x, stud.y, rodZ]}
-              rotation={[Math.PI / 2, 0, 0]}
-            />
-            <mesh
-              geometry={getHeadGeometry(headRadius, headThickness)}
-              material={mat}
-              position={[stud.x, stud.y, headZ]}
-              rotation={[Math.PI / 2, 0, 0]}
-            />
-          </group>
+            <group
+              onPointerOver={() => onStudHover?.(index)}
+              onPointerOut={() => onStudHover?.(null)}
+            >
+              <mesh
+                geometry={getRodGeometry(rodRadius, rodLength)}
+                material={mat}
+                position={[stud.x, stud.y, rodZ]}
+                rotation={[Math.PI / 2, 0, 0]}
+                castShadow
+                receiveShadow
+              />
+              <mesh
+                geometry={getHeadGeometry(headRadius, headThickness)}
+                material={mat}
+                position={[stud.x, stud.y, headZ]}
+                rotation={[Math.PI / 2, 0, 0]}
+                castShadow
+                receiveShadow
+              />
+            </group>
+          </Select>
         );
       })}
     </group>

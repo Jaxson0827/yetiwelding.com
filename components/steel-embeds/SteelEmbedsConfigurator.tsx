@@ -77,9 +77,9 @@ export default function SteelEmbedsConfigurator() {
     <div className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 lg:gap-12 items-start">
         {/* Left Column: Preview */}
-        <div className="order-2 lg:order-1 w-full flex flex-col gap-6">
+        <div className="order-2 lg:order-1 w-full flex flex-col gap-6 lg:sticky lg:top-8">
           {/* 3D Preview */}
-          <div className="flex flex-col h-[340px] sm:h-[420px] lg:h-[500px]">
+          <div className="flex flex-col h-[360px] sm:h-[460px] lg:h-[560px]">
             <h3 className="text-white font-semibold mb-4 uppercase tracking-wider text-sm flex-shrink-0">3D Preview</h3>
             <div className="flex-1 h-full">
               <EmbedPreview3D
