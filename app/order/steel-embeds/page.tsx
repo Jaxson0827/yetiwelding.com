@@ -145,10 +145,9 @@ export default function SteelEmbedsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               { title: '1) Plate', body: 'Enter plate length, width, thickness, and material.' },
-              { title: '2) Studs', body: 'Place studs visually and refine coordinates and sizes.' },
-              { title: '3) Finish & Tolerance', body: 'Choose finish, tolerance, and lead time.' },
-              { title: '4) Quantity', body: 'Set quantity and review your price breakdown.' },
-              { title: '5) Project Info', body: 'Add optional job details to help us process faster.' },
+              { title: '2) Studs', body: 'Choose a stud layout and set edge dimensions like your drawings.' },
+              { title: '3) Finish & Quantity', body: 'Choose finish and tolerance, then set quantity and review pricing.' },
+              { title: '4) Project Info', body: 'Add optional job details to help us process faster.' },
             ].map((item) => (
               <div
                 key={item.title}

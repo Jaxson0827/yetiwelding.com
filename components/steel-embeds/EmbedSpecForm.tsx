@@ -29,7 +29,7 @@ interface EmbedSpecFormProps {
   resetKey?: string;
 }
 
-type FormStep = 1 | 2 | 3 | 4 | 5;
+type FormStep = 1 | 2 | 3 | 4;
 type EmbedSpecDraft = Omit<Partial<EmbedSpec>, 'plate'> & {
   plate?: Partial<EmbedSpec['plate']>;
 };
@@ -55,11 +55,6 @@ const TOLERANCE_OPTIONS: DropdownOption[] = [
   { value: 'tight', label: 'Tight' },
 ];
 
-const LEADTIME_OPTIONS: DropdownOption[] = [
-  { value: 'standard', label: 'Standard' },
-  { value: 'rush', label: 'Rush' },
-];
-
 const STUD_GRADE_OPTIONS: DropdownOption[] = [
   { value: 'A307', label: 'A307' },
   { value: 'A325', label: 'A325' },
@@ -77,6 +72,7 @@ const DEFAULT_SPEC: Partial<EmbedSpec> = {
   finish: 'none',
   tolerance: 'standard',
   quantity: 1,
+  // Lead time is not configurable in the UI; keep as standard for all embeds.
   leadTime: 'standard',
 };
 
@@ -120,7 +116,8 @@ export default function EmbedSpecForm({
   // Sync form when initialSpec / resetKey changes (e.g. switching embed or new embed)
   useEffect(() => {
     if (resetKey !== undefined && initialSpec !== undefined) {
-      setSpec({ ...DEFAULT_SPEC, ...initialSpec });
+      // Lead time removed from UI: force standard regardless of prior value.
+      setSpec({ ...DEFAULT_SPEC, ...initialSpec, leadTime: 'standard' });
     }
   }, [resetKey]);
 
@@ -206,10 +203,14 @@ export default function EmbedSpecForm({
         }
         return true;
       case 3:
-        return !!spec.finish && !!spec.tolerance && !!spec.leadTime;
+        return !!(
+          spec.finish &&
+          spec.tolerance &&
+          spec.quantity &&
+          spec.quantity >= VALIDATION_CONSTRAINTS.quantity.min &&
+          !validationErrors['quantity']
+        );
       case 4:
-        return !!spec.quantity && spec.quantity >= VALIDATION_CONSTRAINTS.quantity.min && !validationErrors['quantity'];
-      case 5:
         // Project info is optional
         return true;
       default:
@@ -218,7 +219,7 @@ export default function EmbedSpecForm({
   };
 
   const handleNext = () => {
-    if (canProceedToNextStep(currentStep) && currentStep < 5) {
+    if (canProceedToNextStep(currentStep) && currentStep < 4) {
       setCurrentStep((currentStep + 1) as FormStep);
     }
   };
@@ -471,7 +472,7 @@ export default function EmbedSpecForm({
     <div className="space-y-6">
       {/* Step Indicator */}
       <div className="flex items-center justify-between mb-8">
-        {[1, 2, 3, 4, 5].map((step) => (
+        {[1, 2, 3, 4].map((step) => (
           <React.Fragment key={step}>
             {(() => {
               const targetStep = step as FormStep;
@@ -499,7 +500,7 @@ export default function EmbedSpecForm({
             </button>
               );
             })()}
-            {step < 5 && (
+            {step < 4 && (
               <div
                 className={`flex-1 h-px mx-2 ${
                   step < currentStep ? 'bg-white/20' : 'bg-white/5'
@@ -1047,7 +1048,7 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 3: Finish & Tolerance */}
+        {/* Step 3: Finish, Tolerance & Quantity */}
         {currentStep === 3 && (
           <motion.div
             key="step3"
@@ -1056,7 +1057,7 @@ export default function EmbedSpecForm({
             exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
           >
-            <h3 className="text-xl font-bold text-white mb-4">Finish & Tolerance</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Finish &amp; Quantity</h3>
 
             <ConfigDropdown
               label="Finish"
@@ -1071,26 +1072,6 @@ export default function EmbedSpecForm({
               value={spec.tolerance || 'standard'}
               onChange={(value) => updateSpec({ tolerance: value as EmbedSpec['tolerance'] })}
             />
-
-            <ConfigDropdown
-              label="Lead Time"
-              options={LEADTIME_OPTIONS}
-              value={spec.leadTime || 'standard'}
-              onChange={(value) => updateSpec({ leadTime: value as EmbedSpec['leadTime'] })}
-            />
-          </motion.div>
-        )}
-
-        {/* Step 4: Quantity */}
-        {currentStep === 4 && (
-          <motion.div
-            key="step4"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-4"
-          >
-            <h3 className="text-xl font-bold text-white mb-4">Quantity</h3>
 
             <div className="max-w-md mx-auto w-full">
               <div>
@@ -1120,10 +1101,10 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 5: Project Information + Final Review */}
-        {currentStep === 5 && (
+        {/* Step 4: Project Information + Final Review */}
+        {currentStep === 4 && (
           <motion.div
-            key="step5"
+            key="step4"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -1393,7 +1374,7 @@ export default function EmbedSpecForm({
           Back
         </button>
 
-        {currentStep < 5 ? (
+        {currentStep < 4 ? (
           <button
             type="button"
             onClick={handleNext}
@@ -1402,7 +1383,7 @@ export default function EmbedSpecForm({
           >
             Next
           </button>
-        ) : currentStep === 5 ? (
+        ) : currentStep === 4 ? (
           <div className="flex gap-3">
             {onExportQuote && (
               <button
