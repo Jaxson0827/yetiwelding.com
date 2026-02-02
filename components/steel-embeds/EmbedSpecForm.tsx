@@ -1170,53 +1170,14 @@ export default function EmbedSpecForm({
                     </div>
                   )}
                 </div>
-                {onExportQuote && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isEmbedSpecComplete(spec) && validateEmbedSpec(spec).length === 0) {
-                        onExportQuote(spec);
-                      }
-                    }}
-                    className="px-4 py-2 bg-white/10 border border-white/20 text-white text-sm rounded-lg font-medium hover:bg-white/20 transition-colors"
-                  >
-                    Download PDF summary
-                  </button>
-                )}
               </div>
             )}
 
             <p className="text-white/60 text-sm">
-              Provide project details for order processing and delivery (optional but recommended).
+              Provide delivery and contact details for order processing (optional but recommended).
             </p>
 
             <div className="max-w-2xl mx-auto w-full">
-              <div>
-                <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 text-center">
-                  Project Name
-                </label>
-                <input
-                  type="text"
-                  value={spec.projectName || ''}
-                  onChange={(e) => updateSpec({ projectName: e.target.value })}
-                  placeholder="e.g., Downtown Office Building"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                />
-              </div>
-
-              <div className="mt-4">
-                <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 text-center">
-                  Project Number
-                </label>
-                <input
-                  type="text"
-                  value={spec.projectNumber || ''}
-                  onChange={(e) => updateSpec({ projectNumber: e.target.value })}
-                  placeholder="e.g., PROJ-2024-001"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                />
-              </div>
-
               <div className="space-y-3 mt-6">
               <h4 className="text-white/80 font-semibold text-sm">Delivery Address</h4>
               <div>
@@ -1346,18 +1307,6 @@ export default function EmbedSpecForm({
               </div>
             </div>
 
-              <div className="mt-6">
-                <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 text-center">
-                  Special Instructions
-                </label>
-                <textarea
-                  value={spec.specialInstructions || ''}
-                  onChange={(e) => updateSpec({ specialInstructions: e.target.value })}
-                  placeholder="Any special requirements or notes for this order..."
-                  rows={4}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors resize-none"
-                />
-              </div>
             </div>
           </motion.div>
         )}
@@ -1384,7 +1333,15 @@ export default function EmbedSpecForm({
             Next
           </button>
         ) : currentStep === 4 ? (
-          <div className="flex gap-3">
+          <div className="flex flex-col items-stretch gap-2 min-w-[220px]">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
+              className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#B01030] transition-colors"
+            >
+              {currentEmbedIndex !== null && currentEmbedIndex !== undefined ? 'Update Embed' : 'Add Embed'}
+            </button>
             {onExportQuote && (
               <button
                 type="button"
@@ -1397,17 +1354,9 @@ export default function EmbedSpecForm({
                 disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
                 className="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
               >
-                Export Quote
+                Download PDF summary
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
-              className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#B01030] transition-colors flex-1"
-            >
-              {currentEmbedIndex !== null && currentEmbedIndex !== undefined ? 'Update Embed' : 'Add Embed'}
-            </button>
           </div>
         ) : null}
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import { PriceBreakdown } from '@/lib/steelEmbeds/types';
 
 interface PriceDisplayProps {
@@ -10,8 +10,6 @@ interface PriceDisplayProps {
 }
 
 export default function PriceDisplay({ priceBreakdown, quantity }: PriceDisplayProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   if (!priceBreakdown) {
     return (
       <div className="space-y-4">
@@ -70,45 +68,6 @@ export default function PriceDisplay({ priceBreakdown, quantity }: PriceDisplayP
             <span className="text-yellow-200 text-xs font-medium">Review may be required</span>
           </div>
         )}
-      </div>
-
-      {/* Line Items Breakdown */}
-      <div className="pt-4 border-t border-white/10">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-white/60 hover:text-white text-sm font-medium flex items-center"
-        >
-          {isExpanded ? 'Hide' : 'Show'} breakdown
-          <svg
-            className={`w-4 h-4 ml-2 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 space-y-2"
-            >
-              {priceBreakdown.lineItems.map((item, index) => (
-                <div key={index} className="flex justify-between text-sm">
-                  <span className="text-white/80">{item.label}</span>
-                  <span className="text-white font-medium">
-                    ${item.amount.toFixed(2)}
-                    {item.quantity && ` (×${item.quantity})`}
-                  </span>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
