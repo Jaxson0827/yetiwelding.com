@@ -2,6 +2,7 @@ import { EmbedSpec } from './types';
 
 export type EdgeSideX = 'left' | 'right';
 export type EdgeSideY = 'bottom' | 'top';
+export type StudPosition = NonNullable<EmbedSpec['studs']>['positions'][number];
 
 export interface StudDefaults {
   diameter: number;
@@ -66,7 +67,7 @@ export function minEdgeDistance(plateLength: number, plateWidth: number, x: numb
 export function closestEdgeRowFromStud(
   plateLength: number,
   plateWidth: number,
-  stud: EmbedSpec['studs'] extends { positions: Array<infer P> } ? P : never
+  stud: StudPosition
 ): EdgeOffsetRow {
   const d = centerToEdgeDistances(plateLength, plateWidth, stud.x, stud.y);
   const xSide: EdgeSideX = d.fromLeft <= d.fromRight ? 'left' : 'right';
