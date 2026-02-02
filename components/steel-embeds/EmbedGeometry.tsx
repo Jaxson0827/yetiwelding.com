@@ -6,20 +6,17 @@
 
 import React, { useMemo } from 'react';
 import { BoxGeometry, CylinderGeometry, MeshPhysicalMaterial } from 'three';
-import { Select } from '@react-three/postprocessing';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 
 interface EmbedGeometryProps {
   spec: Partial<EmbedSpec>;
-  highlightedStudIndex?: number | null;
-  onStudHover?: (index: number | null) => void;
 }
 
 const STUD_SEGMENTS = 32;
 const HEAD_DIAMETER_MULTIPLIER = 1.6; // visual-only: headed stud look
 const MIN_HEAD_THICKNESS_IN = 0.125;
 
-export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover }: EmbedGeometryProps) {
+export default function EmbedGeometry({ spec }: EmbedGeometryProps) {
   const { plate, studs } = spec;
 
   // Strict check: ALL THREE plate dimensions must be present and > 0
@@ -55,22 +52,6 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
         clearcoat: 0.12,
         clearcoatRoughness: 0.22,
         envMapIntensity: 1.05,
-      }),
-    []
-  );
-
-  // Highlighted stud material (crimson tint + subtle emissive; outline will be added via post-processing)
-  const studHighlightMaterial = useMemo(
-    () =>
-      new MeshPhysicalMaterial({
-        color: 0xdc143c,
-        metalness: 0.85,
-        roughness: 0.32,
-        clearcoat: 0.18,
-        clearcoatRoughness: 0.25,
-        envMapIntensity: 1.05,
-        emissive: 0x220306,
-        emissiveIntensity: 0.65,
       }),
     []
   );
@@ -120,8 +101,6 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
       {studPositions.map((stud, index) => {
         const rodRadius = stud.diameter / 2;
         const rodLength = stud.length;
-        const isHighlighted = highlightedStudIndex === index;
-        const mat = isHighlighted ? studHighlightMaterial : studMaterial;
 
         // Visual-only head proportions derived from diameter
         const headDiameter = stud.diameter * HEAD_DIAMETER_MULTIPLIER;
@@ -132,32 +111,24 @@ export default function EmbedGeometry({ spec, highlightedStudIndex, onStudHover 
         const headZ = thickness / 2 + rodLength + headThickness / 2;
 
         return (
-          <Select
-            key={`stud-${index}`}
-            enabled={!!isHighlighted}
-          >
-            <group
-              onPointerOver={() => onStudHover?.(index)}
-              onPointerOut={() => onStudHover?.(null)}
-            >
-              <mesh
-                geometry={getRodGeometry(rodRadius, rodLength)}
-                material={mat}
-                position={[stud.x, stud.y, rodZ]}
-                rotation={[Math.PI / 2, 0, 0]}
-                castShadow
-                receiveShadow
-              />
-              <mesh
-                geometry={getHeadGeometry(headRadius, headThickness)}
-                material={mat}
-                position={[stud.x, stud.y, headZ]}
-                rotation={[Math.PI / 2, 0, 0]}
-                castShadow
-                receiveShadow
-              />
-            </group>
-          </Select>
+          <group key={`stud-${index}`}>
+            <mesh
+              geometry={getRodGeometry(rodRadius, rodLength)}
+              material={studMaterial}
+              position={[stud.x, stud.y, rodZ]}
+              rotation={[Math.PI / 2, 0, 0]}
+              castShadow
+              receiveShadow
+            />
+            <mesh
+              geometry={getHeadGeometry(headRadius, headThickness)}
+              material={studMaterial}
+              position={[stud.x, stud.y, headZ]}
+              rotation={[Math.PI / 2, 0, 0]}
+              castShadow
+              receiveShadow
+            />
+          </group>
         );
       })}
     </group>

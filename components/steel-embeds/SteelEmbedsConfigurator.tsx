@@ -13,11 +13,7 @@ export default function SteelEmbedsConfigurator() {
   const [configuredEmbeds, setConfiguredEmbeds] = useState<EmbedSpec[]>([]);
   const [currentEmbedIndex, setCurrentEmbedIndex] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [hoveredStudIndex, setHoveredStudIndex] = useState<number | null>(null);
-  const [selectedStudIndex, setSelectedStudIndex] = useState<number | null>(null);
   const { addItem } = useCart();
-
-  const effectiveHighlightedStudIndex = hoveredStudIndex ?? selectedStudIndex;
 
   const handleSpecChange = useCallback((newSpec: Partial<EmbedSpec>) => {
     setSpec(newSpec);
@@ -31,22 +27,16 @@ export default function SteelEmbedsConfigurator() {
       setConfiguredEmbeds(updated);
       setCurrentEmbedIndex(null);
       setSpec({});
-      setHoveredStudIndex(null);
-      setSelectedStudIndex(null);
     } else {
       // Add new embed
       setConfiguredEmbeds(prev => [...prev, completeSpec]);
       setSpec({});
-      setHoveredStudIndex(null);
-      setSelectedStudIndex(null);
     }
   }, [currentEmbedIndex, configuredEmbeds]);
 
   const handleEditEmbed = useCallback((index: number) => {
     setCurrentEmbedIndex(index);
     setSpec(configuredEmbeds[index]);
-    setHoveredStudIndex(null);
-    setSelectedStudIndex(null);
   }, [configuredEmbeds]);
 
   const handleRemoveEmbed = useCallback((index: number) => {
@@ -54,8 +44,6 @@ export default function SteelEmbedsConfigurator() {
     if (currentEmbedIndex === index) {
       setCurrentEmbedIndex(null);
       setSpec({});
-      setHoveredStudIndex(null);
-      setSelectedStudIndex(null);
     } else if (currentEmbedIndex !== null && currentEmbedIndex > index) {
       setCurrentEmbedIndex(currentEmbedIndex - 1);
     }
@@ -82,8 +70,6 @@ export default function SteelEmbedsConfigurator() {
     setConfiguredEmbeds([]);
     setCurrentEmbedIndex(null);
     setSpec({});
-    setHoveredStudIndex(null);
-    setSelectedStudIndex(null);
   }, [configuredEmbeds, addItem]);
 
   return (
@@ -99,8 +85,6 @@ export default function SteelEmbedsConfigurator() {
                 glbUrl={null}
                 previewStatus="none"
                 spec={spec}
-                highlightedStudIndex={effectiveHighlightedStudIndex}
-                onStudHover={setHoveredStudIndex}
               />
             </div>
           </div>
@@ -140,10 +124,6 @@ export default function SteelEmbedsConfigurator() {
               currentEmbedIndex={currentEmbedIndex}
               initialSpec={spec}
               resetKey={`${currentEmbedIndex ?? 'new'}:${configuredEmbeds.length}`}
-              highlightedStudIndex={effectiveHighlightedStudIndex}
-              onStudHover={setHoveredStudIndex}
-              selectedStudIndex={selectedStudIndex}
-              onStudSelect={setSelectedStudIndex}
               onExportQuote={async (spec) => {
                 try {
                   const response = await fetch('/api/steel-embeds/export-quote', {

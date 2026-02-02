@@ -18,11 +18,9 @@ interface EmbedPreview3DProps {
   glbUrl: string | null;
   previewStatus: 'loading' | 'available' | 'unavailable' | 'none';
   spec?: Partial<EmbedSpec>;
-  highlightedStudIndex?: number | null;
-  onStudHover?: (index: number | null) => void;
 }
 
-export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlightedStudIndex, onStudHover }: EmbedPreview3DProps) {
+export default function EmbedPreview3D({ glbUrl, previewStatus, spec }: EmbedPreview3DProps) {
   const hasValidSpec =
     spec?.plate?.length &&
     spec?.plate?.width &&
@@ -76,8 +74,6 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, highlighte
           <PreviewCanvas
             glbUrl={hasGlbPreview ? glbUrl : null}
             spec={spec}
-            highlightedStudIndex={highlightedStudIndex}
-            onStudHover={onStudHover}
           />
         </Suspense>
 

@@ -5,7 +5,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls, useGLTF } from '@react-three/drei';
 import { ACESFilmicToneMapping, Box3, MathUtils, Sphere, SRGBColorSpace, Vector3, type Object3D } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { Bloom, EffectComposer, Outline, Selection, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
+import { Bloom, EffectComposer, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import EmbedGeometry from './EmbedGeometry';
 
@@ -101,11 +101,9 @@ function GLBModel({ url, onLoaded }: { url: string; onLoaded?: () => void }) {
 interface PreviewCanvasProps {
   glbUrl?: string | null;
   spec?: Partial<EmbedSpec>;
-  highlightedStudIndex?: number | null;
-  onStudHover?: (index: number | null) => void;
 }
 
-export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onStudHover }: PreviewCanvasProps) {
+export default function PreviewCanvas({ glbUrl, spec }: PreviewCanvasProps) {
   const objectRef = useRef<Object3D | null>(null);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -152,11 +150,6 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
   const requestRender = useCallback(() => {
     invalidateRef.current?.();
   }, []);
-
-  // Keep demand-based rendering responsive to external hover/selection
-  React.useEffect(() => {
-    requestRender();
-  }, [highlightedStudIndex, requestRender]);
 
   return (
     <div style={{ width: '100%', height: '100%', minHeight: '400px' }}>
@@ -214,53 +207,38 @@ export default function PreviewCanvas({ glbUrl, spec, highlightedStudIndex, onSt
           position={[0, 0, -0.001]}
         />
 
-        <Selection>
-          <EffectComposer multisampling={0}>
-            <SMAA />
-            <SSAO
-              samples={12}
-              radius={0.85}
-              intensity={2.6}
-              luminanceInfluence={0.22}
-              worldDistanceThreshold={60}
-              worldDistanceFalloff={8}
-            />
-            <Bloom
-              intensity={0.18}
-              luminanceThreshold={0.82}
-              luminanceSmoothing={0.22}
-            />
-            <Outline
-              blur
-              edgeStrength={2.1}
-              width={900}
-              visibleEdgeColor={0xdc143c}
-              hiddenEdgeColor={0x2a060c}
-            />
-            <Vignette eskil={false} offset={0.1} darkness={0.42} />
-          </EffectComposer>
+        <EffectComposer multisampling={0}>
+          <SMAA />
+          <SSAO
+            samples={12}
+            radius={0.85}
+            intensity={2.6}
+            luminanceInfluence={0.22}
+            worldDistanceThreshold={60}
+            worldDistanceFalloff={8}
+          />
+          <Bloom
+            intensity={0.18}
+            luminanceThreshold={0.82}
+            luminanceSmoothing={0.22}
+          />
+          <Vignette eskil={false} offset={0.1} darkness={0.42} />
+        </EffectComposer>
 
-          <group ref={objectRef}>
-            {renderFromGlb && glbUrl && (
-              <Suspense fallback={null}>
-                <GLBModel
-                  url={glbUrl}
-                  onLoaded={() => {
-                    setGlbLoaded(true);
-                    requestRender();
-                  }}
-                />
-              </Suspense>
-            )}
-            {renderFromSpec && spec && (
-              <EmbedGeometry
-                spec={spec}
-                highlightedStudIndex={highlightedStudIndex ?? undefined}
-                onStudHover={onStudHover}
+        <group ref={objectRef}>
+          {renderFromGlb && glbUrl && (
+            <Suspense fallback={null}>
+              <GLBModel
+                url={glbUrl}
+                onLoaded={() => {
+                  setGlbLoaded(true);
+                  requestRender();
+                }}
               />
-            )}
-          </group>
-        </Selection>
+            </Suspense>
+          )}
+          {renderFromSpec && spec && <EmbedGeometry spec={spec} />}
+        </group>
 
         <OrbitControls
           ref={controlsRef}

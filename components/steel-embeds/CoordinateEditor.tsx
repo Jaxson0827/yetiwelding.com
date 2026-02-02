@@ -27,7 +27,6 @@ interface CoordinateEditorProps {
   /** Add multiple studs at once (for snap presets). Parent adds each with default stud props. */
   onAddStudPositions?: (positions: Array<{ x: number; y: number }>) => void;
   onStudHover?: (index: number | null) => void;
-  highlightedStudIndex?: number | null;
   /** When hover ends, we can fall back to the selected stud highlight (if any). */
   selectedStudIndex?: number | null;
 }
@@ -45,7 +44,6 @@ export default function CoordinateEditor({
   onStudRemove,
   onAddStudPositions,
   onStudHover,
-  highlightedStudIndex = null,
   selectedStudIndex = null,
 }: CoordinateEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -293,9 +291,8 @@ export default function CoordinateEditor({
             const radius = (stud.diameter / 2) * scale;
             const displayRadius = Math.max(radius, 8);
             const isSelected = selectedStud === index;
-            const isHighlighted = highlightedStudIndex === index;
             const edgeDist = minEdgeDistance(stud.x, stud.y);
-            const ringColor = edgeDist < EDGE_WARN_RED ? '#ef4444' : edgeDist < EDGE_WARN_YELLOW ? '#eab308' : 'transparent';
+            const ringColor = edgeDist < EDGE_WARN_RED ? '#eab308' : edgeDist < EDGE_WARN_YELLOW ? '#facc15' : 'transparent';
             const fromLeft = (plateLength / 2 + stud.x).toFixed(1);
             const fromBottom = (plateWidth / 2 + stud.y).toFixed(1);
 
@@ -314,9 +311,9 @@ export default function CoordinateEditor({
                   cx={svgX}
                   cy={svgY}
                   r={displayRadius}
-                  fill={isSelected || isHighlighted ? '#DC143C' : 'rgba(220, 20, 60, 0.6)'}
+                  fill={'rgba(220, 20, 60, 0.6)'}
                   stroke="white"
-                  strokeWidth={isSelected || isHighlighted ? 2 : 1}
+                  strokeWidth={isSelected ? 2 : 1}
                   className="cursor-move"
                   onMouseDown={(e) => {
                     e.stopPropagation();

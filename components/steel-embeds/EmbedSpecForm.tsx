@@ -27,10 +27,6 @@ interface EmbedSpecFormProps {
   currentEmbedIndex?: number | null;
   initialSpec?: Partial<EmbedSpec>;
   resetKey?: string;
-  highlightedStudIndex?: number | null;
-  onStudHover?: (index: number | null) => void;
-  selectedStudIndex?: number | null;
-  onStudSelect?: (index: number | null) => void;
 }
 
 type FormStep = 1 | 2 | 3 | 4 | 5;
@@ -91,10 +87,6 @@ export default function EmbedSpecForm({
   currentEmbedIndex,
   initialSpec,
   resetKey,
-  highlightedStudIndex,
-  onStudHover,
-  selectedStudIndex: selectedStudIndexProp,
-  onStudSelect,
 }: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -254,8 +246,8 @@ export default function EmbedSpecForm({
     return Math.round(value * 100) / 100;
   };
 
-  const selectedStudIndex = selectedStudIndexProp ?? selectedStudIndexInternal;
-  const setSelectedStudIndex = onStudSelect ?? setSelectedStudIndexInternal;
+  const selectedStudIndex = selectedStudIndexInternal;
+  const setSelectedStudIndex = setSelectedStudIndexInternal;
 
   const normalizeStudIndexAfterRemoval = (removedIndex: number) => {
     // Expanded index adjustments (existing behavior)
@@ -339,10 +331,8 @@ export default function EmbedSpecForm({
       updateSpec({ studs: positions.length > 0 ? { positions } : undefined });
       if (positions.length > 0) {
         setSelectedStudIndex(0);
-        onStudHover?.(0);
       } else {
         setSelectedStudIndex(null);
-        onStudHover?.(null);
       }
       return;
     }
@@ -360,7 +350,6 @@ export default function EmbedSpecForm({
       );
       updateSpec({ studs: { positions } });
       setSelectedStudIndex(0);
-      onStudHover?.(0);
       return;
     }
 
@@ -380,7 +369,6 @@ export default function EmbedSpecForm({
       );
       updateSpec({ studs: { positions } });
       setSelectedStudIndex(0);
-      onStudHover?.(0);
       return;
     }
 
@@ -398,7 +386,6 @@ export default function EmbedSpecForm({
     );
     updateSpec({ studs: { positions } });
     setSelectedStudIndex(0);
-    onStudHover?.(0);
   };
 
   // Keep offset rows in sync when switching to offsets style
@@ -925,8 +912,6 @@ export default function EmbedSpecForm({
                         <div
                           key={idx}
                           className="grid grid-cols-1 md:grid-cols-[90px_1fr_90px_1fr_auto] gap-2 items-end"
-                          onMouseEnter={() => onStudHover?.(idx)}
-                          onMouseLeave={() => onStudHover?.(selectedStudIndex ?? null)}
                         >
                           <div>
                             <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">X side</label>
@@ -1017,7 +1002,6 @@ export default function EmbedSpecForm({
                       onClick={() => {
                         updateSpec({ studs: undefined });
                         setSelectedStudIndex(null);
-                        onStudHover?.(null);
                       }}
                       className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                     >
@@ -1040,8 +1024,6 @@ export default function EmbedSpecForm({
                           <div
                             key={index}
                             className="flex items-start justify-between gap-3 p-3 rounded border border-white/10 bg-black/20"
-                            onMouseEnter={() => onStudHover?.(index)}
-                            onMouseLeave={() => onStudHover?.(selectedStudIndex ?? null)}
                           >
                             <div className="min-w-0">
                               <div className="text-white text-sm font-medium">
