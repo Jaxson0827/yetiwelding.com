@@ -9,6 +9,12 @@ import { Bloom, EffectComposer, SMAA, SSAO, Vignette } from '@react-three/postpr
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import EmbedGeometry from './EmbedGeometry';
 
+export type PreviewViewState = {
+  cameraPosition: [number, number, number];
+  target: [number, number, number];
+  hasUserInteracted: boolean;
+};
+
 function AutoFrame({
   enabled,
   objectRef,
@@ -101,14 +107,17 @@ function GLBModel({ url, onLoaded }: { url: string; onLoaded?: () => void }) {
 interface PreviewCanvasProps {
   glbUrl?: string | null;
   spec?: Partial<EmbedSpec>;
+  viewState?: PreviewViewState | null;
+  onViewStateChange?: (next: PreviewViewState) => void;
 }
 
-export default function PreviewCanvas({ glbUrl, spec }: PreviewCanvasProps) {
+export default function PreviewCanvas({ glbUrl, spec, viewState, onViewStateChange }: PreviewCanvasProps) {
   const objectRef = useRef<Object3D | null>(null);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState<boolean>(viewState?.hasUserInteracted ?? false);
   const [glbLoaded, setGlbLoaded] = useState(false);
   const invalidateRef = useRef<(() => void) | null>(null);
+  const cameraRef = useRef<{ position: Vector3; up: Vector3; near: number; far: number; lookAt: (...args: any[]) => void; updateProjectionMatrix: () => void } | null>(null);
 
   const hasValidSpec =
     spec?.plate?.length &&
@@ -151,6 +160,43 @@ export default function PreviewCanvas({ glbUrl, spec }: PreviewCanvasProps) {
     invalidateRef.current?.();
   }, []);
 
+  const captureViewState = useCallback(
+    (nextHasUserInteracted: boolean): PreviewViewState | null => {
+      const cam = cameraRef.current as any;
+      const ctrls = controlsRef.current as any;
+      if (!cam || !ctrls) return null;
+
+      return {
+        cameraPosition: [cam.position.x, cam.position.y, cam.position.z],
+        target: [ctrls.target.x, ctrls.target.y, ctrls.target.z],
+        hasUserInteracted: nextHasUserInteracted,
+      };
+    },
+    []
+  );
+
+  const applyViewState = useCallback(
+    (state: PreviewViewState) => {
+      const cam = cameraRef.current as any;
+      const ctrls = controlsRef.current as any;
+      if (!cam || !ctrls) return;
+
+      ctrls.target.set(state.target[0], state.target[1], state.target[2]);
+      cam.position.set(state.cameraPosition[0], state.cameraPosition[1], state.cameraPosition[2]);
+      cam.updateProjectionMatrix();
+      ctrls.update();
+      requestRender();
+    },
+    [requestRender]
+  );
+
+  useLayoutEffect(() => {
+    if (!viewState) return;
+    // If the canvas remounts after switching away, restore the last camera/target.
+    setHasUserInteracted(viewState.hasUserInteracted);
+    applyViewState(viewState);
+  }, [applyViewState, viewState]);
+
   return (
     <div style={{ width: '100%', height: '100%', minHeight: '400px' }}>
       <Canvas
@@ -165,6 +211,11 @@ export default function PreviewCanvas({ glbUrl, spec }: PreviewCanvasProps) {
         }}
         onCreated={(state) => {
           invalidateRef.current = state.invalidate;
+          cameraRef.current = state.camera as any;
+          if (viewState) {
+            setHasUserInteracted(viewState.hasUserInteracted);
+            applyViewState(viewState);
+          }
         }}
         style={{ width: '100%', height: '100%' }}
       >
@@ -254,8 +305,16 @@ export default function PreviewCanvas({ glbUrl, spec }: PreviewCanvasProps) {
           maxPolarAngle={Math.PI * 0.88}
           minDistance={1}
           maxDistance={250}
-          onStart={() => setHasUserInteracted(true)}
+          onStart={() => {
+            setHasUserInteracted(true);
+            const snapshot = captureViewState(true);
+            if (snapshot) onViewStateChange?.(snapshot);
+          }}
           onChange={() => requestRender()}
+          onEnd={() => {
+            const snapshot = captureViewState(true);
+            if (snapshot) onViewStateChange?.(snapshot);
+          }}
         />
 
         <AutoFrame

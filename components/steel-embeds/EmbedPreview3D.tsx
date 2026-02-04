@@ -13,14 +13,17 @@ const PreviewCanvas = dynamic(() => import('./PreviewCanvas'), {
 });
 
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
+import type { PreviewViewState } from './PreviewCanvas';
 
 interface EmbedPreview3DProps {
   glbUrl: string | null;
   previewStatus: 'loading' | 'available' | 'unavailable' | 'none';
   spec?: Partial<EmbedSpec>;
+  viewState?: PreviewViewState | null;
+  onViewStateChange?: (next: PreviewViewState) => void;
 }
 
-export default function EmbedPreview3D({ glbUrl, previewStatus, spec }: EmbedPreview3DProps) {
+export default function EmbedPreview3D({ glbUrl, previewStatus, spec, viewState, onViewStateChange }: EmbedPreview3DProps) {
   const hasValidSpec =
     spec?.plate?.length &&
     spec?.plate?.width &&
@@ -74,6 +77,8 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec }: EmbedPre
           <PreviewCanvas
             glbUrl={hasGlbPreview ? glbUrl : null}
             spec={spec}
+            viewState={viewState}
+            onViewStateChange={onViewStateChange}
           />
         </Suspense>
 

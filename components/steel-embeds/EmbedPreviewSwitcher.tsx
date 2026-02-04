@@ -4,6 +4,7 @@ import Image from 'next/image';
 import React, { useMemo, useState } from 'react';
 import EmbedPreview3D from './EmbedPreview3D';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
+import type { PreviewViewState } from './PreviewCanvas';
 
 type PreviewMode = '3d' | 'photos';
 
@@ -16,6 +17,7 @@ const PHOTO_SOURCES = [
 export default function EmbedPreviewSwitcher({ spec }: { spec: Partial<EmbedSpec> }) {
   const [mode, setMode] = useState<PreviewMode>('3d');
   const [activeSrc, setActiveSrc] = useState<(typeof PHOTO_SOURCES)[number]['src']>(PHOTO_SOURCES[0].src);
+  const [viewState, setViewState] = useState<PreviewViewState | null>(null);
 
   const active = useMemo(() => PHOTO_SOURCES.find((p) => p.src === activeSrc) ?? PHOTO_SOURCES[0], [activeSrc]);
 
@@ -49,12 +51,26 @@ export default function EmbedPreviewSwitcher({ spec }: { spec: Partial<EmbedSpec
       </div>
 
       <div className="w-full">
-        {mode === '3d' ? (
-          <div className="h-[320px] sm:h-[400px] lg:h-[520px]">
-            <EmbedPreview3D glbUrl={null} previewStatus="none" spec={spec} />
+        <div className="relative h-[320px] sm:h-[400px] lg:h-[520px]">
+          {/* Keep 3D mounted at all times so it doesn't reset */}
+          <div className="absolute inset-0">
+            <EmbedPreview3D
+              glbUrl={null}
+              previewStatus="none"
+              spec={spec}
+              viewState={viewState}
+              onViewStateChange={setViewState}
+            />
           </div>
-        ) : (
-          <div className="w-full h-[320px] sm:h-[400px] lg:h-[520px] rounded-xl overflow-hidden relative border border-white/10 bg-gradient-to-br from-[#0b0b0c] via-[#101013] to-black shadow-[0_12px_40px_rgba(0,0,0,0.55)]">
+
+          {/* Photo layer overlays 3D when selected */}
+          <div
+            className={`absolute inset-0 transition-opacity ${
+              mode === 'photos' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+            aria-hidden={mode !== 'photos'}
+          >
+            <div className="w-full h-full rounded-xl overflow-hidden relative border border-white/10 bg-gradient-to-br from-[#0b0b0c] via-[#101013] to-black shadow-[0_12px_40px_rgba(0,0,0,0.55)]">
             <Image
               src={active.src}
               alt={active.alt}
@@ -64,7 +80,8 @@ export default function EmbedPreviewSwitcher({ spec }: { spec: Partial<EmbedSpec
               priority={false}
             />
           </div>
-        )}
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
