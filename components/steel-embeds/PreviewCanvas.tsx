@@ -219,7 +219,7 @@ export default function PreviewCanvas({ glbUrl, spec, viewState, onViewStateChan
         }}
         style={{ width: '100%', height: '100%' }}
       >
-        <color attach="background" args={['#0b0b0c']} />
+        <color attach="background" args={['#ffffff']} />
 
         {/* Studio-style environment lighting (key/fill/rim) */}
         <ambientLight intensity={0.15} />
