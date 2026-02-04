@@ -15,6 +15,7 @@ interface ConfigDropdownProps {
   value: string;
   onChange: (value: string) => void;
   type?: 'color' | 'size';
+  disabled?: boolean;
 }
 
 export default function ConfigDropdown({
@@ -23,6 +24,7 @@ export default function ConfigDropdown({
   value,
   onChange,
   type = 'size',
+  disabled = false,
 }: ConfigDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -45,6 +47,10 @@ export default function ConfigDropdown({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (disabled && isOpen) setIsOpen(false);
+  }, [disabled, isOpen]);
+
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
@@ -57,8 +63,15 @@ export default function ConfigDropdown({
       </label>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-left flex items-center justify-between hover:bg-white/10 transition-all group"
+        onClick={() => {
+          if (disabled) return;
+          setIsOpen(!isOpen);
+        }}
+        disabled={disabled}
+        aria-disabled={disabled}
+        className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-left flex items-center justify-between transition-all group ${
+          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'
+        }`}
         style={{
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
@@ -93,7 +106,7 @@ export default function ConfigDropdown({
       </button>
 
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && !disabled && (
           <>
             <motion.div
               className="absolute z-50 w-full mt-2 rounded-lg overflow-hidden"

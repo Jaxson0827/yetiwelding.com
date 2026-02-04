@@ -36,6 +36,17 @@ type EmbedSpecDraft = Omit<Partial<EmbedSpec>, 'plate'> & {
 type StudPreset = 'fourSquare' | 'twoInline' | 'custom';
 type StudInputStyle = 'plan' | 'offsets';
 
+const STUD_PRESET_OPTIONS: DropdownOption[] = [
+  { value: 'fourSquare', label: '4-stud square/rectangle' },
+  { value: 'twoInline', label: '2-stud inline' },
+  { value: 'custom', label: 'Custom' },
+];
+
+const STUD_INPUT_STYLE_OPTIONS: DropdownOption[] = [
+  { value: 'plan', label: 'Plan style (margins + gauge)' },
+  { value: 'offsets', label: 'Offsets table (from edges)' },
+];
+
 const MATERIAL_OPTIONS: DropdownOption[] = [
   { value: 'A36', label: 'A36' },
   { value: 'A572', label: 'A572' },
@@ -607,33 +618,26 @@ export default function EmbedSpecForm({
                 <div className="p-4 bg-white/5 rounded-lg border border-white/20 space-y-3">
                   <div className="flex flex-wrap items-end gap-3 justify-between">
                     <div className="min-w-[220px]">
-                      <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Layout</label>
-                      <select
+                      <ConfigDropdown
+                        label="Layout"
+                        options={STUD_PRESET_OPTIONS}
                         value={studPreset}
-                        onChange={(e) => {
-                          const next = e.target.value as StudPreset;
+                        onChange={(value) => {
+                          const next = value as StudPreset;
                           setStudPreset(next);
                           if (next === 'custom') setStudInputStyle('offsets');
                         }}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                      >
-                        <option value="fourSquare">4-stud square/rectangle</option>
-                        <option value="twoInline">2-stud inline</option>
-                        <option value="custom">Custom</option>
-                      </select>
+                      />
                     </div>
 
                     <div className="min-w-[220px]">
-                      <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Input style</label>
-                      <select
+                      <ConfigDropdown
+                        label="Input style"
+                        options={STUD_INPUT_STYLE_OPTIONS}
                         value={studInputStyle}
-                        onChange={(e) => setStudInputStyle(e.target.value as StudInputStyle)}
+                        onChange={(value) => setStudInputStyle(value as StudInputStyle)}
                         disabled={studPreset === 'custom'}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] disabled:opacity-50"
-                      >
-                        <option value="plan">Plan style (margins + gauge)</option>
-                        <option value="offsets">Offsets table (from edges)</option>
-                      </select>
+                      />
                     </div>
 
                     <button
