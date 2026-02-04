@@ -38,7 +38,7 @@ export default function SteelEmbedsPage() {
       <section className="w-full py-20 px-4 bg-white/5">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-white text-3xl font-bold mb-10 text-center">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { title: '1) Plate', body: 'Enter plate length, width, thickness, and material.' },
               { title: '2) Studs', body: 'Choose a stud layout and set edge dimensions like your drawings.' },
