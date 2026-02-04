@@ -79,22 +79,6 @@ export default function SteelEmbedsPage() {
         </div>
       </section>
 
-      {/* Lead Time */}
-      <section className="w-full py-20 px-4 bg-white/5">
-        <div className="container mx-auto max-w-5xl">
-          <h2 className="text-white text-3xl font-bold mb-8 text-center">Lead Time</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-2">Standard vs Rush</h3>
-              <p className="text-white/80">
-                Rush increases price and may be limited by current production schedule. If we can’t meet the requested
-                timeline, we’ll reach out before fabrication.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ */}
       <section className="w-full py-20 px-4">
         <div className="container mx-auto max-w-5xl">
