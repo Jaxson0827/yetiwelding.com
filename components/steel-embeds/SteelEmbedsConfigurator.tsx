@@ -10,8 +10,6 @@ import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 
 export default function SteelEmbedsConfigurator() {
   const [spec, setSpec] = useState<Partial<EmbedSpec>>({});
-  const [configuredEmbeds, setConfiguredEmbeds] = useState<EmbedSpec[]>([]);
-  const [currentEmbedIndex, setCurrentEmbedIndex] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const { addItem } = useCart();
 
@@ -19,58 +17,22 @@ export default function SteelEmbedsConfigurator() {
     setSpec(newSpec);
   }, []);
 
-  const handleAddEmbed = useCallback((completeSpec: EmbedSpec) => {
-    if (currentEmbedIndex !== null) {
-      // Update existing embed
-      const updated = [...configuredEmbeds];
-      updated[currentEmbedIndex] = completeSpec;
-      setConfiguredEmbeds(updated);
-      setCurrentEmbedIndex(null);
-      setSpec({});
-    } else {
-      // Add new embed
-      setConfiguredEmbeds(prev => [...prev, completeSpec]);
-      setSpec({});
-    }
-  }, [currentEmbedIndex, configuredEmbeds]);
+  const handleAddToCart = useCallback((embedSpec: EmbedSpec) => {
+    const priceBreakdown = priceEmbed(embedSpec);
+    const unitPrice = priceBreakdown.unitPrice;
+    const totalPrice = unitPrice * embedSpec.quantity;
 
-  const handleEditEmbed = useCallback((index: number) => {
-    setCurrentEmbedIndex(index);
-    setSpec(configuredEmbeds[index]);
-  }, [configuredEmbeds]);
+    const cartItem = {
+      id: `steel-embed-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+      productType: 'steel-plate-embeds' as const,
+      configuration: embedSpec,
+      price: totalPrice,
+    };
 
-  const handleRemoveEmbed = useCallback((index: number) => {
-    setConfiguredEmbeds(prev => prev.filter((_, i) => i !== index));
-    if (currentEmbedIndex === index) {
-      setCurrentEmbedIndex(null);
-      setSpec({});
-    } else if (currentEmbedIndex !== null && currentEmbedIndex > index) {
-      setCurrentEmbedIndex(currentEmbedIndex - 1);
-    }
-  }, [currentEmbedIndex]);
-
-  const handleAddAllToCart = useCallback(() => {
-    configuredEmbeds.forEach(embedSpec => {
-      const priceBreakdown = priceEmbed(embedSpec);
-      const unitPrice = priceBreakdown.unitPrice;
-      const totalPrice = unitPrice * embedSpec.quantity;
-
-      const cartItem = {
-        id: `steel-embed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        productType: 'steel-plate-embeds' as const,
-        configuration: embedSpec,
-        price: totalPrice,
-      };
-
-      addItem(cartItem);
-    });
-
+    addItem(cartItem);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
-    setConfiguredEmbeds([]);
-    setCurrentEmbedIndex(null);
-    setSpec({});
-  }, [configuredEmbeds, addItem]);
+  }, [addItem]);
 
   return (
     <div className="w-full">
@@ -95,13 +57,8 @@ export default function SteelEmbedsConfigurator() {
             <div className="mb-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold text-white uppercase tracking-tight">
-                  {currentEmbedIndex !== null ? `Edit Embed Plate ${currentEmbedIndex + 1}` : 'Design Your Embed Plate'}
+                  Design Your Embed Plate
                 </h2>
-                {configuredEmbeds.length > 0 && (
-                  <span className="text-white/60 text-sm">
-                    {configuredEmbeds.length} embed{configuredEmbeds.length !== 1 ? 's' : ''} configured
-                  </span>
-                )}
               </div>
               <p className="text-white/70 text-sm mt-2">
                 Create a custom steel embed plate in minutes—no drawings required.
@@ -110,77 +67,8 @@ export default function SteelEmbedsConfigurator() {
 
             <EmbedSpecForm
               onSpecChange={handleSpecChange}
-              onAddToCart={handleAddEmbed}
-              currentEmbedIndex={currentEmbedIndex}
-              initialSpec={spec}
-              resetKey={`${currentEmbedIndex ?? 'new'}:${configuredEmbeds.length}`}
+              onAddToCart={handleAddToCart}
             />
-
-            {/* Configured Embeds List */}
-            {configuredEmbeds.length > 0 && (
-              <div className="mt-8 pt-8 border-t border-white/10">
-                <h3 className="text-xl font-bold text-white mb-4">Configured Embeds</h3>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {configuredEmbeds.map((embed, index) => {
-                    const priceBreakdown = priceEmbed(embed);
-                    const totalPrice = priceBreakdown.unitPrice * embed.quantity;
-                    
-                    return (
-                      <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h4 className="text-white font-semibold mb-1">
-                              Embed {index + 1}: {embed.plate.length}" × {embed.plate.width}" × {embed.plate.thickness}"
-                            </h4>
-                            <p className="text-white/60 text-sm">
-                              {embed.plate.material} • {embed.studs?.positions?.length || 0} studs • Qty: {embed.quantity}
-                            </p>
-                            <p className="text-white/80 text-sm font-semibold mt-1">
-                              ${totalPrice.toFixed(2)} total
-                            </p>
-                          </div>
-                          <div className="flex gap-2 ml-4">
-                            <button
-                              type="button"
-                              onClick={() => handleEditEmbed(index)}
-                              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-sm rounded transition-colors"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveEmbed(index)}
-                              className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm rounded transition-colors"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-white/10">
-                  <div>
-                    <p className="text-white/60 text-sm">Total Embeds: {configuredEmbeds.length}</p>
-                    <p className="text-white font-semibold text-lg mt-1">
-                      Total: ${configuredEmbeds.reduce((sum, embed) => {
-                        const priceBreakdown = priceEmbed(embed);
-                        return sum + (priceBreakdown.unitPrice * embed.quantity);
-                      }, 0).toFixed(2)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddAllToCart}
-                    className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold hover:bg-[#B01030] transition-colors"
-                  >
-                    Add All to Cart
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

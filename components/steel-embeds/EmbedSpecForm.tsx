@@ -23,9 +23,6 @@ import {
 interface EmbedSpecFormProps {
   onSpecChange: (spec: Partial<EmbedSpec>) => void;
   onAddToCart: (spec: EmbedSpec) => void;
-  currentEmbedIndex?: number | null;
-  initialSpec?: Partial<EmbedSpec>;
-  resetKey?: string;
 }
 
 type FormStep = 1 | 2 | 3 | 4;
@@ -83,9 +80,6 @@ const DEFAULT_SPEC: Partial<EmbedSpec> = {
 export default function EmbedSpecForm({
   onSpecChange,
   onAddToCart,
-  currentEmbedIndex,
-  initialSpec,
-  resetKey,
 }: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -115,14 +109,6 @@ export default function EmbedSpecForm({
   const [studLayoutError, setStudLayoutError] = useState<string | null>(null);
 
   const [spec, setSpec] = useState<Partial<EmbedSpec>>(DEFAULT_SPEC);
-
-  // Sync form when initialSpec / resetKey changes (e.g. switching embed or new embed)
-  useEffect(() => {
-    if (resetKey !== undefined && initialSpec !== undefined) {
-      // Lead time removed from UI: force standard regardless of prior value.
-      setSpec({ ...DEFAULT_SPEC, ...initialSpec, leadTime: 'standard' });
-    }
-  }, [resetKey]);
 
   // Update parent when spec changes
   useEffect(() => {
@@ -236,6 +222,36 @@ export default function EmbedSpecForm({
     const specForValidation = spec as Partial<EmbedSpec>;
     if (isEmbedSpecComplete(specForValidation) && validateEmbedSpec(specForValidation).length === 0) {
       onAddToCart(specForValidation as EmbedSpec);
+
+      // Reset UI back to a clean Step 1 state for the next embed.
+      setCurrentStep(1);
+      setValidationErrors({});
+      setDefaultStud(DEFAULT_STUD);
+      setExpandedStudIndex(null);
+      setSelectedStudIndexInternal(null);
+      setStudPreset('fourSquare');
+      setStudInputStyle('plan');
+      setOffsetRows([]);
+      setStudLayoutError(null);
+
+      // Reset plan-style layout defaults
+      setFourEqX(true);
+      setFourLeft(2);
+      setFourRight(2);
+      setFourEqY(true);
+      setFourBottom(2);
+      setFourTop(2);
+
+      setTwoOrientation('horizontal');
+      setTwoEqAxis(true);
+      setTwoStart(2);
+      setTwoEnd(2);
+      setTwoCrossMode('centered');
+      setTwoCrossSide('bottom');
+      setTwoCrossOffset(2);
+
+      // Reset the spec last so effects propagate the clean state to the preview.
+      setSpec(DEFAULT_SPEC);
     }
   };
 
