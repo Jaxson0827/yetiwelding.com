@@ -85,6 +85,49 @@ const socialLinks = [
   },
 ];
 
+export function ContactSocial() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+
+  return (
+    <section ref={sectionRef} className="w-full pt-8 pb-8 px-4">
+      <div className="container mx-auto">
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <h3 className="text-2xl font-bold mb-6 uppercase tracking-tight text-white">
+            Follow Us
+          </h3>
+          <div className="flex justify-center gap-4">
+            {socialLinks.map((social) => (
+              <motion.a
+                key={social.name}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`
+                  w-12 h-12 rounded-full flex items-center justify-center
+                  bg-gradient-to-br ${social.color}
+                  text-white hover:scale-110 transition-transform duration-300
+                  shadow-lg
+                `}
+                whileHover={{ scale: 1.1, rotate: -5 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label={`Visit our ${social.name} page`}
+              >
+                {social.icon}
+              </motion.a>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 export default function ContactMethods() {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
@@ -113,11 +156,11 @@ export default function ContactMethods() {
   };
 
   return (
-    <section ref={sectionRef} className="w-full pt-8 pb-20 px-4">
+    <section ref={sectionRef} className="w-full pt-6 pb-20 px-4">
       <div className="container mx-auto">
         {/* Contact Method Cards */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
@@ -202,39 +245,6 @@ export default function ContactMethods() {
               </div>
             </motion.a>
           ))}
-        </motion.div>
-
-        {/* Social Media Links */}
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <h3 className="text-2xl font-bold mb-6 uppercase tracking-tight text-white">
-            Follow Us
-          </h3>
-          <div className="flex justify-center gap-4">
-            {socialLinks.map((social) => (
-              <motion.a
-                key={social.name}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`
-                  w-12 h-12 rounded-full flex items-center justify-center
-                  bg-gradient-to-br ${social.color}
-                  text-white hover:scale-110 transition-transform duration-300
-                  shadow-lg
-                `}
-                whileHover={{ scale: 1.1, rotate: -5 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label={`Visit our ${social.name} page`}
-              >
-                {social.icon}
-              </motion.a>
-            ))}
-          </div>
         </motion.div>
       </div>
     </section>

@@ -99,43 +99,6 @@ export default function ContactCTA() {
           animate={isInView ? 'visible' : 'hidden'}
           className="text-center"
         >
-          {/* Response Time Promise */}
-          <motion.div
-            variants={itemVariants}
-            className="mb-8"
-          >
-            <div
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-full mb-6"
-              style={{
-                background: 'rgba(220, 20, 60, 0.1)',
-                border: '1px solid rgba(220, 20, 60, 0.3)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <svg
-                className="w-6 h-6 text-accent-red"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div className="text-left">
-                <p className="text-white/90 font-semibold text-sm uppercase tracking-wider">
-                  Response Time Promise
-                </p>
-                <p className="text-white/70 text-xs">
-                  We respond within 24 hours
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
           {/* Business Hours Status */}
           <motion.div
             variants={itemVariants}

@@ -13,17 +13,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     const updateScrollProgress = () => {
       const scrollPx = document.documentElement.scrollTop;
-      const winHeightPx =
-        document.documentElement.scrollHeight -
-        document.documentElement.clientHeight;
-      const scrolled = (scrollPx / winHeightPx) * 100;
-      setScrollProgress(scrolled);
       setShowBackToTop(scrollPx > 300);
     };
 
@@ -119,13 +113,6 @@ export default function ServicesPage() {
       <a href="#main-content" className="skip-to-content">
         Skip to main content
       </a>
-
-      {/* Scroll Progress Indicator */}
-      <div
-        className="scroll-progress"
-        style={{ width: `${scrollProgress}%` }}
-        aria-hidden="true"
-      />
 
       <main id="main-content" className="min-h-screen bg-black">
         <Header />

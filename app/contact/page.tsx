@@ -3,7 +3,7 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ContactHero from '@/components/contact/ContactHero';
-import ContactMethods from '@/components/contact/ContactMethods';
+import ContactMethods, { ContactSocial } from '@/components/contact/ContactMethods';
 import ContactForm from '@/components/contact/ContactForm';
 import FAQSection from '@/components/contact/FAQSection';
 import TeamSection from '@/components/contact/TeamSection';
@@ -13,17 +13,11 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ContactPage() {
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     const updateScrollProgress = () => {
       const scrollPx = document.documentElement.scrollTop;
-      const winHeightPx =
-        document.documentElement.scrollHeight -
-        document.documentElement.clientHeight;
-      const scrolled = (scrollPx / winHeightPx) * 100;
-      setScrollProgress(scrolled);
       setShowBackToTop(scrollPx > 300);
     };
 
@@ -49,13 +43,6 @@ export default function ContactPage() {
       <a href="#main-content" className="skip-to-content">
         Skip to main content
       </a>
-
-      {/* Scroll Progress Indicator */}
-      <div
-        className="scroll-progress"
-        style={{ width: `${scrollProgress}%` }}
-        aria-hidden="true"
-      />
 
       <main id="main-content" className="min-h-screen bg-black">
         <Header />
@@ -101,17 +88,19 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* Contact Methods Section */}
-        <ContactMethods />
-
         {/* Team Section */}
         <TeamSection />
+
+        <ContactSocial />
 
         {/* FAQ Section */}
         <FAQSection />
 
         {/* Map Section */}
         <MapSection />
+
+        {/* Contact Methods Section */}
+        <ContactMethods />
 
         {/* CTA Section */}
         <ContactCTA />

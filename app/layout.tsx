@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import CartProviderWrapper from "@/components/CartProviderWrapper";
+import ScrollProgressBar from "@/components/ScrollProgressBar";
 
 export const metadata: Metadata = {
   title: "Yeti Welding | Professional Welding Services | Custom Fabrication | Utah",
@@ -58,6 +59,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
+        <ScrollProgressBar />
         <CartProviderWrapper>{children}</CartProviderWrapper>
       </body>
     </html>

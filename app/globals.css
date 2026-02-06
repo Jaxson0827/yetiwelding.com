@@ -339,6 +339,27 @@ span[style*="position: relative"] {
   top: 0;
 }
 
+/* Scroll progress indicator */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-red) 0%, var(--accent-red-light) 100%);
+  box-shadow: 0 0 10px rgba(220, 20, 60, 0.35);
+  opacity: 0.75;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .scroll-progress {
+    height: 4px;
+    opacity: 0.95;
+    box-shadow: 0 0 14px rgba(220, 20, 60, 0.6);
+  }
+}
+
 /* 3D Transform Utilities */
 .transform-3d {
   transform-style: preserve-3d;

@@ -6,7 +6,8 @@ import dynamic from 'next/dynamic';
 const PreviewCanvas = dynamic(() => import('./PreviewCanvas'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-black/10 bg-white flex items-center justify-center">
+    <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-white/10 bg-gradient-to-br from-black via-[#280a0a] to-[#3c0f0f] flex items-center justify-center">
+      <div className="absolute inset-0 opacity-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
       <div className="w-[70%] max-w-md h-28 rounded-lg border border-white/10 bg-gradient-to-r from-white/5 via-white/10 to-white/5 bg-[length:1000px_100%] animate-[shimmer_2.2s_infinite_linear]" />
     </div>
   ),
@@ -38,10 +39,11 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, viewState,
 
   if (previewStatus === 'loading') {
     return (
-      <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-black/10 bg-white flex items-center justify-center">
+      <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-white/10 bg-gradient-to-br from-black via-[#280a0a] to-[#3c0f0f] flex items-center justify-center">
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
         <div className="text-center space-y-4">
           <div className="w-[70%] max-w-md h-28 rounded-lg border border-white/10 bg-gradient-to-r from-white/5 via-white/10 to-white/5 bg-[length:1000px_100%] animate-[shimmer_2.2s_infinite_linear]" />
-          <p className="text-black/60 text-sm">Preparing 3D preview…</p>
+          <p className="text-white/70 text-sm">Preparing 3D preview…</p>
         </div>
       </div>
     );
@@ -49,14 +51,15 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, viewState,
 
   if (previewStatus === 'unavailable') {
     return (
-      <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-yellow-500/30 bg-white flex items-center justify-center">
+      <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-yellow-500/30 bg-gradient-to-br from-black via-[#280a0a] to-[#3c0f0f] flex items-center justify-center">
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
         <div className="text-center space-y-2 max-w-md px-4">
-          <svg className="w-12 h-12 text-yellow-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 text-yellow-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <p className="text-black font-medium">Preview unavailable</p>
-          <p className="text-black/60 text-sm">We couldn’t generate a preview for this configuration yet.</p>
-          <p className="text-black/40 text-xs mt-2">
+          <p className="text-white font-medium">Preview unavailable</p>
+          <p className="text-white/70 text-sm">We couldn’t generate a preview for this configuration yet.</p>
+          <p className="text-white/50 text-xs mt-2">
             You can still proceed with your order. Preview is for visualization only.
           </p>
         </div>
@@ -97,10 +100,11 @@ export default function EmbedPreview3D({ glbUrl, previewStatus, spec, viewState,
 
   if (previewStatus === 'none' && !hasValidSpec) {
     return (
-      <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-black/10 bg-white flex items-center justify-center">
+      <div className="w-full h-full min-h-[340px] rounded-xl overflow-hidden relative border border-white/10 bg-gradient-to-br from-black via-[#280a0a] to-[#3c0f0f] flex items-center justify-center">
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
         <div className="text-center space-y-2">
-          <p className="text-black font-medium">3D preview</p>
-          <p className="text-black/60 text-sm">Enter plate dimensions to generate a preview.</p>
+          <p className="text-white font-medium">3D preview</p>
+          <p className="text-white/70 text-sm">Enter plate dimensions to generate a preview.</p>
         </div>
       </div>
     );
