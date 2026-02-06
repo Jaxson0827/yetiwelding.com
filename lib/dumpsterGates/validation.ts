@@ -1,4 +1,4 @@
-import { GateStyle, MIN_WIDTH_FT, MAX_WIDTH_FT, MIN_HEIGHT_FT, MAX_HEIGHT_FT, MAX_SINGLE_SWING_WIDTH_FT } from './types';
+import { GateStyle, MIN_WIDTH_FT, MAX_WIDTH_FT, MIN_HEIGHT_FT, MAX_HEIGHT_FT, MAX_BLOCK_HEIGHT_FT, MAX_SINGLE_SWING_WIDTH_FT } from './types';
 
 /**
  * Parse a dimension string into decimal feet
@@ -107,6 +107,26 @@ export function validateHeight(heightFt: number): { valid: boolean; error?: stri
     return { valid: false, error: `Maximum height is ${MAX_HEIGHT_FT}'` };
   }
   
+  return { valid: true };
+}
+
+/**
+ * Validate block height (enclosure height) dimension.
+ * Block heights can be taller than the gate height constraints.
+ */
+export function validateBlockHeight(heightFt: number): { valid: boolean; error?: string } {
+  if (isNaN(heightFt) || heightFt <= 0) {
+    return { valid: false, error: 'Block height must be a positive number' };
+  }
+
+  if (heightFt < MIN_HEIGHT_FT) {
+    return { valid: false, error: `Minimum block height is ${MIN_HEIGHT_FT}'` };
+  }
+
+  if (heightFt > MAX_BLOCK_HEIGHT_FT) {
+    return { valid: false, error: `Maximum block height is ${MAX_BLOCK_HEIGHT_FT}'` };
+  }
+
   return { valid: true };
 }
 

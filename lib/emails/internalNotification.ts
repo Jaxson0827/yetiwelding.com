@@ -59,13 +59,21 @@ export function generateInternalNotificationEmail(
       const sizeDisplay = config.isCustom 
         ? `${config.widthFt}' × ${config.heightFt}'`
         : config.size;
+      const powderCoatColorLabel =
+        config.finish === 'powder-coat-black' && config.powderCoatColor
+          ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)
+          : null;
       return `
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">
             <strong>Dumpster Gate #${index + 1}</strong><br>
             <span style="color: #666; font-size: 14px;">
               Size: ${sizeDisplay} • Style: ${config.style.replace('-', ' ')}<br>
-              Finish: ${config.finish.replace('-', ' ')} • ${config.mounting.replace('-', ' ')}<br>
+              Finish: ${
+                config.finish === 'powder-coat-black'
+                  ? `Powder coat${powderCoatColorLabel ? ` (${powderCoatColorLabel})` : ''}`
+                  : config.finish.replace('-', ' ')
+              } • ${config.mounting.replace('-', ' ')}<br>
               Qty: ${config.quantity}${config.isCustom ? ' <span style="color: #DC143C; font-weight: bold;">(CUSTOM)</span>' : ''}
             </span>
           </td>
@@ -388,7 +396,15 @@ ${items.map((item, index) => {
   } else {
     const config = item.configuration as DumpsterGateConfig;
     const sizeDisplay = config.isCustom ? `${config.widthFt}' × ${config.heightFt}'` : config.size;
-    return `${index + 1}. Dumpster Gate: ${sizeDisplay}${config.isCustom ? ' (CUSTOM)' : ''} • $${item.price.toFixed(2)}`;
+    const powderCoatColorLabel =
+      config.finish === 'powder-coat-black' && config.powderCoatColor
+        ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)
+        : null;
+    const finishDisplay =
+      config.finish === 'powder-coat-black'
+        ? `Powder coat${powderCoatColorLabel ? ` (${powderCoatColorLabel})` : ''}`
+        : config.finish.replace('-', ' ');
+    return `${index + 1}. Dumpster Gate: ${sizeDisplay}${config.isCustom ? ' (CUSTOM)' : ''} • Finish: ${finishDisplay} • $${item.price.toFixed(2)}`;
   }
 }).join('\n')}
 

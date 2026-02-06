@@ -80,6 +80,10 @@ export default function CartItem({ item, onRemove, onQuantityChange, onSaveForLa
       const sizeDisplay = config.isCustom 
         ? `${config.widthFt}' × ${config.heightFt}'`
         : config.size;
+      const powderCoatColorLabel =
+        config.finish === 'powder-coat-black' && config.powderCoatColor
+          ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)
+          : null;
       return (
         <div className="space-y-1">
           <h4 className="text-white font-semibold">
@@ -89,7 +93,11 @@ export default function CartItem({ item, onRemove, onQuantityChange, onSaveForLa
             Size: {sizeDisplay} • Style: {config.style.replace('-', ' ')}
           </p>
           <p className="text-white/70 text-sm">
-            Finish: {config.finish.replace('-', ' ')} • {config.mounting.replace('-', ' ')}
+            Finish:{' '}
+            {config.finish === 'powder-coat-black'
+              ? `Powder coat${powderCoatColorLabel ? ` (${powderCoatColorLabel})` : ''}`
+              : config.finish.replace('-', ' ')}{' '}
+            • {config.mounting.replace('-', ' ')}
           </p>
         </div>
       );

@@ -78,7 +78,7 @@ export function priceGate(config: DumpsterGateConfig): PriceBreakdown {
   const finishAdder = FINISH_ADDERS[config.finish];
   if (finishAdder > 0) {
     const finishLabel = config.finish === 'powder-coat-black' 
-      ? 'Powder coat (black)' 
+      ? 'Powder coat'
       : config.finish === 'prime-painted'
       ? 'Prime painted'
       : config.finish === 'galvanized'

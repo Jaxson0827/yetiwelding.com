@@ -22,8 +22,12 @@ export default function PricingSummary({
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [customSizeAcknowledged, setCustomSizeAcknowledged] = useState(false);
 
+  const powderCoatColorLabel = config.powderCoatColor
+    ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)
+    : undefined;
+
   const finishLabel = config.finish === 'powder-coat-black' 
-    ? 'Powder Coat' 
+    ? `Powder Coat${powderCoatColorLabel ? ` (${powderCoatColorLabel})` : ''}`
     : config.finish === 'prime-painted'
     ? 'Prime Painted'
     : config.finish === 'galvanized'

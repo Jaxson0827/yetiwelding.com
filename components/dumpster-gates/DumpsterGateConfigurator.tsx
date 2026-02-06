@@ -9,6 +9,18 @@ import DimensionGraphic from './DimensionGraphic';
 import ConfigurationPanel from './ConfigurationPanel';
 import PricingSummary from './PricingSummary';
 
+function getMaxBlockHeightFt(cfg: Pick<DumpsterGateConfig, 'leftHeightFt' | 'rightHeightFt'>) {
+  return Math.max(cfg.leftHeightFt, cfg.rightHeightFt);
+}
+
+function getGateHeightFt(
+  cfg: Pick<DumpsterGateConfig, 'leftHeightFt' | 'rightHeightFt' | 'bottomGapIn'>
+): number {
+  const maxBlockHeightFt = getMaxBlockHeightFt(cfg);
+  const gateHeightFt = maxBlockHeightFt - cfg.bottomGapIn / 12;
+  return Math.max(0, gateHeightFt);
+}
+
 export default function DumpsterGateConfigurator() {
   const { addItem } = useCart();
   const [config, setConfig] = useState<DumpsterGateConfig>({
@@ -19,7 +31,7 @@ export default function DumpsterGateConfigurator() {
     quantity: 1,
     isCustom: true,
     widthFt: 14,
-    heightFt: 6,
+    heightFt: getGateHeightFt({ leftHeightFt: 6, rightHeightFt: 6, bottomGapIn: 4 }),
 
     enclosureLengthFt: 14,
     leftHeightFt: 6,
@@ -36,25 +48,45 @@ export default function DumpsterGateConfigurator() {
     () => isSlopeWithinTolerance(config.leftHeightFt, config.rightHeightFt, 3),
     [config.leftHeightFt, config.rightHeightFt]
   );
-  const requiresQuote = useMemo(() => !slopeWithinTolerance, [slopeWithinTolerance]);
+  const powderCoatRequiresQuote = useMemo(() => {
+    if (config.finish !== 'powder-coat-black') return false;
+    return (config.powderCoatColor || 'black') !== 'black';
+  }, [config.finish, config.powderCoatColor]);
+
+  const requiresQuote = useMemo(
+    () => powderCoatRequiresQuote || !slopeWithinTolerance,
+    [powderCoatRequiresQuote, slopeWithinTolerance]
+  );
+
+  const quoteReason = useMemo(() => {
+    const parts: string[] = [];
+    if (powderCoatRequiresQuote) {
+      parts.push('Powder coat color selection requires a quote.');
+    }
+    if (!slopeWithinTolerance) {
+      parts.push(`Slope exceeds 3" tolerance (${Math.round(slopeDiffIn)}").`);
+    }
+    return parts.join(' ');
+  }, [powderCoatRequiresQuote, slopeDiffIn, slopeWithinTolerance]);
 
   const printValues = useMemo(() => {
-    const minHeightFt = Math.min(config.leftHeightFt, config.rightHeightFt);
+    const maxBlockHeightFt = getMaxBlockHeightFt(config);
+    const gateHeightFt = getGateHeightFt(config);
+    const enclCTOCFt = Math.max(0, config.enclosureLengthFt - config.blockWidthIn / 12);
 
     return {
       enclOverall: formatDimension(config.enclosureLengthFt),
-      // TODO: Replace with correct math once provided.
-      enclCTOC: formatDimension(config.enclosureLengthFt),
-      lGap: '',
-      cGap: '',
-      rGap: '',
-      gateHeight: formatDimension(minHeightFt),
+      enclCTOC: formatDimension(enclCTOCFt),
+      lGap: '2"',
+      cGap: '2"',
+      rGap: '2"',
+      gateHeight: formatDimension(gateHeightFt),
       // TODO: Replace with correct gate math once provided.
       gateWidth: formatDimension(config.enclosureLengthFt / 2),
       blockWidth: `${Math.round(config.blockWidthIn * 100) / 100}"`,
-      blockHeight: '',
+      blockHeight: formatDimension(maxBlockHeightFt),
       bottomGap: `${config.bottomGapIn}"`,
-      postDepth: '',
+      postDepth: `3'`,
     };
   }, [
     config.enclosureLengthFt,
@@ -81,7 +113,7 @@ export default function DumpsterGateConfigurator() {
 
       // Keep legacy pricing fields aligned with enclosure inputs.
       next.widthFt = next.enclosureLengthFt;
-      next.heightFt = Math.min(next.leftHeightFt, next.rightHeightFt);
+      next.heightFt = getGateHeightFt(next);
 
       return next;
     });
@@ -136,7 +168,7 @@ export default function DumpsterGateConfigurator() {
             priceBreakdown={priceBreakdown}
             onAddToCart={handleAddToCart}
             requiresQuote={requiresQuote}
-            quoteReason={`Slope exceeds 3" tolerance (${Math.round(slopeDiffIn)}").`}
+            quoteReason={quoteReason}
           />
         </div>
       </div>

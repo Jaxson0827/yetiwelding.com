@@ -3,12 +3,17 @@ export type GateStyle = 'double-swing' | 'single-swing-left' | 'single-swing-rig
 export type Finish = 'raw-steel' | 'prime-painted' | 'powder-coat-black' | 'galvanized';
 export type MountingOption = 'with-posts' | 'gate-only';
 
+export type PowderCoatColor = 'black' | 'white' | 'gray' | 'red' | 'blue' | 'green' | 'bronze';
+
 // Validation constants
 export const MIN_WIDTH_FT = 8;
 export const MAX_WIDTH_FT = 20;
 export const MIN_HEIGHT_FT = 5;
 export const MAX_HEIGHT_FT = 8;
 export const MAX_SINGLE_SWING_WIDTH_FT = 14;
+
+// Block height (enclosure) limits
+export const MAX_BLOCK_HEIGHT_FT = 16;
 
 // Structured dimension map to prevent string parsing and math bugs
 export const GATE_DIMENSIONS = {
@@ -23,6 +28,7 @@ export interface DumpsterGateConfig {
   size: GateSize;
   style: GateStyle;
   finish: Finish;
+  powderCoatColor?: PowderCoatColor;
   mounting: MountingOption;
   quantity: number;
   isCustom: boolean;
@@ -47,11 +53,12 @@ export interface DimensionDisplay {
 
 // Helper to generate deterministic cart key
 export function getCartKey(config: DumpsterGateConfig): string {
+  const powderCoatKey = config.powderCoatColor || 'none';
   if (config.isCustom) {
     // Include dimensions in key for custom sizes
-    return `dumpster-gate-custom-${config.widthFt.toFixed(2)}-${config.heightFt.toFixed(2)}-${config.enclosureLengthFt.toFixed(2)}-${config.leftHeightFt.toFixed(2)}-${config.rightHeightFt.toFixed(2)}-${config.blockWidthIn.toFixed(2)}-${config.bottomGapIn}-${config.style}-${config.finish}-${config.mounting}`;
+    return `dumpster-gate-custom-${config.widthFt.toFixed(2)}-${config.heightFt.toFixed(2)}-${config.enclosureLengthFt.toFixed(2)}-${config.leftHeightFt.toFixed(2)}-${config.rightHeightFt.toFixed(2)}-${config.blockWidthIn.toFixed(2)}-${config.bottomGapIn}-${config.style}-${config.finish}-${powderCoatKey}-${config.mounting}`;
   }
-  return `dumpster-gate-${config.size}-${config.style}-${config.finish}-${config.mounting}`;
+  return `dumpster-gate-${config.size}-${config.style}-${config.finish}-${powderCoatKey}-${config.mounting}`;
 }
 
 export interface PriceBreakdown {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
@@ -8,12 +8,13 @@ import Link from 'next/link';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isOrderDropdownOpen, setIsOrderDropdownOpen] = useState(false);
+  const [isMobileOrderDropdownOpen, setIsMobileOrderDropdownOpen] = useState(false);
+  const [isDesktopOrderDropdownOpen, setIsDesktopOrderDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [hoveredNavItem, setHoveredNavItem] = useState<string | null>(null);
   const pathname = usePathname();
   const { getItemCount } = useCart();
   const itemCount = getItemCount();
+  const desktopOrderDropdownRef = useRef<HTMLDivElement>(null);
 
   // Increment this version number when you update the logo to force cache refresh
   const LOGO_VERSION = '4';
@@ -42,6 +43,37 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close desktop dropdown on route change.
+  useEffect(() => {
+    setIsDesktopOrderDropdownOpen(false);
+  }, [pathname]);
+
+  // Close desktop dropdown on outside click / Escape.
+  useEffect(() => {
+    if (!isDesktopOrderDropdownOpen) return;
+
+    function handleMouseDown(e: MouseEvent) {
+      const el = desktopOrderDropdownRef.current;
+      if (!el) return;
+      if (!el.contains(e.target as Node)) {
+        setIsDesktopOrderDropdownOpen(false);
+      }
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setIsDesktopOrderDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDesktopOrderDropdownOpen]);
 
   return (
     <motion.header
@@ -109,59 +141,30 @@ export default function Header() {
           {navItems.map((item) => (
             <div 
               key={item.label} 
-              className="relative group"
-              onMouseEnter={(e) => {
-                // Clear any pending timeout
-                const timeoutId = (e.currentTarget as any)._hoverTimeout;
-                if (timeoutId) {
-                  clearTimeout(timeoutId);
-                  delete (e.currentTarget as any)._hoverTimeout;
-                }
-                if (item.dropdownItems) {
-                  setHoveredNavItem(item.label);
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (item.dropdownItems) {
-                  // Use a small delay to allow mouse to move to dropdown/bridge
-                  // This prevents clearing when moving between child elements
-                  const timeoutId = setTimeout(() => {
-                    setHoveredNavItem(null);
-                  }, 100);
-                  // Store timeout to clear if mouse re-enters
-                  (e.currentTarget as any)._hoverTimeout = timeoutId;
-                }
-              }}
+              className="relative"
+              ref={item.dropdownItems ? desktopOrderDropdownRef : undefined}
             >
-              <a
-                href={item.href}
-                className={`text-white/95 uppercase text-sm xl:text-base font-semibold tracking-wider transition-all relative py-2 group/link flex items-center gap-1.5 ${
-                  pathname === item.href ? 'text-white' : 'hover:text-white'
-                }`}
-                style={{
-                  textShadow: pathname === item.href ? '0 0 10px rgba(220, 20, 60, 0.5)' : 'none',
-                }}
-                onMouseEnter={() => {
-                  if (item.dropdownItems) {
-                    setHoveredNavItem(item.label);
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  // Don't clear state here - let parent group handle it
-                  // This prevents clearing when moving to dropdown/bridge
-                }}
-              >
-                {item.label}
-                {/* Dropdown indicator chevron */}
-                {item.dropdownItems && (
+              {item.dropdownItems ? (
+                <button
+                  type="button"
+                  className={`text-white/95 uppercase text-sm xl:text-base font-semibold tracking-wider transition-all relative py-2 group/link flex items-center gap-1.5 ${
+                    isDesktopOrderDropdownOpen ? 'text-white' : 'hover:text-white'
+                  }`}
+                  style={{
+                    textShadow: isDesktopOrderDropdownOpen ? '0 0 10px rgba(220, 20, 60, 0.5)' : 'none',
+                  }}
+                  aria-haspopup="menu"
+                  aria-expanded={isDesktopOrderDropdownOpen}
+                  onClick={() => setIsDesktopOrderDropdownOpen((v) => !v)}
+                >
+                  {item.label}
                   <motion.svg
                     className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    animate={{ rotate: 0 }}
-                    whileHover={{ rotate: 180 }}
-                    transition={{ duration: 0.3 }}
+                    animate={{ rotate: isDesktopOrderDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <path
                       strokeLinecap="round"
@@ -170,7 +173,20 @@ export default function Header() {
                       d="M19 9l-7 7-7-7"
                     />
                   </motion.svg>
-                )}
+                </button>
+              ) : (
+                <a
+                  href={item.href}
+                  className={`text-white/95 uppercase text-sm xl:text-base font-semibold tracking-wider transition-all relative py-2 group/link flex items-center gap-1.5 ${
+                    pathname === item.href ? 'text-white' : 'hover:text-white'
+                  }`}
+                  style={{
+                    textShadow: pathname === item.href ? '0 0 10px rgba(220, 20, 60, 0.5)' : 'none',
+                  }}
+                >
+                  {item.label}
+                </a>
+              )}
                 {/* Animated Underline with Glow */}
                 <motion.div
                   className="absolute bottom-0 left-0 h-0.5"
@@ -194,85 +210,75 @@ export default function Header() {
                     }}
                   />
                 )}
-              </a>
-              {/* Dropdown Menu */}
+              {/* Dropdown Menu (desktop click-to-open) */}
               {item.dropdownItems && (
-                <>
-                  {/* Invisible hover bridge to fill the gap */}
-                  <div 
-                    className="absolute top-full left-0 w-full h-2 z-40"
-                    onMouseEnter={() => {
-                      setHoveredNavItem(item.label);
-                    }}
-                  />
-                  <div 
-                    className={`absolute top-full left-0 transition-all duration-300 z-50 ${
-                      hoveredNavItem === item.label ? 'opacity-100 visible' : 'opacity-0'
-                    }`}
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                    onMouseEnter={() => {
-                      setHoveredNavItem(item.label);
-                    }}
-                    onMouseLeave={() => {
-                      // Don't clear immediately - let parent group handle with delay
-                    }}
-                  >
-                  <motion.div
-                    className="min-w-[220px] rounded-lg overflow-hidden mt-2"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.98) 0%, rgba(40, 10, 10, 0.98) 50%, rgba(60, 15, 15, 0.98) 100%)',
-                      backdropFilter: 'blur(20px) saturate(180%)',
-                      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                      border: '1px solid rgba(220, 20, 60, 0.3)',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 60px rgba(220, 20, 60, 0.15)',
-                    }}
-                    initial={{ y: -10, opacity: 0 }}
-                    whileHover={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {/* Pattern Overlay */}
-                    <div
-                      className="absolute inset-0 opacity-5 pointer-events-none"
-                      style={{
-                        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(220, 20, 60, 0.8) 1px, transparent 0)',
-                        backgroundSize: '40px 40px',
-                      }}
-                    />
-                    <div className="relative z-10 py-2">
-                      {item.dropdownItems.map((dropdownItem, index) => {
-                        const isActive = pathname === dropdownItem.href;
-                        return (
-                          <a
-                            key={dropdownItem.href}
-                            href={dropdownItem.href}
-                            className={`block px-6 py-3 text-white/95 uppercase text-sm font-semibold tracking-wider transition-all relative group/item ${
-                              isActive ? 'text-white' : 'hover:text-white hover:bg-white/5'
-                            }`}
-                            style={{
-                              textShadow: isActive ? '0 0 10px rgba(220, 20, 60, 0.5)' : 'none',
-                            }}
-                          >
-                            {dropdownItem.label}
-                            {/* Hover Glow Effect */}
-                            <motion.div
-                              className="absolute left-0 top-0 bottom-0 opacity-0 group-hover/item:opacity-100"
-                              style={{
-                                background: 'linear-gradient(to bottom, transparent 0%, rgba(220, 20, 60, 0.8) 50%, transparent 100%)',
-                                boxShadow: '0 0 8px rgba(220, 20, 60, 0.6)',
-                              }}
-                              initial={{ width: 0 }}
-                              whileHover={{ width: '4px' }}
-                              transition={{ duration: 0.3 }}
-                            />
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                </div>
-                </>
+                <AnimatePresence>
+                  {isDesktopOrderDropdownOpen && (
+                    <motion.div
+                      className="absolute top-full left-0 z-50"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div
+                        className="min-w-[220px] rounded-lg overflow-hidden mt-2"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, rgba(0, 0, 0, 0.98) 0%, rgba(40, 10, 10, 0.98) 50%, rgba(60, 15, 15, 0.98) 100%)',
+                          backdropFilter: 'blur(20px) saturate(180%)',
+                          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                          border: '1px solid rgba(220, 20, 60, 0.3)',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 60px rgba(220, 20, 60, 0.15)',
+                        }}
+                        role="menu"
+                      >
+                        {/* Pattern Overlay */}
+                        <div
+                          className="absolute inset-0 opacity-5 pointer-events-none"
+                          style={{
+                            backgroundImage:
+                              'radial-gradient(circle at 2px 2px, rgba(220, 20, 60, 0.8) 1px, transparent 0)',
+                            backgroundSize: '40px 40px',
+                          }}
+                        />
+                        <div className="relative z-10 py-2">
+                          {item.dropdownItems.map((dropdownItem) => {
+                            const isActive = pathname === dropdownItem.href;
+                            return (
+                              <a
+                                key={dropdownItem.href}
+                                href={dropdownItem.href}
+                                role="menuitem"
+                                className={`block px-6 py-3 text-white/95 uppercase text-sm font-semibold tracking-wider transition-all relative group/item ${
+                                  isActive ? 'text-white' : 'hover:text-white hover:bg-white/5'
+                                }`}
+                                style={{
+                                  textShadow: isActive ? '0 0 10px rgba(220, 20, 60, 0.5)' : 'none',
+                                }}
+                                onClick={() => setIsDesktopOrderDropdownOpen(false)}
+                              >
+                                {dropdownItem.label}
+                                {/* Hover Glow Effect */}
+                                <motion.div
+                                  className="absolute left-0 top-0 bottom-0 opacity-0 group-hover/item:opacity-100"
+                                  style={{
+                                    background:
+                                      'linear-gradient(to bottom, transparent 0%, rgba(220, 20, 60, 0.8) 50%, transparent 100%)',
+                                    boxShadow: '0 0 8px rgba(220, 20, 60, 0.6)',
+                                  }}
+                                  initial={{ width: 0 }}
+                                  whileHover={{ width: '4px' }}
+                                  transition={{ duration: 0.3 }}
+                                />
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               )}
             </div>
           ))}
@@ -319,7 +325,7 @@ export default function Header() {
           onClick={() => {
             setIsMenuOpen(!isMenuOpen);
             if (isMenuOpen) {
-              setIsOrderDropdownOpen(false);
+              setIsMobileOrderDropdownOpen(false);
             }
           }}
           aria-label="Toggle menu"
@@ -363,7 +369,7 @@ export default function Header() {
               exit={{ opacity: 0 }}
               onClick={() => {
                 setIsMenuOpen(false);
-                setIsOrderDropdownOpen(false);
+                setIsMobileOrderDropdownOpen(false);
               }}
             />
             <motion.nav
@@ -386,7 +392,7 @@ export default function Header() {
                       <>
                         <motion.button
                           className="w-full text-left text-white uppercase text-base font-semibold hover:text-red-200 transition-all py-2 flex items-center justify-between"
-                          onClick={() => setIsOrderDropdownOpen(!isOrderDropdownOpen)}
+                          onClick={() => setIsMobileOrderDropdownOpen(!isMobileOrderDropdownOpen)}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.1 }}
@@ -397,7 +403,7 @@ export default function Header() {
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
-                            animate={{ rotate: isOrderDropdownOpen ? 180 : 0 }}
+                            animate={{ rotate: isMobileOrderDropdownOpen ? 180 : 0 }}
                             transition={{ duration: 0.3 }}
                           >
                             <path
@@ -409,7 +415,7 @@ export default function Header() {
                           </motion.svg>
                         </motion.button>
                         <AnimatePresence>
-                          {isOrderDropdownOpen && (
+                          {isMobileOrderDropdownOpen && (
                             <motion.div
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
@@ -429,7 +435,7 @@ export default function Header() {
                                       }`}
                                       onClick={() => {
                                         setIsMenuOpen(false);
-                                        setIsOrderDropdownOpen(false);
+                                        setIsMobileOrderDropdownOpen(false);
                                       }}
                                       initial={{ opacity: 0, x: -20 }}
                                       animate={{ opacity: 1, x: 0 }}
