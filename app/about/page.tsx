@@ -3,7 +3,6 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AboutHero from '@/components/about/AboutHero';
-import ValuesSection from '@/components/about/ValuesSection';
 import MissionVisionSection from '@/components/about/MissionVisionSection';
 import HistorySection from '@/components/about/HistorySection';
 import PhilosophySection from '@/components/about/PhilosophySection';
@@ -113,8 +112,6 @@ export default function AboutPage() {
       <main id="main-content" className="min-h-screen bg-black">
         <Header />
         <AboutHero />
-        <SectionDivider />
-        <ValuesSection />
         <SectionDivider />
         <MissionVisionSection />
         <SectionDivider />

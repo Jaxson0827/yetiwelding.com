@@ -37,7 +37,7 @@ export default function OrderDetails({
             {config.studs?.positions?.length || 0} studs • Qty: {config.quantity}
           </p>
           <p className="text-white/70 text-sm">
-            Finish: {config.finish} • {config.leadTime === 'rush' ? 'Rush' : 'Standard'}
+            Lead time: {config.leadTime === 'rush' ? 'Rush' : 'Standard'}
           </p>
         </div>
       );

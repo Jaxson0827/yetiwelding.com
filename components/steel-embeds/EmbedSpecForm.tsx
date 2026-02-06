@@ -25,7 +25,7 @@ interface EmbedSpecFormProps {
   onAddToCart: (spec: EmbedSpec) => void;
 }
 
-type FormStep = 1 | 2 | 3 | 4;
+type FormStep = 1 | 2 | 3;
 type EmbedSpecDraft = Omit<Partial<EmbedSpec>, 'plate'> & {
   plate?: Partial<EmbedSpec['plate']>;
 };
@@ -51,12 +51,6 @@ const MATERIAL_OPTIONS: DropdownOption[] = [
   { value: 'A992', label: 'A992' },
 ];
 
-const FINISH_OPTIONS: DropdownOption[] = [
-  { value: 'none', label: 'None' },
-  { value: 'primer', label: 'Primer' },
-  { value: 'galv', label: 'Galvanized' },
-];
-
 const STUD_GRADE_OPTIONS: DropdownOption[] = [
   { value: 'A307', label: 'A307' },
   { value: 'A325', label: 'A325' },
@@ -71,6 +65,7 @@ const DEFAULT_SPEC: Partial<EmbedSpec> = {
     thickness: undefined as any,
     material: 'A36',
   },
+  // Finish is not configurable in the UI; default to raw steel.
   finish: 'none',
   quantity: 1,
   // Lead time is not configurable in the UI; keep as standard for all embeds.
@@ -193,21 +188,17 @@ export default function EmbedSpecForm({
         return true;
       case 3:
         return !!(
-          spec.finish &&
           spec.quantity &&
           spec.quantity >= VALIDATION_CONSTRAINTS.quantity.min &&
           !validationErrors['quantity']
         );
-      case 4:
-        // Project info is optional
-        return true;
       default:
         return false;
     }
   };
 
   const handleNext = () => {
-    if (canProceedToNextStep(currentStep) && currentStep < 4) {
+    if (canProceedToNextStep(currentStep) && currentStep < 3) {
       setCurrentStep((currentStep + 1) as FormStep);
     }
   };
@@ -490,7 +481,7 @@ export default function EmbedSpecForm({
     <div className="space-y-6">
       {/* Step Indicator */}
       <div className="flex items-center justify-between mb-8">
-        {[1, 2, 3, 4].map((step) => (
+        {[1, 2, 3].map((step) => (
           <React.Fragment key={step}>
             {(() => {
               const targetStep = step as FormStep;
@@ -518,7 +509,7 @@ export default function EmbedSpecForm({
             </button>
               );
             })()}
-            {step < 4 && (
+            {step < 3 && (
               <div
                 className={`flex-1 h-px mx-2 ${
                   step < currentStep ? 'bg-white/20' : 'bg-white/5'
@@ -1059,7 +1050,7 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 3: Finish & Quantity */}
+        {/* Step 3: Quantity */}
         {currentStep === 3 && (
           <motion.div
             key="step3"
@@ -1068,14 +1059,7 @@ export default function EmbedSpecForm({
             exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
           >
-            <h3 className="text-xl font-bold text-white mb-4">Finish &amp; Quantity</h3>
-
-            <ConfigDropdown
-              label="Finish"
-              options={FINISH_OPTIONS}
-              value={spec.finish || 'none'}
-              onChange={(value) => updateSpec({ finish: value as EmbedSpec['finish'] })}
-            />
+            <h3 className="text-xl font-bold text-white mb-4">Quantity</h3>
 
             <div className="max-w-md mx-auto w-full">
               <div>
@@ -1102,21 +1086,8 @@ export default function EmbedSpecForm({
                 />
               </div>
             </div>
-          </motion.div>
-        )}
 
-        {/* Step 4: Project Information + Final Review */}
-        {currentStep === 4 && (
-          <motion.div
-            key="step4"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
-          >
-            <h3 className="text-xl font-bold text-white mb-4">Project Information & Review</h3>
-
-            {/* Final Review block — summary, thumbnail, PDF */}
+            {/* Final Review block — summary, thumbnail */}
             {isEmbedSpecComplete(spec) && validateEmbedSpec(spec).length === 0 && (
               <div className="p-4 bg-white/5 rounded-lg border border-white/20 space-y-4">
                 <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Final review</h4>
@@ -1130,14 +1101,15 @@ export default function EmbedSpecForm({
                     </p>
                     {spec.studs?.positions && spec.studs.positions.length > 0 && (
                       <p className="text-white/70 text-xs">
-                        Studs: {(() => {
-                          const first = spec.studs.positions[0];
-                          const allSame = spec.studs.positions.every(
-                            s => s.diameter === first.diameter && s.length === first.length && s.grade === first.grade
+                        Studs:{' '}
+                        {(() => {
+                          const first = spec.studs!.positions[0];
+                          const allSame = spec.studs!.positions.every(
+                            (s) => s.diameter === first.diameter && s.length === first.length && s.grade === first.grade
                           );
                           return allSame
-                            ? `${spec.studs.positions.length} × ${first.diameter}" × ${first.length}" ${first.grade}`
-                            : `${spec.studs.positions.length} studs (mixed)`;
+                            ? `${spec.studs!.positions.length} × ${first.diameter}" × ${first.length}" ${first.grade}`
+                            : `${spec.studs!.positions.length} studs (mixed)`;
                         })()}
                       </p>
                     )}
@@ -1176,142 +1148,6 @@ export default function EmbedSpecForm({
                 </div>
               </div>
             )}
-
-            <p className="text-white/60 text-sm">
-              Provide delivery and contact details for order processing (optional but recommended).
-            </p>
-
-            <div className="max-w-2xl mx-auto w-full">
-              <div className="space-y-3 mt-6">
-              <h4 className="text-white/80 font-semibold text-sm">Delivery Address</h4>
-              <div>
-                <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                  Street Address
-                </label>
-                <input
-                  type="text"
-                  value={spec.deliveryAddress?.street || ''}
-                  onChange={(e) => updateSpec({
-                    deliveryAddress: { ...spec.deliveryAddress, street: e.target.value }
-                  })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    value={spec.deliveryAddress?.city || ''}
-                    onChange={(e) => updateSpec({
-                      deliveryAddress: { ...spec.deliveryAddress, city: e.target.value }
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={spec.deliveryAddress?.state || ''}
-                    onChange={(e) => updateSpec({
-                      deliveryAddress: { ...spec.deliveryAddress, state: e.target.value }
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    ZIP Code
-                  </label>
-                  <input
-                    type="text"
-                    value={spec.deliveryAddress?.zip || ''}
-                    onChange={(e) => updateSpec({
-                      deliveryAddress: { ...spec.deliveryAddress, zip: e.target.value }
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    Country
-                  </label>
-                  <input
-                    type="text"
-                    value={spec.deliveryAddress?.country || 'USA'}
-                    onChange={(e) => updateSpec({
-                      deliveryAddress: { ...spec.deliveryAddress, country: e.target.value }
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                  />
-                </div>
-              </div>
-            </div>
-
-              <div className="space-y-3 mt-6">
-              <h4 className="text-white/80 font-semibold text-sm">Contact Information</h4>
-              <div>
-                <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                  Contact Name
-                </label>
-                <input
-                  type="text"
-                  value={spec.contactInfo?.name || ''}
-                  onChange={(e) => updateSpec({
-                    contactInfo: { ...spec.contactInfo, name: e.target.value }
-                  })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={spec.contactInfo?.email || ''}
-                    onChange={(e) => updateSpec({
-                      contactInfo: { ...spec.contactInfo, email: e.target.value }
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={spec.contactInfo?.phone || ''}
-                    onChange={(e) => updateSpec({
-                      contactInfo: { ...spec.contactInfo, phone: e.target.value }
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    Company
-                  </label>
-                  <input
-                    type="text"
-                    value={spec.contactInfo?.company || ''}
-                    onChange={(e) => updateSpec({
-                      contactInfo: { ...spec.contactInfo, company: e.target.value }
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#DC143C] transition-colors"
-                  />
-                </div>
-              </div>
-            </div>
-
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1327,7 +1163,7 @@ export default function EmbedSpecForm({
           Back
         </button>
 
-        {currentStep < 4 ? (
+        {currentStep < 3 ? (
           <button
             type="button"
             onClick={handleNext}
@@ -1336,7 +1172,7 @@ export default function EmbedSpecForm({
           >
             Next
           </button>
-        ) : currentStep === 4 ? (
+        ) : currentStep === 3 ? (
           <div className="flex flex-col items-stretch gap-2 min-w-[220px]">
             <button
               type="button"

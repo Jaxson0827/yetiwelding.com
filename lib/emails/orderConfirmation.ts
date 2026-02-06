@@ -34,7 +34,7 @@ export function generateOrderConfirmationEmail(
             <span style="color: #666; font-size: 14px;">
               ${config.plate.length}" × ${config.plate.width}" × ${config.plate.thickness}" • ${config.plate.material}<br>
               ${config.studs?.positions?.length || 0} studs • Qty: ${config.quantity}<br>
-              Finish: ${config.finish} • ${config.leadTime === 'rush' ? 'Rush' : 'Standard'} lead time
+              Lead time: ${config.leadTime === 'rush' ? 'Rush' : 'Standard'}
             </span>
           </td>
           <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: right;">

@@ -187,19 +187,7 @@ export async function generateShopPacketBuffer(jobId: string, embedSpecs: EmbedS
     // Header
     doc.fontSize(20).text('SHOP PACKET', { align: 'center' });
     doc.fontSize(16).text(`Job ID: ${jobId}`, { align: 'center' });
-    
-    // Project information if available
-    if (embedSpecs[0]?.projectName || embedSpecs[0]?.projectNumber) {
-      doc.moveDown();
-      doc.fontSize(12);
-      if (embedSpecs[0].projectName) {
-        doc.text(`Project: ${embedSpecs[0].projectName}`, { align: 'center' });
-      }
-      if (embedSpecs[0].projectNumber) {
-        doc.text(`Project Number: ${embedSpecs[0].projectNumber}`, { align: 'center' });
-      }
-    }
-    
+
     doc.moveDown(2);
 
     // Generate packet for each embed spec
@@ -268,10 +256,10 @@ export async function generateShopPacketBuffer(jobId: string, embedSpecs: EmbedS
         doc.moveDown();
       }
 
-      // Finish
+      // Finish (not configurable in UI; always raw steel)
       doc.fontSize(12).text('FINISH', { underline: true });
       doc.fontSize(10);
-      doc.text(`Finish: ${spec.finish.toUpperCase()}`);
+      doc.text('Finish: RAW STEEL');
       doc.moveDown();
 
       // Quantity & Lead Time
@@ -280,36 +268,6 @@ export async function generateShopPacketBuffer(jobId: string, embedSpecs: EmbedS
       doc.text(`Quantity: ${spec.quantity}`);
       doc.text(`Lead Time: ${spec.leadTime.toUpperCase()}`);
       doc.moveDown();
-
-      // Project Information
-      if (spec.projectName || spec.projectNumber || spec.deliveryAddress || spec.contactInfo) {
-        doc.fontSize(12).text('PROJECT INFORMATION', { underline: true });
-        doc.fontSize(10);
-        if (spec.projectName) doc.text(`Project Name: ${spec.projectName}`);
-        if (spec.projectNumber) doc.text(`Project Number: ${spec.projectNumber}`);
-        if (spec.deliveryAddress) {
-          const addr = spec.deliveryAddress;
-          if (addr.street) doc.text(`Delivery: ${addr.street}`);
-          if (addr.city || addr.state || addr.zip) {
-            doc.text(`${addr.city || ''}${addr.city && addr.state ? ', ' : ''}${addr.state || ''} ${addr.zip || ''}`.trim());
-          }
-        }
-        if (spec.contactInfo) {
-          const contact = spec.contactInfo;
-          if (contact.name) doc.text(`Contact: ${contact.name}`);
-          if (contact.email) doc.text(`Email: ${contact.email}`);
-          if (contact.phone) doc.text(`Phone: ${contact.phone}`);
-        }
-        doc.moveDown();
-      }
-
-      // Special Instructions
-      if (spec.specialInstructions) {
-        doc.fontSize(12).text('SPECIAL INSTRUCTIONS', { underline: true });
-        doc.fontSize(10);
-        doc.text(spec.specialInstructions, { width: pageWidth });
-        doc.moveDown();
-      }
     });
 
     doc.end();

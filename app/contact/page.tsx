@@ -78,7 +78,7 @@ export default function ContactPage() {
                 Send Us a Message
               </h2>
               <p className="text-white/70 text-lg max-w-2xl mx-auto">
-                Fill out the form below and we'll get back to you within 24 hours.
+                Fill out the form below and we’ll get back to you soon.
               </p>
             </motion.div>
 

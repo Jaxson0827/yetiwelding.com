@@ -27,7 +27,7 @@ export default function SavedItemCard({ item, onMoveToCart, onRemove }: SavedIte
             {config.studs?.positions?.length || 0} studs • Qty: {config.quantity}
           </p>
           <p className="text-white/70 text-sm">
-            Finish: {config.finish} • {config.leadTime === 'rush' ? 'Rush' : 'Standard'} lead time
+            Lead time: {config.leadTime === 'rush' ? 'Rush' : 'Standard'}
           </p>
         </div>
       );

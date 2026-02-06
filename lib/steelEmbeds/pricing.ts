@@ -11,16 +11,6 @@ const MATERIAL_COST_PER_LB: Record<string, number> = {
 const CUTTING_RATE_PER_INCH = 0.15; // $/inch of perimeter
 const STUD_WELDING_RATE = 5.00; // $ per stud
 const SETUP_COST = 150.00; // $ per job (order-level)
-const FINISH_RATE: Record<string, number> = {
-  none: 0,
-  primer: 0.25, // $/sq in
-  galv: 0.75, // $/sq in
-};
-const FINISH_MIN_CHARGE: Record<string, number> = {
-  none: 0,
-  primer: 25.00,
-  galv: 50.00,
-};
 const RUSH_MULTIPLIER = 1.5;
 const MARGIN_BUFFER = 1.15; // 15% margin
 
@@ -51,7 +41,7 @@ function calculateArea(length: number, width: number): number {
  */
 export function priceEmbed(spec: EmbedSpec): PriceBreakdown {
   const lineItems: PriceLineItem[] = [];
-  const { plate, studs, finish, leadTime } = spec;
+  const { plate, studs, leadTime } = spec;
 
   // Material cost
   const weight = calculateWeight(plate.length, plate.width, plate.thickness);
@@ -79,19 +69,6 @@ export function priceEmbed(spec: EmbedSpec): PriceBreakdown {
       label: `Stud welding (${studCount} studs, ${grade})`,
       amount: studCost,
       quantity: studCount,
-    });
-  }
-
-  // Finish cost
-  if (finish !== 'none') {
-    const area = calculateArea(plate.length, plate.width);
-    const finishCost = Math.max(
-      area * FINISH_RATE[finish],
-      FINISH_MIN_CHARGE[finish]
-    );
-    lineItems.push({
-      label: `Finish (${finish})`,
-      amount: finishCost,
     });
   }
 
@@ -162,16 +139,15 @@ export function priceOrder(embedSpecs: EmbedSpec[]): OrderPriceBreakdown {
  * Calculate confidence level for pricing
  */
 function calculateConfidence(spec: EmbedSpec): 'high' | 'review' {
-  const { plate, studs, finish } = spec;
+  const { plate, studs } = spec;
 
   // High confidence conditions
   const isRectangular = plate.length / plate.width >= 0.5 && plate.length / plate.width <= 2.0;
   const isStandardThickness = plate.thickness >= 0.25 && plate.thickness <= 2.0;
   const isLowStudCount = !studs || !studs.positions || studs.positions.length < 20;
-  const isStandardFinish = finish === 'none' || finish === 'primer';
 
   // All conditions must be true for high confidence
-  if (isRectangular && isStandardThickness && isLowStudCount && isStandardFinish) {
+  if (isRectangular && isStandardThickness && isLowStudCount) {
     return 'high';
   }
 
