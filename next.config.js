@@ -13,7 +13,8 @@ const csp = [
   // In development, Next may require eval; restrict in production.
   `script-src 'self' 'unsafe-inline' ${isProd ? '' : "'unsafe-eval'"} https://js.stripe.com`,
   "connect-src 'self' https://api.stripe.com https://*.stripe.com https://raw.githack.com",
-  "frame-src https://js.stripe.com https://checkout.stripe.com",
+  // Allow embedded Google Maps on the Contact page.
+  "frame-src https://js.stripe.com https://checkout.stripe.com https://www.google.com https://maps.google.com",
   "form-action 'self' https://checkout.stripe.com",
   'upgrade-insecure-requests',
 ].join('; ')
