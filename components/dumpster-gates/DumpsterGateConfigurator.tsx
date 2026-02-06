@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { DumpsterGateConfig, DimensionDisplay, GATE_DIMENSIONS, getCartKey } from '@/lib/dumpsterGates/types';
+import { DumpsterGateConfig, getCartKey } from '@/lib/dumpsterGates/types';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { useCart } from '@/contexts/CartContext';
-import { parseDimension, formatDimension, validateWidth, validateHeight, validateGateStyle } from '@/lib/dumpsterGates/validation';
+import { formatDimension, getSlopeDiffIn, isSlopeWithinTolerance } from '@/lib/dumpsterGates/validation';
 import DimensionGraphic from './DimensionGraphic';
 import ConfigurationPanel from './ConfigurationPanel';
 import PricingSummary from './PricingSummary';
@@ -12,146 +12,84 @@ import PricingSummary from './PricingSummary';
 export default function DumpsterGateConfigurator() {
   const { addItem } = useCart();
   const [config, setConfig] = useState<DumpsterGateConfig>({
-    size: '14x6',
+    size: 'custom',
     style: 'double-swing',
     finish: 'prime-painted',
     mounting: 'with-posts',
     quantity: 1,
-    isCustom: false,
+    isCustom: true,
     widthFt: 14,
     heightFt: 6,
+
+    enclosureLengthFt: 14,
+    leftHeightFt: 6,
+    rightHeightFt: 6,
+    blockWidthIn: 8,
+    bottomGapIn: 4,
   });
 
-  const [widthError, setWidthError] = useState<string | undefined>();
-  const [heightError, setHeightError] = useState<string | undefined>();
-  const [styleWarning, setStyleWarning] = useState<string | undefined>();
+  const slopeDiffIn = useMemo(() => getSlopeDiffIn(config.leftHeightFt, config.rightHeightFt), [
+    config.leftHeightFt,
+    config.rightHeightFt,
+  ]);
+  const slopeWithinTolerance = useMemo(
+    () => isSlopeWithinTolerance(config.leftHeightFt, config.rightHeightFt, 3),
+    [config.leftHeightFt, config.rightHeightFt]
+  );
+  const requiresQuote = useMemo(() => !slopeWithinTolerance, [slopeWithinTolerance]);
 
-  // Calculate dimensions display
-  const dimensions: DimensionDisplay = useMemo(() => {
-    const presetDimensions = config.size in GATE_DIMENSIONS
-      ? GATE_DIMENSIONS[config.size as keyof typeof GATE_DIMENSIONS]
-      : null;
-    const widthFt = config.isCustom || !presetDimensions ? config.widthFt : presetDimensions.widthFt;
-    const heightFt = config.isCustom || !presetDimensions ? config.heightFt : presetDimensions.heightFt;
-    const leafWidth = config.style === 'double-swing'
-      ? widthFt / 2
-      : widthFt;
-    
+  const printValues = useMemo(() => {
+    const minHeightFt = Math.min(config.leftHeightFt, config.rightHeightFt);
+
     return {
-      overallWidth: formatDimension(widthFt),
-      overallHeight: formatDimension(heightFt),
-      leafWidth: formatDimension(leafWidth),
-      groundClearance: '2"',
+      enclOverall: formatDimension(config.enclosureLengthFt),
+      // TODO: Replace with correct math once provided.
+      enclCTOC: formatDimension(config.enclosureLengthFt),
+      lGap: '',
+      cGap: '',
+      rGap: '',
+      gateHeight: formatDimension(minHeightFt),
+      // TODO: Replace with correct gate math once provided.
+      gateWidth: formatDimension(config.enclosureLengthFt / 2),
+      blockWidth: `${Math.round(config.blockWidthIn * 100) / 100}"`,
+      blockHeight: '',
+      bottomGap: `${config.bottomGapIn}"`,
+      postDepth: '',
     };
-  }, [config.size, config.style, config.isCustom, config.widthFt, config.heightFt]);
+  }, [
+    config.enclosureLengthFt,
+    config.leftHeightFt,
+    config.rightHeightFt,
+    config.blockWidthIn,
+    config.bottomGapIn,
+  ]);
 
   // Calculate pricing
   const priceBreakdown = useMemo(() => {
     return priceGate(config);
   }, [config]);
 
-  // Handle dimension change from editable label
-  const handleDimensionChange = useCallback((dimension: 'width' | 'height', value: string) => {
-    const parsed = parseDimension(value);
-    
-    if (parsed === null) {
-      if (dimension === 'width') {
-        setWidthError('Invalid format. Use: 15\' 6" or 15.5');
-      } else {
-        setHeightError('Invalid format. Use: 6\' or 6.0');
-      }
-      return;
-    }
-
-    // Validate dimension
-    let validation;
-    if (dimension === 'width') {
-      validation = validateWidth(parsed);
-      if (!validation.valid) {
-        setWidthError(validation.error);
-        return;
-      }
-      setWidthError(undefined);
-    } else {
-      validation = validateHeight(parsed);
-      if (!validation.valid) {
-        setHeightError(validation.error);
-        return;
-      }
-      setHeightError(undefined);
-    }
-
-    // Update config
-    setConfig((prev) => {
-      const newConfig = {
-        ...prev,
-        isCustom: true,
-        size: 'custom' as const,
-        [dimension === 'width' ? 'widthFt' : 'heightFt']: parsed,
-      };
-
-      // If width changed, check if we need to auto-switch style
-      if (dimension === 'width') {
-        const styleValidation = validateGateStyle(parsed, newConfig.style);
-        if (styleValidation.shouldSwitch) {
-          setStyleWarning(styleValidation.error);
-          newConfig.style = 'double-swing';
-        } else {
-          setStyleWarning(undefined);
-        }
-      }
-
-      return newConfig;
-    });
-  }, []);
-
-  // Handle width change from dimension graphic
-  const handleWidthChange = useCallback((value: string) => {
-    handleDimensionChange('width', value);
-  }, [handleDimensionChange]);
-
-  // Handle height change from dimension graphic
-  const handleHeightChange = useCallback((value: string) => {
-    handleDimensionChange('height', value);
-  }, [handleDimensionChange]);
-
   // Handle configuration changes
   const handleConfigChange = useCallback((partialConfig: Partial<DumpsterGateConfig>) => {
     setConfig((prev) => {
-      const newConfig = { ...prev, ...partialConfig };
-      
-      // If size changed to a preset, update widthFt/heightFt and clear custom flag
-      if (partialConfig.size && partialConfig.size !== 'custom' && partialConfig.size in GATE_DIMENSIONS) {
-        const dims = GATE_DIMENSIONS[partialConfig.size as keyof typeof GATE_DIMENSIONS];
-        newConfig.widthFt = dims.widthFt;
-        newConfig.heightFt = dims.heightFt;
-        newConfig.isCustom = false;
-        setWidthError(undefined);
-        setHeightError(undefined);
-        setStyleWarning(undefined);
-      }
-      
-      // If size changed to custom, set isCustom flag
-      if (partialConfig.size === 'custom') {
-        newConfig.isCustom = true;
-      }
-      
-      // If style changed, check if it's valid for current width
-      if (partialConfig.style && newConfig.widthFt) {
-        const styleValidation = validateGateStyle(newConfig.widthFt, newConfig.style);
-        if (styleValidation.shouldSwitch) {
-          setStyleWarning(styleValidation.error);
-        } else {
-          setStyleWarning(undefined);
-        }
-      }
-      
-      return newConfig;
+      const next = { ...prev, ...partialConfig };
+
+      // Lock to custom-only + double swing.
+      next.isCustom = true;
+      next.size = 'custom';
+      next.style = 'double-swing';
+
+      // Keep legacy pricing fields aligned with enclosure inputs.
+      next.widthFt = next.enclosureLengthFt;
+      next.heightFt = Math.min(next.leftHeightFt, next.rightHeightFt);
+
+      return next;
     });
   }, []);
 
   // Handle add to cart
   const handleAddToCart = useCallback(() => {
+    if (requiresQuote) return;
     const cartKey = getCartKey(config);
     const cartItem = {
       id: cartKey,
@@ -164,7 +102,7 @@ export default function DumpsterGateConfigurator() {
     
     // Show success feedback (you could add a toast here)
     alert(`Added ${config.quantity} gate${config.quantity > 1 ? 's' : ''} to cart`);
-  }, [config, priceBreakdown, addItem]);
+  }, [config, priceBreakdown, addItem, requiresQuote]);
 
   return (
     <div className="w-full">
@@ -172,16 +110,14 @@ export default function DumpsterGateConfigurator() {
         {/* Left Side: Dimension Graphic */}
         <div className="order-2 lg:order-1">
           <DimensionGraphic
-            dimensions={dimensions}
+            values={printValues}
             style={config.style}
-            onWidthChange={handleWidthChange}
-            onHeightChange={handleHeightChange}
-            widthError={widthError}
-            heightError={heightError}
           />
-          {styleWarning && (
+          {!slopeWithinTolerance && (
             <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-              <p className="text-yellow-200 text-sm">{styleWarning}</p>
+              <p className="text-yellow-200 text-sm">
+                Slope detected: left/right height differs by {Math.round(slopeDiffIn)}&quot;. This exceeds our 3&quot; tolerance — please request a quote.
+              </p>
             </div>
           )}
         </div>
@@ -199,6 +135,8 @@ export default function DumpsterGateConfigurator() {
             config={config}
             priceBreakdown={priceBreakdown}
             onAddToCart={handleAddToCart}
+            requiresQuote={requiresQuote}
+            quoteReason={`Slope exceeds 3" tolerance (${Math.round(slopeDiffIn)}").`}
           />
         </div>
       </div>

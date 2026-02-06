@@ -28,6 +28,14 @@ export interface DumpsterGateConfig {
   isCustom: boolean;
   widthFt: number;  // Numeric width in feet (for all sizes, not just custom)
   heightFt: number; // Numeric height in feet (for all sizes, not just custom)
+
+  // Custom-only enclosure inputs (used to drive drawing + slope rules).
+  // NOTE: For now, pricing continues to use `widthFt` (set equal to `enclosureLengthFt`).
+  enclosureLengthFt: number;
+  leftHeightFt: number;
+  rightHeightFt: number;
+  blockWidthIn: number;
+  bottomGapIn: 4 | 5 | 6 | 7;
 }
 
 export interface DimensionDisplay {
@@ -41,7 +49,7 @@ export interface DimensionDisplay {
 export function getCartKey(config: DumpsterGateConfig): string {
   if (config.isCustom) {
     // Include dimensions in key for custom sizes
-    return `dumpster-gate-custom-${config.widthFt.toFixed(2)}-${config.heightFt.toFixed(2)}-${config.style}-${config.finish}-${config.mounting}`;
+    return `dumpster-gate-custom-${config.widthFt.toFixed(2)}-${config.heightFt.toFixed(2)}-${config.enclosureLengthFt.toFixed(2)}-${config.leftHeightFt.toFixed(2)}-${config.rightHeightFt.toFixed(2)}-${config.blockWidthIn.toFixed(2)}-${config.bottomGapIn}-${config.style}-${config.finish}-${config.mounting}`;
   }
   return `dumpster-gate-${config.size}-${config.style}-${config.finish}-${config.mounting}`;
 }

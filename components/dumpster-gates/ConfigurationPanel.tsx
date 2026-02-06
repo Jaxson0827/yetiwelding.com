@@ -1,28 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { DumpsterGateConfig, GateSize, GateStyle, Finish, MountingOption, GATE_DIMENSIONS, MAX_SINGLE_SWING_WIDTH_FT } from '@/lib/dumpsterGates/types';
-import { parseDimension, formatDimension, validateWidth, validateHeight } from '@/lib/dumpsterGates/validation';
+import React, { useEffect, useState } from 'react';
+import { DumpsterGateConfig, Finish, MountingOption } from '@/lib/dumpsterGates/types';
+import { formatDimension, parseDimension, validateHeight, validateWidth } from '@/lib/dumpsterGates/validation';
+import ConfigDropdown, { DropdownOption } from '@/components/ConfigDropdown';
 
 interface ConfigurationPanelProps {
   config: DumpsterGateConfig;
   onConfigChange: (config: Partial<DumpsterGateConfig>) => void;
 }
-
-const SIZE_OPTIONS: { value: GateSize; label: string }[] = [
-  { value: '10x6', label: "10' × 6'" },
-  { value: '12x6', label: "12' × 6'" },
-  { value: '14x6', label: "14' × 6'" },
-  { value: '16x6', label: "16' × 6'" },
-  { value: '18x6', label: "18' × 6'" },
-  { value: 'custom', label: 'Custom' },
-];
-
-const STYLE_OPTIONS: { value: GateStyle; label: string }[] = [
-  { value: 'double-swing', label: 'Double Swing' },
-  { value: 'single-swing-left', label: 'Single Swing (Left)' },
-  { value: 'single-swing-right', label: 'Single Swing (Right)' },
-];
 
 const FINISH_OPTIONS: { value: Finish; label: string; note?: string }[] = [
   { value: 'raw-steel', label: 'Raw steel' },
@@ -32,86 +18,103 @@ const FINISH_OPTIONS: { value: Finish; label: string; note?: string }[] = [
 ];
 
 export default function ConfigurationPanel({ config, onConfigChange }: ConfigurationPanelProps) {
-  const [customWidthInput, setCustomWidthInput] = useState(formatDimension(config.widthFt));
-  const [customHeightInput, setCustomHeightInput] = useState(formatDimension(config.heightFt));
-  const [customWidthError, setCustomWidthError] = useState<string | undefined>();
-  const [customHeightError, setCustomHeightError] = useState<string | undefined>();
+  const [enclLengthInput, setEnclLengthInput] = useState(formatDimension(config.enclosureLengthFt));
+  const [leftHeightInput, setLeftHeightInput] = useState(formatDimension(config.leftHeightFt));
+  const [rightHeightInput, setRightHeightInput] = useState(formatDimension(config.rightHeightFt));
+  const [blockWidthInput, setBlockWidthInput] = useState(`${Math.round(config.blockWidthIn * 100) / 100}"`);
 
-  // Sync input values when config changes externally (e.g., from dimension graphic edits)
+  const [enclLengthError, setEnclLengthError] = useState<string | undefined>();
+  const [leftHeightError, setLeftHeightError] = useState<string | undefined>();
+  const [rightHeightError, setRightHeightError] = useState<string | undefined>();
+  const [blockWidthError, setBlockWidthError] = useState<string | undefined>();
+
+  // Sync input values when config changes externally
   useEffect(() => {
-    if (config.isCustom) {
-      setCustomWidthInput(formatDimension(config.widthFt));
-      setCustomHeightInput(formatDimension(config.heightFt));
-      // Clear errors when config changes externally
-      setCustomWidthError(undefined);
-      setCustomHeightError(undefined);
-    } else if (config.size !== 'custom') {
-      // When switching to preset, update inputs to match preset dimensions
-      const dims = GATE_DIMENSIONS[config.size as keyof typeof GATE_DIMENSIONS];
-      if (dims) {
-        setCustomWidthInput(formatDimension(dims.widthFt));
-        setCustomHeightInput(formatDimension(dims.heightFt));
-      }
-    }
-  }, [config.widthFt, config.heightFt, config.isCustom, config.size]);
+    setEnclLengthInput(formatDimension(config.enclosureLengthFt));
+    setLeftHeightInput(formatDimension(config.leftHeightFt));
+    setRightHeightInput(formatDimension(config.rightHeightFt));
+    setBlockWidthInput(`${Math.round(config.blockWidthIn * 100) / 100}"`);
+  }, [config.enclosureLengthFt, config.leftHeightFt, config.rightHeightFt, config.blockWidthIn]);
 
-  const isSingleSwing = config.style !== 'double-swing';
-  const currentWidthFt = config.isCustom ? config.widthFt : GATE_DIMENSIONS[config.size as keyof typeof GATE_DIMENSIONS]?.widthFt || 14;
-  const showInvalidCombinationWarning = isSingleSwing && currentWidthFt > MAX_SINGLE_SWING_WIDTH_FT;
-
-  const handleSizeChange = (size: GateSize) => {
-    onConfigChange({ size });
-  };
-
-  const handleCustomWidthChange = (value: string) => {
-    setCustomWidthInput(value);
+  const handleEnclLengthChange = (value: string) => {
+    setEnclLengthInput(value);
     const parsed = parseDimension(value);
-    
     if (parsed === null) {
-      setCustomWidthError('Invalid format. Use: 15\' 6" or 15.5');
+      setEnclLengthError('Invalid format. Use: 14\' 6" or 14.5');
       return;
     }
-
     const validation = validateWidth(parsed);
     if (!validation.valid) {
-      setCustomWidthError(validation.error);
+      setEnclLengthError(validation.error);
       return;
     }
-
-    setCustomWidthError(undefined);
-    onConfigChange({
-      size: 'custom',
-      isCustom: true,
-      widthFt: parsed,
-    });
+    setEnclLengthError(undefined);
+    onConfigChange({ enclosureLengthFt: parsed });
   };
 
-  const handleCustomHeightChange = (value: string) => {
-    setCustomHeightInput(value);
+  const handleLeftHeightChange = (value: string) => {
+    setLeftHeightInput(value);
     const parsed = parseDimension(value);
-    
     if (parsed === null) {
-      setCustomHeightError('Invalid format. Use: 6\' or 6.0');
+      setLeftHeightError('Invalid format. Use: 6\' or 6.0');
       return;
     }
-
     const validation = validateHeight(parsed);
     if (!validation.valid) {
-      setCustomHeightError(validation.error);
+      setLeftHeightError(validation.error);
       return;
     }
-
-    setCustomHeightError(undefined);
-    onConfigChange({
-      size: 'custom',
-      isCustom: true,
-      heightFt: parsed,
-    });
+    setLeftHeightError(undefined);
+    onConfigChange({ leftHeightFt: parsed });
   };
 
-  const handleStyleChange = (style: GateStyle) => {
-    onConfigChange({ style });
+  const handleRightHeightChange = (value: string) => {
+    setRightHeightInput(value);
+    const parsed = parseDimension(value);
+    if (parsed === null) {
+      setRightHeightError('Invalid format. Use: 6\' or 6.0');
+      return;
+    }
+    const validation = validateHeight(parsed);
+    if (!validation.valid) {
+      setRightHeightError(validation.error);
+      return;
+    }
+    setRightHeightError(undefined);
+    onConfigChange({ rightHeightFt: parsed });
   };
+
+  const handleBlockWidthChange = (value: string) => {
+    setBlockWidthInput(value);
+    const parsedFt = parseDimension(value);
+    if (parsedFt === null) {
+      setBlockWidthError('Invalid format. Use: 8" or 0\' 8"');
+      return;
+    }
+    const inches = parsedFt * 12;
+    if (isNaN(inches) || inches <= 0) {
+      setBlockWidthError('Block width must be positive');
+      return;
+    }
+    setBlockWidthError(undefined);
+    onConfigChange({ blockWidthIn: Math.round(inches * 16) / 16 });
+  };
+
+  const handleBottomGapChange = (bottomGapIn: 4 | 5 | 6 | 7) => {
+    onConfigChange({ bottomGapIn });
+  };
+
+  const bottomGapOptions: DropdownOption[] = [
+    { value: '4', label: '4"' },
+    { value: '5', label: '5"' },
+    { value: '6', label: '6"' },
+    { value: '7', label: '7"' },
+  ];
+
+  const finishDropdownOptions: DropdownOption[] = FINISH_OPTIONS.map((o) => ({
+    value: o.value,
+    label: o.label,
+  }));
 
   const handleFinishChange = (finish: Finish) => {
     onConfigChange({ finish });
@@ -129,154 +132,125 @@ export default function ConfigurationPanel({ config, onConfigChange }: Configura
 
   return (
     <div className="space-y-8">
-      {/* A. Preset Size Selector */}
+      {/* A. Enclosure Inputs */}
       <div>
         <label className="block text-white text-sm font-medium mb-3">
-          Gate Size <span className="text-red-500">*</span>
+          Enclosure Inputs <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {SIZE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => handleSizeChange(option.value)}
-              className={`px-4 py-3 rounded-lg border-2 transition-all ${
-                config.size === option.value
-                  ? 'border-red-500 bg-red-500/10 text-white'
-                  : 'border-white/20 bg-white/5 text-white/70 hover:border-white/40 hover:text-white'
+        <div className="mt-4 space-y-4">
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Enclosure length (outside-to-outside)</label>
+            <input
+              type="text"
+              value={enclLengthInput}
+              onChange={(e) => handleEnclLengthChange(e.target.value)}
+              onBlur={() => {
+                const parsed = parseDimension(enclLengthInput);
+                if (parsed !== null && validateWidth(parsed).valid) {
+                  setEnclLengthInput(formatDimension(parsed));
+                }
+              }}
+              placeholder={formatDimension(config.enclosureLengthFt)}
+              className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
+                enclLengthError
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-white/20 focus:border-red-500'
               }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+            />
+            {enclLengthError && <p className="mt-1 text-red-400 text-xs">{enclLengthError}</p>}
+          </div>
 
-        {/* Custom Size Inputs */}
-        {config.size === 'custom' && (
-          <div className="mt-4 space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-block px-2 py-1 text-xs font-semibold text-red-500 bg-red-500/10 rounded">
-                Custom Size
-              </span>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-white/70 text-sm mb-2">Width</label>
+              <label className="block text-white/70 text-sm mb-2">Left height</label>
               <input
                 type="text"
-                value={customWidthInput}
-                onChange={(e) => handleCustomWidthChange(e.target.value)}
+                value={leftHeightInput}
+                onChange={(e) => handleLeftHeightChange(e.target.value)}
                 onBlur={() => {
-                  // Format on blur if valid
-                  const parsed = parseDimension(customWidthInput);
-                  if (parsed !== null && validateWidth(parsed).valid) {
-                    setCustomWidthInput(formatDimension(parsed));
-                  }
-                }}
-                placeholder={formatDimension(config.widthFt)}
-                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
-                  customWidthError
-                    ? 'border-red-500 focus:border-red-500'
-                    : 'border-white/20 focus:border-red-500'
-                }`}
-              />
-              {customWidthError && (
-                <p className="mt-1 text-red-400 text-xs">{customWidthError}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-white/70 text-sm mb-2">Height</label>
-              <input
-                type="text"
-                value={customHeightInput}
-                onChange={(e) => handleCustomHeightChange(e.target.value)}
-                onBlur={() => {
-                  // Format on blur if valid
-                  const parsed = parseDimension(customHeightInput);
+                  const parsed = parseDimension(leftHeightInput);
                   if (parsed !== null && validateHeight(parsed).valid) {
-                    setCustomHeightInput(formatDimension(parsed));
+                    setLeftHeightInput(formatDimension(parsed));
                   }
                 }}
-                placeholder={formatDimension(config.heightFt)}
+                placeholder={formatDimension(config.leftHeightFt)}
                 className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
-                  customHeightError
+                  leftHeightError
                     ? 'border-red-500 focus:border-red-500'
                     : 'border-white/20 focus:border-red-500'
                 }`}
               />
-              {customHeightError && (
-                <p className="mt-1 text-red-400 text-xs">{customHeightError}</p>
-              )}
+              {leftHeightError && <p className="mt-1 text-red-400 text-xs">{leftHeightError}</p>}
             </div>
-
-            <p className="text-white/60 text-sm">
-              Custom sizes subject to review before fabrication.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* B. Gate Style */}
-      <div>
-        <label className="block text-white text-sm font-medium mb-3">
-          Gate Style <span className="text-red-500">*</span>
-        </label>
-        <div className="space-y-2">
-          {STYLE_OPTIONS.map((option) => (
-            <label
-              key={option.value}
-              className="flex items-center p-3 rounded-lg border-2 border-white/20 bg-white/5 hover:border-white/40 cursor-pointer transition-all"
-            >
+            <div>
+              <label className="block text-white/70 text-sm mb-2">Right height</label>
               <input
-                type="radio"
-                name="gate-style"
-                value={option.value}
-                checked={config.style === option.value}
-                onChange={() => handleStyleChange(option.value)}
-                className="mr-3 w-4 h-4 text-red-500 focus:ring-red-500 focus:ring-2"
+                type="text"
+                value={rightHeightInput}
+                onChange={(e) => handleRightHeightChange(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseDimension(rightHeightInput);
+                  if (parsed !== null && validateHeight(parsed).valid) {
+                    setRightHeightInput(formatDimension(parsed));
+                  }
+                }}
+                placeholder={formatDimension(config.rightHeightFt)}
+                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
+                  rightHeightError
+                    ? 'border-red-500 focus:border-red-500'
+                    : 'border-white/20 focus:border-red-500'
+                }`}
               />
-              <span className="text-white">{option.label}</span>
-            </label>
-          ))}
+              {rightHeightError && <p className="mt-1 text-red-400 text-xs">{rightHeightError}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
+                Block width
+              </label>
+              <input
+                type="text"
+                value={blockWidthInput}
+                onChange={(e) => handleBlockWidthChange(e.target.value)}
+                onBlur={() => {
+                  const parsedFt = parseDimension(blockWidthInput);
+                  if (parsedFt !== null && parsedFt > 0) {
+                    const inches = Math.round(parsedFt * 12 * 16) / 16;
+                    setBlockWidthInput(`${Math.round(inches * 100) / 100}"`);
+                  }
+                }}
+                placeholder={`${config.blockWidthIn}"`}
+                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
+                  blockWidthError
+                    ? 'border-red-500 focus:border-red-500'
+                    : 'border-white/20 focus:border-red-500'
+                }`}
+              />
+              {blockWidthError && <p className="mt-1 text-red-400 text-xs">{blockWidthError}</p>}
+              <p className="mt-1 text-white/60 text-xs">Examples: 8&quot; or 0&apos; 8&quot;</p>
+            </div>
+            <div>
+              <ConfigDropdown
+                label="Bottom gap"
+                options={bottomGapOptions}
+                value={String(config.bottomGapIn)}
+                onChange={(value) => handleBottomGapChange(parseInt(value, 10) as 4 | 5 | 6 | 7)}
+              />
+            </div>
+          </div>
         </div>
-        {config.style === 'double-swing' && (
-          <p className="mt-2 text-white/60 text-sm">
-            Double swing recommended for openings over 10'
-          </p>
-        )}
-        {showInvalidCombinationWarning && (
-          <div className="mt-2 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-            <p className="text-yellow-200 text-sm">
-              Single swing recommended up to {MAX_SINGLE_SWING_WIDTH_FT}'. Double swing required above that.
-            </p>
-          </div>
-        )}
-        {isSingleSwing && currentWidthFt > MAX_SINGLE_SWING_WIDTH_FT && (
-          <div className="mt-2 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-            <p className="text-yellow-200 text-sm">
-              Maximum single swing width is {MAX_SINGLE_SWING_WIDTH_FT}'. Please select double swing for widths over {MAX_SINGLE_SWING_WIDTH_FT}'.
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* C. Finish */}
+      {/* B. Finish */}
       <div>
-        <label className="block text-white text-sm font-medium mb-3">
-          Finish <span className="text-red-500">*</span>
-        </label>
-        <select
+        <ConfigDropdown
+          label="Finish"
+          options={finishDropdownOptions}
           value={config.finish}
-          onChange={(e) => handleFinishChange(e.target.value as Finish)}
-          className="w-full px-4 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-white focus:border-red-500 focus:outline-none"
-        >
-          {FINISH_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          onChange={(value) => handleFinishChange(value as Finish)}
+        />
         {config.finish === 'powder-coat-black' && (
           <p className="mt-2 text-white/60 text-sm">
             Adds 3–5 business days
@@ -291,7 +265,7 @@ export default function ConfigurationPanel({ config, onConfigChange }: Configura
         )}
       </div>
 
-      {/* D. Post/Mounting Option */}
+      {/* C. Post/Mounting Option */}
       <div>
         <label className="block text-white text-sm font-medium mb-3">
           Mounting Option <span className="text-red-500">*</span>

@@ -14,6 +14,15 @@ export function parseDimension(value: string): number | null {
     return null;
   }
 
+  // Inches-only: accept patterns like `8"`, `8 in`, `8 inches`
+  // This is especially helpful for things like block width where users think in inches.
+  const inchesOnlyMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:"|in|inch|inches)\s*$/i);
+  if (inchesOnlyMatch) {
+    const inches = parseFloat(inchesOnlyMatch[1]);
+    if (isNaN(inches) || inches < 0) return null;
+    return inches / 12;
+  }
+
   // Remove common suffixes
   const cleaned = trimmed
     .replace(/['"]/g, "'") // Normalize quotes
@@ -122,6 +131,24 @@ export function validateGateStyle(
   }
   
   return { valid: true };
+}
+
+/**
+ * Return absolute height difference (slope) in inches.
+ */
+export function getSlopeDiffIn(leftHeightFt: number, rightHeightFt: number): number {
+  return Math.abs(leftHeightFt - rightHeightFt) * 12;
+}
+
+/**
+ * True when left/right height difference is within tolerance in inches.
+ */
+export function isSlopeWithinTolerance(
+  leftHeightFt: number,
+  rightHeightFt: number,
+  toleranceIn = 3
+): boolean {
+  return getSlopeDiffIn(leftHeightFt, rightHeightFt) <= toleranceIn;
 }
 
 

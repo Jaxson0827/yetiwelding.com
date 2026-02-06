@@ -8,9 +8,17 @@ interface PricingSummaryProps {
   config: DumpsterGateConfig;
   priceBreakdown: PriceBreakdown;
   onAddToCart: () => void;
+  requiresQuote?: boolean;
+  quoteReason?: string;
 }
 
-export default function PricingSummary({ config, priceBreakdown, onAddToCart }: PricingSummaryProps) {
+export default function PricingSummary({
+  config,
+  priceBreakdown,
+  onAddToCart,
+  requiresQuote = false,
+  quoteReason,
+}: PricingSummaryProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [customSizeAcknowledged, setCustomSizeAcknowledged] = useState(false);
 
@@ -160,19 +168,38 @@ export default function PricingSummary({ config, priceBreakdown, onAddToCart }: 
           </div>
         )}
 
-        {/* Add to Cart CTA */}
-        <button
-          type="button"
-          onClick={onAddToCart}
-          disabled={config.isCustom && !customSizeAcknowledged}
-          className={`w-full font-semibold py-3 px-6 rounded-lg transition-colors mb-3 ${
-            config.isCustom && !customSizeAcknowledged
-              ? 'bg-white/10 text-white/50 cursor-not-allowed'
-              : 'bg-red-500 hover:bg-red-600 text-white'
-          }`}
-        >
-          Add to Cart
-        </button>
+        {/* CTA */}
+        {requiresQuote ? (
+          <div className="mb-3 space-y-3">
+            <div className="px-3 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+              <p className="text-yellow-200 text-sm font-medium">
+                ⚠ Requires Quote
+              </p>
+              <p className="text-yellow-100/90 text-xs mt-1">
+                {quoteReason || 'This configuration requires a custom quote.'}
+              </p>
+            </div>
+            <a
+              href="/contact"
+              className="block w-full text-center font-semibold py-3 px-6 rounded-lg transition-colors bg-red-500 hover:bg-red-600 text-white"
+            >
+              Get a Quote
+            </a>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onAddToCart}
+            disabled={config.isCustom && !customSizeAcknowledged}
+            className={`w-full font-semibold py-3 px-6 rounded-lg transition-colors mb-3 ${
+              config.isCustom && !customSizeAcknowledged
+                ? 'bg-white/10 text-white/50 cursor-not-allowed'
+                : 'bg-red-500 hover:bg-red-600 text-white'
+            }`}
+          >
+            Add to Cart
+          </button>
+        )}
 
         {/* Secondary Link */}
         {!config.isCustom && (
