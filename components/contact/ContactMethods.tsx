@@ -113,7 +113,7 @@ export default function ContactMethods() {
   };
 
   return (
-    <section ref={sectionRef} className="w-full py-20 px-4">
+    <section ref={sectionRef} className="w-full pt-8 pb-20 px-4">
       <div className="container mx-auto">
         {/* Contact Method Cards */}
         <motion.div

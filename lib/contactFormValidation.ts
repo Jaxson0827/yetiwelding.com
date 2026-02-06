@@ -7,11 +7,8 @@ export interface FormField {
   name: string;
   email: string;
   phone?: string;
-  inquiryType: string;
-  projectType?: string;
   message: string;
   preferredContact: string;
-  urgency?: string;
 }
 
 // Email validation regex
@@ -116,32 +113,6 @@ export function validateMessage(message: string, minLength: number = 10, maxLeng
 }
 
 /**
- * Validates inquiry type selection
- */
-export function validateInquiryType(inquiryType: string): ValidationResult {
-  const validTypes = ['general', 'quote', 'service', 'support'];
-  
-  if (!inquiryType || !validTypes.includes(inquiryType)) {
-    return { isValid: false, error: 'Please select an inquiry type' };
-  }
-
-  return { isValid: true };
-}
-
-/**
- * Validates project type (required when inquiry type is quote or service)
- */
-export function validateProjectType(projectType: string | undefined, inquiryType: string): ValidationResult {
-  if (inquiryType === 'quote' || inquiryType === 'service') {
-    if (!projectType || projectType.trim().length === 0) {
-      return { isValid: false, error: 'Project type is required for this inquiry' };
-    }
-  }
-
-  return { isValid: true };
-}
-
-/**
  * Validates preferred contact method
  */
 export function validatePreferredContact(preferredContact: string): ValidationResult {
@@ -202,18 +173,6 @@ export function validateForm(formData: Partial<FormField>): {
   const phoneResult = validatePhone(formData.phone);
   if (!phoneResult.isValid) {
     errors.phone = phoneResult.error || 'Invalid phone';
-  }
-
-  // Validate inquiry type
-  const inquiryResult = validateInquiryType(formData.inquiryType || '');
-  if (!inquiryResult.isValid) {
-    errors.inquiryType = inquiryResult.error || 'Invalid inquiry type';
-  }
-
-  // Validate project type if needed
-  const projectResult = validateProjectType(formData.projectType, formData.inquiryType || '');
-  if (!projectResult.isValid) {
-    errors.projectType = projectResult.error || 'Invalid project type';
   }
 
   // Validate message

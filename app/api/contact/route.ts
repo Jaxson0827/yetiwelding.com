@@ -48,11 +48,8 @@ export async function POST(request: NextRequest) {
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
     const phone = formData.get('phone') as string;
-    const inquiryType = formData.get('inquiryType') as string;
-    const projectType = formData.get('projectType') as string;
     const message = formData.get('message') as string;
     const preferredContact = formData.get('preferredContact') as string;
-    const urgency = formData.get('urgency') as string;
     const file = formData.get('file') as File | null;
 
     // Honeypot triggered: pretend success to avoid tipping off bots
@@ -89,21 +86,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare email content
-    const inquiryTypeLabels: Record<string, string> = {
-      general: 'General Inquiry',
-      quote: 'Quote Request',
-      service: 'Service Inquiry',
-      support: 'Support',
-    };
-
-    const urgencyLabels: Record<string, string> = {
-      low: 'Low - No rush',
-      normal: 'Normal - Within a week',
-      high: 'High - Within 48 hours',
-      urgent: 'Urgent - As soon as possible',
-    };
-
     const preferredContactLabels: Record<string, string> = {
       phone: 'Phone',
       email: 'Email',
@@ -134,10 +116,7 @@ export async function POST(request: NextRequest) {
       name: escapeHtml(name.trim()),
       email: escapeHtml(email.trim()),
       phone: phone ? escapeHtml(phone.trim()) : '',
-      inquiryType: escapeHtml(inquiryType || ''),
-      projectType: escapeHtml(projectType || ''),
       preferredContact: escapeHtml(preferredContact || ''),
-      urgency: escapeHtml(urgency || ''),
       messageHtml: escapeHtml(message).replace(/\n/g, '<br>'),
       messageText: message.trim(),
       fileName: file ? escapeHtml(file.name) : '',
@@ -167,7 +146,7 @@ export async function POST(request: NextRequest) {
       from: process.env.RESEND_FROM_EMAIL || 'Yeti Welding Contact <onboarding@resend.dev>',
       to: [businessEmail],
       replyTo: email,
-      subject: `New Contact Form: ${inquiryTypeLabels[inquiryType] || inquiryType} - ${name}`,
+      subject: `New Contact Form: ${name}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -205,22 +184,8 @@ export async function POST(request: NextRequest) {
                 </div>
                 ` : ''}
                 <div class="field">
-                  <div class="label">Inquiry Type:</div>
-                  <div class="value">${escapeHtml(inquiryTypeLabels[inquiryType] || inquiryType)}</div>
-                </div>
-                ${projectType ? `
-                <div class="field">
-                  <div class="label">Project Type:</div>
-                  <div class="value">${safe.projectType}</div>
-                </div>
-                ` : ''}
-                <div class="field">
                   <div class="label">Preferred Contact Method:</div>
                   <div class="value">${escapeHtml(preferredContactLabels[preferredContact] || preferredContact)}</div>
-                </div>
-                <div class="field">
-                  <div class="label">Urgency:</div>
-                  <div class="value">${escapeHtml(urgencyLabels[urgency] || urgency)}</div>
                 </div>
                 ${file ? `
                 <div class="field">
@@ -247,10 +212,7 @@ New Contact Form Submission from Yeti Welding Website
 Name: ${name}
 Email: ${email}
 ${phone ? `Phone: ${phone}` : ''}
-Inquiry Type: ${inquiryTypeLabels[inquiryType] || inquiryType}
-${projectType ? `Project Type: ${projectType}` : ''}
 Preferred Contact: ${preferredContactLabels[preferredContact] || preferredContact}
-Urgency: ${urgencyLabels[urgency] || urgency}
 ${file ? `Attachment: ${file.name} (${(file.size / 1024).toFixed(2)} KB)` : ''}
 
 Message:

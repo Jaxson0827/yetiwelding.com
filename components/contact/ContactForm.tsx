@@ -9,8 +9,6 @@ import {
   validateEmail,
   validatePhone,
   validateMessage,
-  validateInquiryType,
-  validateProjectType,
   validatePreferredContact,
   validateFile,
   formatPhoneNumber,
@@ -22,31 +20,10 @@ interface ContactFormProps {
   onSuccess?: () => void;
 }
 
-const INQUIRY_TYPES = [
-  { value: 'general', label: 'General Inquiry' },
-  { value: 'quote', label: 'Quote Request' },
-  { value: 'service', label: 'Service Inquiry' },
-  { value: 'support', label: 'Support' },
-];
-
-const PROJECT_TYPES = [
-  { value: 'custom-fabrication', label: 'Custom Fabrication' },
-  { value: 'structural-welding', label: 'Structural Welding' },
-  { value: 'ornamental-work', label: 'Ornamental Work' },
-  { value: 'other', label: 'Other' },
-];
-
 const PREFERRED_CONTACT_METHODS = [
   { value: 'phone', label: 'Phone' },
   { value: 'email', label: 'Email' },
   { value: 'text', label: 'Text Message' },
-];
-
-const URGENCY_LEVELS = [
-  { value: 'low', label: 'Low - No rush' },
-  { value: 'normal', label: 'Normal - Within a week' },
-  { value: 'high', label: 'High - Within 48 hours' },
-  { value: 'urgent', label: 'Urgent - As soon as possible' },
 ];
 
 const STORAGE_KEY = 'yeti-welding-contact-form-draft';
@@ -56,11 +33,8 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
     name: '',
     email: '',
     phone: '',
-    inquiryType: '',
-    projectType: '',
     message: '',
     preferredContact: '',
-    urgency: 'normal',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -141,12 +115,6 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       case 'message':
         validationResult = validateMessage(formData.message || '');
         break;
-      case 'inquiryType':
-        validationResult = validateInquiryType(formData.inquiryType || '');
-        break;
-      case 'projectType':
-        validationResult = validateProjectType(formData.projectType, formData.inquiryType || '');
-        break;
       case 'preferredContact':
         validationResult = validatePreferredContact(formData.preferredContact || '');
         break;
@@ -181,7 +149,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
     e.preventDefault();
     
     // Mark all fields as touched
-    const allFields = ['name', 'email', 'phone', 'inquiryType', 'projectType', 'message', 'preferredContact'];
+    const allFields = ['name', 'email', 'phone', 'message', 'preferredContact'];
     const newTouched: Record<string, boolean> = {};
     allFields.forEach((field) => {
       newTouched[field] = true;
@@ -214,11 +182,8 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       submitData.append('name', sanitizeInput(formData.name || ''));
       submitData.append('email', sanitizeInput(formData.email || ''));
       submitData.append('phone', sanitizeInput(formData.phone || ''));
-      submitData.append('inquiryType', formData.inquiryType || '');
-      submitData.append('projectType', formData.projectType || '');
       submitData.append('message', sanitizeInput(formData.message || ''));
       submitData.append('preferredContact', formData.preferredContact || '');
-      submitData.append('urgency', formData.urgency || 'normal');
       
       if (uploadedFile) {
         submitData.append('file', uploadedFile);
@@ -245,11 +210,8 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
           name: '',
           email: '',
           phone: '',
-          inquiryType: '',
-          projectType: '',
           message: '',
           preferredContact: '',
-          urgency: 'normal',
         });
         setUploadedFile(null);
         setTouched({});
@@ -264,8 +226,6 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       setIsSubmitting(false);
     }
   };
-
-  const showProjectType = formData.inquiryType === 'quote' || formData.inquiryType === 'service';
 
   return (
     <div className="w-full">
@@ -324,45 +284,6 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
           placeholder="(555) 123-4567"
         />
 
-        {/* Inquiry Type */}
-        <FormField
-          label="Inquiry Type"
-          name="inquiryType"
-          type="select"
-          value={formData.inquiryType || ''}
-          onChange={(value) => handleFieldChange('inquiryType', value)}
-          onBlur={() => handleFieldBlur('inquiryType')}
-          error={touched.inquiryType ? errors.inquiryType : undefined}
-          required
-          placeholder="Select inquiry type"
-          options={INQUIRY_TYPES}
-        />
-
-        {/* Project Type (conditional) */}
-        <AnimatePresence>
-          {showProjectType && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <FormField
-                label="Project Type"
-                name="projectType"
-                type="select"
-                value={formData.projectType || ''}
-                onChange={(value) => handleFieldChange('projectType', value)}
-                onBlur={() => handleFieldBlur('projectType')}
-                error={touched.projectType ? errors.projectType : undefined}
-                required={showProjectType}
-                placeholder="Select project type"
-                options={PROJECT_TYPES}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Message */}
         <FormField
           label="Message"
@@ -390,16 +311,6 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
           error={touched.preferredContact ? errors.preferredContact : undefined}
           required
           options={PREFERRED_CONTACT_METHODS}
-        />
-
-        {/* Urgency Level */}
-        <FormField
-          label="Urgency Level"
-          name="urgency"
-          type="select"
-          value={formData.urgency || 'normal'}
-          onChange={(value) => handleFieldChange('urgency', value)}
-          options={URGENCY_LEVELS}
         />
 
         {/* File Upload */}

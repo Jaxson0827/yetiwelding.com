@@ -62,7 +62,7 @@ export default function ContactPage() {
         <ContactHero />
 
         {/* Contact Form Section */}
-        <section id="contact-form" className="w-full py-20 px-4 bg-black">
+        <section id="contact-form" className="w-full pt-20 pb-12 px-4 bg-black">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               className="text-center mb-12"
@@ -104,11 +104,11 @@ export default function ContactPage() {
         {/* Contact Methods Section */}
         <ContactMethods />
 
-        {/* FAQ Section */}
-        <FAQSection />
-
         {/* Team Section */}
         <TeamSection />
+
+        {/* FAQ Section */}
+        <FAQSection />
 
         {/* Map Section */}
         <MapSection />

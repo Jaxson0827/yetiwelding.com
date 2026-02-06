@@ -14,25 +14,25 @@ interface TeamMember {
 // Placeholder team data - can be updated with actual team members
 const teamMembers: TeamMember[] = [
   {
-    name: 'Office Team',
-    role: 'General Inquiries',
-    email: 'office@yetiwelding.com',
-    phone: '801-995-8906',
-    description: 'Our office team is here to help with general questions, quote requests, and scheduling.',
+    name: 'Matt Warren',
+    role: 'Estimates',
+    email: 'matt@yetiwelding.com',
+    phone: '(385) 225-5131',
+    description: 'For estimates and early project pricing.',
   },
   {
-    name: 'Project Managers',
-    role: 'Project Coordination',
-    email: 'office@yetiwelding.com',
-    phone: '801-995-8906',
-    description: 'For questions about ongoing projects, timelines, and project-specific inquiries.',
+    name: 'Marc Wright',
+    role: 'Detailing',
+    email: 'marc@yetiwelding.com',
+    phone: '(801) 400-7047',
+    description: 'For detailing questions and shop drawing coordination.',
   },
   {
-    name: 'Sales Team',
-    role: 'Quotes & Estimates',
-    email: 'office@yetiwelding.com',
-    phone: '801-995-8906',
-    description: 'Ready to discuss your project needs and provide detailed quotes and estimates.',
+    name: 'Mckay Hales',
+    role: 'Financials',
+    email: 'mckay@yetiwelding.com',
+    phone: '(801) 358-2758',
+    description: 'For invoicing, payments, and billing questions.',
   },
 ];
 
@@ -123,17 +123,15 @@ export default function TeamSection() {
                 />
 
                 <div className="relative z-10">
-                  {/* Role Badge */}
-                  <div className="mb-4">
-                    <span className="inline-block px-3 py-1 bg-accent-red/20 text-accent-red text-xs font-semibold uppercase tracking-wider rounded-full border border-accent-red/30">
-                      {member.role}
-                    </span>
-                  </div>
-
-                  {/* Name */}
-                  <h3 className="text-2xl font-bold mb-3 text-white uppercase tracking-tight">
-                    {member.name}
+                  {/* Header */}
+                  <h3 className="text-2xl font-bold mb-2 uppercase tracking-tight text-accent-red text-glow">
+                    {member.role}
                   </h3>
+
+                  {/* Subheading */}
+                  <p className="text-white/90 font-semibold uppercase tracking-wider mb-4">
+                    {member.name}
+                  </p>
 
                   {/* Description */}
                   <p className="text-white/70 mb-6 leading-relaxed">
