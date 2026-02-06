@@ -61,9 +61,6 @@ export default function ContactPage() {
         <Header />
         <ContactHero />
 
-        {/* Contact Methods Section */}
-        <ContactMethods />
-
         {/* Contact Form Section */}
         <section id="contact-form" className="w-full py-20 px-4 bg-black">
           <div className="container mx-auto max-w-4xl">
@@ -103,6 +100,9 @@ export default function ContactPage() {
             </motion.div>
           </div>
         </section>
+
+        {/* Contact Methods Section */}
+        <ContactMethods />
 
         {/* FAQ Section */}
         <FAQSection />
