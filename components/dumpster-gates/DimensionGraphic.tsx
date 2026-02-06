@@ -1,12 +1,15 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { GateStyle } from '@/lib/dumpsterGates/types';
 
 import basePrint from './dumpster_print_base.png';
-import { DUMPSTER_GATE_DIM_PLACEMENTS, DUMPSTER_GATE_PRINT_VIEWBOX } from './dumpsterGatePrintPlacements';
+import {
+  DUMPSTER_GATE_DIM_PLACEMENTS,
+  DUMPSTER_GATE_PRINT_VIEWBOX,
+  type DumpsterGateDimPlacement,
+} from './dumpsterGatePrintPlacements';
 
 export interface DumpsterGatePrintValues {
   enclOverall?: string;
@@ -48,11 +51,12 @@ function formatLabel(name: string, value?: string) {
 }
 
 type PlacementKey = keyof typeof DUMPSTER_GATE_DIM_PLACEMENTS;
-type Placement = (typeof DUMPSTER_GATE_DIM_PLACEMENTS)[PlacementKey];
+type Placement = DumpsterGateDimPlacement;
+type PlacementMap = Record<PlacementKey, DumpsterGateDimPlacement>;
 
 function clonePlacements() {
   // Simple numeric object deep-clone; avoids structuredClone compatibility issues.
-  return JSON.parse(JSON.stringify(DUMPSTER_GATE_DIM_PLACEMENTS)) as typeof DUMPSTER_GATE_DIM_PLACEMENTS;
+  return JSON.parse(JSON.stringify(DUMPSTER_GATE_DIM_PLACEMENTS)) as PlacementMap;
 }
 
 function DimLabel({
@@ -260,11 +264,21 @@ export default function DimensionGraphic({
   const isSingleSwingLeft = style === 'single-swing-left';
   const isSingleSwingRight = style === 'single-swing-right';
 
-  const searchParams = useSearchParams();
-  const calibrate = searchParams?.get('calibrateDims') === '1';
+  // NOTE: We avoid `useSearchParams()` here because it requires Suspense boundaries
+  // during prerender/build. Calibration is a debug-only feature, so reading from
+  // `window.location.search` after mount is sufficient.
+  const [calibrate, setCalibrate] = useState(false);
+  useEffect(() => {
+    try {
+      const v = new URLSearchParams(window.location.search).get('calibrateDims') === '1';
+      setCalibrate(v);
+    } catch {
+      setCalibrate(false);
+    }
+  }, []);
 
   const [lastClick, setLastClick] = useState<Point | null>(null);
-  const [draftPlacements, setDraftPlacements] = useState(() => clonePlacements());
+  const [draftPlacements, setDraftPlacements] = useState<PlacementMap>(() => clonePlacements());
   const placementKeys = useMemo(() => Object.keys(DUMPSTER_GATE_DIM_PLACEMENTS) as PlacementKey[], []);
   const [activeKey, setActiveKey] = useState<PlacementKey>('enclOverall');
   const [activeStep, setActiveStep] = useState<0 | 1 | 2 | 3 | 4>(0);
@@ -548,7 +562,9 @@ export default function DimensionGraphic({
 
   // NOTE: These are starter coordinates. Use `?calibrateDims=1` and click
   // endpoints/label centers to refine and lock them in.
-  const placements = calibrate ? draftPlacements : DUMPSTER_GATE_DIM_PLACEMENTS;
+  const placements: PlacementMap = calibrate
+    ? draftPlacements
+    : (DUMPSTER_GATE_DIM_PLACEMENTS as unknown as PlacementMap);
 
   return (
     <div className="w-full">
