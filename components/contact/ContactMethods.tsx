@@ -115,21 +115,6 @@ export default function ContactMethods() {
   return (
     <section ref={sectionRef} className="w-full py-20 px-4">
       <div className="container mx-auto">
-        {/* Section Header */}
-        <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 uppercase tracking-tight text-glow">
-            Get In Touch
-          </h2>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            Choose your preferred way to reach us. We're here to help bring your vision to life.
-          </p>
-        </motion.div>
-
         {/* Contact Method Cards */}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
