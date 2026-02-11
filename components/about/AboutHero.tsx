@@ -12,7 +12,7 @@ export default function AboutHero() {
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full">
         <Image
-          src="/homepage/team_photo.jpeg"
+          src="/about/about_hero.jpg"
           alt="Yeti Welding team members working together in the shop"
           fill
           className="object-cover"
