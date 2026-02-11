@@ -147,7 +147,7 @@ export const philosophyItems: PhilosophyItem[] = [
   {
     title: 'Knowledge Transfer',
     imageSide: 'left',
-    image: '/homepage/about.JPG',
+    image: '/about/knowledge_transfer.jpeg',
     imageAlt: 'Yeti Welding founder mentoring the next generation of welders, demonstrating the company\'s commitment to craftsmanship and knowledge transfer',
     description: 'This photo tells our story—founder passing down knowledge to the next generation. Founded in 2016, we deliver results that speak for themselves through disciplined work, problem-solving, and pride in the craft.',
     year: 2016,
