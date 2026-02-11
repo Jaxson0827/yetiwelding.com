@@ -8,9 +8,15 @@ export default function HistorySection() {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
-  // Split timeline items into two columns
-  const leftColumnItems = timelineItems.filter((_, index) => index % 2 === 0);
-  const rightColumnItems = timelineItems.filter((_, index) => index % 2 === 1);
+  const sortedAscItems = [...timelineItems].sort((a, b) => a.year - b.year);
+  const halfIdx = Math.ceil(sortedAscItems.length / 2);
+
+  // Desktop: sequential by columns (left = earlier years, right = later years)
+  const leftColumnItems = sortedAscItems.slice(0, halfIdx);
+  const rightColumnItems = sortedAscItems.slice(halfIdx);
+
+  // Mobile: descending order (latest first)
+  const mobileItemsDesc = [...sortedAscItems].sort((a, b) => b.year - a.year);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -82,36 +88,27 @@ export default function HistorySection() {
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
         >
-          {/* Left Column Timeline */}
-          <div className="relative">
-            {/* Vertical Timeline Line */}
+          {/* Mobile: single column, descending order */}
+          <div className="relative md:hidden">
             <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
-            
-            {/* Timeline Items */}
-            <div className="space-y-8 md:space-y-12">
-              {leftColumnItems.map((item, index) => (
+
+            <div className="space-y-8">
+              {mobileItemsDesc.map((item) => (
                 <motion.div
                   key={item.year}
                   className="relative pl-16"
                   variants={itemVariants}
                 >
-                  {/* Red Square Marker (no icon) */}
                   <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
-                  
-                  {/* Connector Line to Timeline */}
                   <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
-                  
-                  {/* Year */}
-                  <div className="text-accent-red text-2xl md:text-3xl font-bold mb-2">
+
+                  <div className="text-accent-red text-2xl font-bold mb-2">
                     {item.year}
                   </div>
-                  
-                  {/* Title and Description */}
+
                   <div>
-                    <h3 className="text-lg md:text-xl font-bold text-white mb-2">
-                      {item.title}
-                    </h3>
-                    <p className="text-base md:text-lg text-white/70 leading-relaxed">
+                    <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
+                    <p className="text-base text-white/70 leading-relaxed">
                       {item.description}
                     </p>
                   </div>
@@ -120,43 +117,70 @@ export default function HistorySection() {
             </div>
           </div>
 
-          {/* Right Column Timeline */}
-          <div className="relative">
-            {/* Vertical Timeline Line */}
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
-            
-            {/* Timeline Items */}
-            <div className="space-y-8 md:space-y-12">
-              {rightColumnItems.map((item, index) => (
-                <motion.div
-                  key={item.year}
-                  className="relative pl-16"
-                  variants={itemVariants}
-                >
-                  {/* Red Square Marker (no icon) */}
-                  <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
-                  
-                  {/* Connector Line to Timeline */}
-                  <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
-                  
-                  {/* Year */}
-                  <div className="text-accent-red text-2xl md:text-3xl font-bold mb-2">
-                    {item.year}
-                  </div>
-                  
-                  {/* Title and Description */}
-                  <div>
-                    <h3 className="text-lg md:text-xl font-bold text-white mb-2">
-                      {item.title}
-                    </h3>
-                    <p className="text-base md:text-lg text-white/70 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+          {/* Desktop: two columns, sequential by column */}
+          <>
+            {/* Left Column Timeline */}
+            <div className="relative hidden md:block">
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
+
+              <div className="space-y-12">
+                {leftColumnItems.map((item) => (
+                  <motion.div
+                    key={item.year}
+                    className="relative pl-16"
+                    variants={itemVariants}
+                  >
+                    <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
+                    <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
+
+                    <div className="text-accent-red text-3xl font-bold mb-2">
+                      {item.year}
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-2">
+                        {item.title}
+                      </h3>
+                      <p className="text-lg text-white/70 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
+
+            {/* Right Column Timeline */}
+            <div className="relative hidden md:block">
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
+
+              <div className="space-y-12">
+                {rightColumnItems.map((item) => (
+                  <motion.div
+                    key={item.year}
+                    className="relative pl-16"
+                    variants={itemVariants}
+                  >
+                    <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
+                    <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
+
+                    <div className="text-accent-red text-3xl font-bold mb-2">
+                      {item.year}
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-2">
+                        {item.title}
+                      </h3>
+                      <p className="text-lg text-white/70 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </>
         </motion.div>
       </div>
     </section>
