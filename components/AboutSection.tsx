@@ -114,9 +114,10 @@ export default function AboutSection() {
             className="text-white/90 text-base md:text-lg leading-relaxed mb-8 max-w-2xl"
             variants={itemVariants}
           >
-            This photo tells our story—founder passing down knowledge to the next
-            generation. Founded in 2016, we bring a hands-on, problem-solving mindset
-            to every job and deliver results that speak for themselves.
+            Not every shop is built for custom. We are. From complex structural work to
+            high-finish fabrication, we’re the team clients bring in when the project is
+            unique and it has to be done right the first time—measured twice, built
+            once, delivered with pride.
           </motion.p>
 
           {/* Key Values/Statistics Grid */}
@@ -137,8 +138,8 @@ export default function AboutSection() {
               variants={itemVariants}
               className="border-l-2 border-accent-red pl-4"
             >
-              <div className="text-3xl font-bold text-accent-red mb-1">1000+</div>
-              <div className="text-white/70 text-sm uppercase tracking-wide">Projects Completed</div>
+              <div className="text-3xl font-bold text-accent-red mb-1">Hundreds</div>
+              <div className="text-white/70 text-sm uppercase tracking-wide">Jobs Completed</div>
             </motion.div>
           </motion.div>
 
