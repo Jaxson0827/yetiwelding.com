@@ -155,7 +155,7 @@ export const philosophyItems: PhilosophyItem[] = [
   {
     title: 'Precision in Practice',
     imageSide: 'right',
-    image: '/homepage/hero.JPG',
+    image: '/about/precision.jpg',
     imageAlt: 'Yeti Welding workshop showcasing professional metal fabrication equipment and precision craftsmanship in action',
     description: 'Every weld matters. Every measurement counts. Our approach combines time-tested techniques with meticulous attention to detail. We believe that quality isn\'t achieved through shortcuts—it comes from respecting the craft and putting in the work that excellence demands.',
   },
