@@ -74,8 +74,8 @@ export default function ServicesHero() {
           variants={itemVariants}
         >
           Professional welding and fabrication services delivered with precision,
-          craftsmanship, and attention to detail. With 40+ years of experience, we specialize
-          in custom fabrication, structural welding, and ornamental work.
+          craftsmanship, and attention to detail. Founded in 2016, we specialize in
+          custom fabrication, structural welding, and ornamental work.
         </motion.p>
 
         {/* Primary CTA */}

@@ -111,7 +111,7 @@ export default function Footer() {
               />
             </motion.div>
             <p className="text-white/70 text-sm mb-4 max-w-xs">
-              Professional welding services with decades of experience. Trusted craftsmanship that speaks for itself.
+              Professional welding and fabrication services. Founded in 2016. Trusted craftsmanship that speaks for itself.
             </p>
             {/* Social Media */}
             <div>

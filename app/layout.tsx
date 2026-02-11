@@ -5,7 +5,7 @@ import ScrollProgressBar from "@/components/ScrollProgressBar";
 
 export const metadata: Metadata = {
   title: "Yeti Welding | Professional Welding Services | Custom Fabrication | Utah",
-  description: "Yeti Welding delivers exceptional welding services with 40+ years of experience. Specializing in custom fabrication, structural welding, and ornamental work. Based in Springville, Utah. Trusted craftsmanship that speaks for itself.",
+  description: "Yeti Welding delivers exceptional welding and fabrication services. Founded in 2016 and based in Springville, Utah. Specializing in custom fabrication, structural welding, and ornamental work. Trusted craftsmanship that speaks for itself.",
   keywords: ["welding", "custom fabrication", "structural welding", "ornamental welding", "welding services", "metal fabrication", "Yeti Welding", "Utah welding", "Springville welding", "steel fabrication"],
   authors: [{ name: "Yeti Welding" }],
   icons: {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Yeti Welding | Professional Welding Services | Custom Fabrication",
-    description: "40+ years of experience in custom fabrication, structural welding, and ornamental work. Trusted craftsmanship that delivers results. Based in Springville, Utah.",
+    description: "Founded in 2016. Trusted craftsmanship in custom fabrication, structural welding, and ornamental work. Based in Springville, Utah.",
     type: "website",
     locale: "en_US",
     url: "https://yetiwelding.com",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Yeti Welding | Professional Welding Services",
-    description: "40+ years of experience in custom fabrication, structural welding, and ornamental work. Trusted craftsmanship that delivers results.",
+    description: "Founded in 2016. Trusted craftsmanship in custom fabrication, structural welding, and ornamental work.",
     images: ["/homepage/hero.JPG"],
   },
   robots: {

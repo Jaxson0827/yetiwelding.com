@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Our Services | Yeti Welding - Professional Welding & Fabrication',
-  description: 'Professional welding and fabrication services including custom fabrication, structural welding, and ornamental work. 40+ years of experience in Utah.',
+  description: 'Professional welding and fabrication services including custom fabrication, structural welding, and ornamental work. Founded in 2016 in Springville, Utah.',
   keywords: [
     'welding services',
     'metal fabrication',

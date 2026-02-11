@@ -42,7 +42,7 @@ export default function AboutPage() {
               '@type': 'Organization',
               name: 'Yeti Welding',
               foundingDate: `${companyStats.foundingYear}-01-01`,
-              description: 'Professional welding and fabrication services with 40+ years of experience. Specializing in custom fabrication, structural welding, and ornamental work.',
+              description: 'Professional welding and fabrication services. Founded in 2016. Specializing in custom fabrication, structural welding, and ornamental work.',
               url: 'https://yetiwelding.com',
               telephone: '801-995-8906',
               email: 'office@yetiwelding.com',

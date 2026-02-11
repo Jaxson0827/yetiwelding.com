@@ -96,7 +96,7 @@ export default function ProjectsPage() {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: 'Our Projects | Yeti Welding',
-            description: 'Showcasing decades of exceptional craftsmanship and custom fabrication expertise in metalwork and welding.',
+            description: 'Showcasing exceptional craftsmanship and custom fabrication expertise in metalwork and welding.',
             url: 'https://yetiwelding.com/projects',
             mainEntity: {
               '@type': 'ItemList',

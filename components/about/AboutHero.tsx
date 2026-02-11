@@ -13,7 +13,7 @@ export default function AboutHero() {
       <div className="absolute inset-0 w-full h-full">
         <Image
           src="/homepage/team_photo.jpeg"
-          alt="Yeti Welding team members working together, representing 40+ years of combined experience in metal fabrication and welding services"
+          alt="Yeti Welding team members working together in the shop"
           fill
           className="object-cover"
           priority

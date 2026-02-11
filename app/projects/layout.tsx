@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: 'Our Projects | Yeti Welding',
-    description: 'Showcasing decades of exceptional craftsmanship and custom fabrication expertise in metalwork and welding.',
+    description: 'Showcasing exceptional craftsmanship and custom fabrication expertise in metalwork and welding.',
     url: 'https://yetiwelding.com/projects',
     siteName: 'Yeti Welding',
     images: [
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Our Projects | Yeti Welding',
-    description: 'Showcasing decades of exceptional craftsmanship and custom fabrication expertise.',
+    description: 'Showcasing exceptional craftsmanship and custom fabrication expertise.',
     images: ['https://yetiwelding.com/homepage/hero.JPG'],
   },
   alternates: {

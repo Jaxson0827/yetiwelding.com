@@ -75,7 +75,7 @@ export default function ProjectsHero() {
           className="text-base md:text-lg text-white/80 max-w-2xl mx-auto"
           variants={itemVariants}
         >
-          Showcasing decades of exceptional craftsmanship and custom fabrication expertise
+          Showcasing exceptional craftsmanship and custom fabrication expertise
         </motion.p>
       </motion.div>
     </section>

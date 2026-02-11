@@ -10,8 +10,8 @@ export interface CompanyStats {
 }
 
 export const companyStats: CompanyStats = {
-  foundingYear: 1984,
-  yearsInBusiness: 40,
+  foundingYear: 2016,
+  yearsInBusiness: 10,
   projectsCompleted: 10000,
   teamMembers: 15,
   certifications: [
@@ -31,7 +31,7 @@ export interface MissionContent {
 export const missionContent: MissionContent = {
   title: 'OUR MISSION',
   primaryStatement: 'To deliver exceptional welding and fabrication services with uncompromising quality, precision, and craftsmanship that exceeds expectations and builds lasting partnerships.',
-  supportingStatement: 'With decades of combined experience, we bring traditional techniques and modern innovation together to create solutions that stand the test of time. Every project is approached with the same dedication to excellence that has defined our work from day one.',
+  supportingStatement: 'Founded in 2016, we bring disciplined craftsmanship and modern fabrication capabilities together to create solutions that stand the test of time. Every project is approached with the same dedication to excellence that has defined our work from day one.',
 };
 
 // Team Members
@@ -148,9 +148,9 @@ export const philosophyItems: PhilosophyItem[] = [
     title: 'Knowledge Transfer',
     imageSide: 'left',
     image: '/homepage/about.JPG',
-    imageAlt: 'Yeti Welding founder mentoring the next generation of welders, demonstrating the company\'s commitment to passing down 40+ years of metal fabrication expertise and craftsmanship traditions',
-    description: 'This photo tells our story—founder passing down knowledge to the next generation. With decades of experience and a legacy built on craftsmanship, we deliver results that speak for themselves. The tradition of mentorship and continuous learning ensures that every project benefits from accumulated wisdom.',
-    year: 1984,
+    imageAlt: 'Yeti Welding founder mentoring the next generation of welders, demonstrating the company\'s commitment to craftsmanship and knowledge transfer',
+    description: 'This photo tells our story—founder passing down knowledge to the next generation. Founded in 2016, we deliver results that speak for themselves through disciplined work, problem-solving, and pride in the craft.',
+    year: 2016,
   },
   {
     title: 'Precision in Practice',
@@ -172,40 +172,46 @@ export interface TimelineItem {
 
 export const timelineItems: TimelineItem[] = [
   {
-    year: 1984,
-    title: 'The Beginning',
-    description: 'Yeti Welding was founded on a simple principle: do the work right, every time. What started as a commitment to quality craftsmanship has grown into a legacy that spans decades.',
+    year: 2008,
+    title: 'Farm-Built Foundations',
+    description:
+      'Before Yeti Welding had a name, it was forged on a working farm. Dillon learned to weld fixing broken equipment with an old 1971 Miller machine and a Geneva Steel hood. That early hands-on experience built the work ethic and problem-solving mindset the company still runs on today.',
     category: 'founding',
   },
   {
-    year: 1995,
-    title: 'Expanding Capabilities',
-    description: 'After a decade of steady growth, we expanded our facilities and capabilities, taking on larger commercial and industrial projects. Our reputation for reliability and precision began to spread throughout the region.',
+    year: 2012,
+    title: 'Field-Tested Experience',
+    description:
+      'After high school welding classes sharpened his skills, Dillon hit the road working pipeline jobs. The field became the real classroom. Long days, real weld tests, and production deadlines refined his craft. Those years built confidence, discipline, and the ability to perform under pressure.',
     category: 'growth',
   },
   {
-    year: 2005,
-    title: 'Certification Excellence',
-    description: 'Achieved AWS (American Welding Society) certification and maintained OSHA compliance standards. This milestone reinforced our commitment to industry-leading quality and safety.',
+    year: 2016,
+    title: 'Yeti Welding Begins',
+    description:
+      'Yeti Welding officially launched with a two-wheel-drive Ford Ranger, a 1971 Miller welder, and zero outside funding. The early focus was ornamental iron and residential railings — building one tool, one client, and one project at a time. The company was built debt-free from day one.',
+    category: 'founding',
+  },
+  {
+    year: 2017,
+    title: 'Credibility Through Content',
+    description:
+      'As a young contractor trying to win work, Dillon turned to social media to prove capability. Projects were documented, shared, and showcased publicly. Instead of convincing clients in person, Yeti Welding let the work speak online — building trust, visibility, and momentum through consistent content.',
     category: 'achievement',
   },
   {
-    year: 2015,
-    title: 'Generational Transition',
-    description: 'The next generation joined the team, bringing fresh perspectives while honoring traditional craftsmanship. This marked a new era of innovation combined with time-tested expertise.',
+    year: 2019,
+    title: 'Defining Projects',
+    description:
+      'Yeti Welding took on bold, unconventional work — including large commercial projects built from modified shipping containers. Complex builds that others avoided became opportunities to grow skill, reputation, and confidence. The company began establishing itself as the team willing to solve difficult problems.',
     category: 'milestone',
   },
   {
-    year: 2020,
-    title: 'Digital Innovation',
-    description: 'Embracing modern technology while maintaining our core values. We integrated advanced fabrication techniques and digital tools to enhance precision and efficiency without compromising quality.',
+    year: 2025,
+    title: 'Major Expansion',
+    description:
+      'In 2025, Yeti Welding entered a new chapter — moving into a significantly larger shop, tripling the size of the team, expanding equipment and fleet capacity, and taking on larger structural and commercial projects. What started with one truck has grown into a full-scale operation built for long-term growth.',
     category: 'growth',
-  },
-  {
-    year: 2024,
-    title: 'The Way Forward',
-    description: 'Today, we continue to honor our founding principles while embracing innovation. The knowledge passed down through generations informs every decision, every weld, every project. The Way of the Yeti endures.',
-    category: 'milestone',
   },
 ];
 

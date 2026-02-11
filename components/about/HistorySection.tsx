@@ -12,42 +12,6 @@ export default function HistorySection() {
   const leftColumnItems = timelineItems.filter((_, index) => index % 2 === 0);
   const rightColumnItems = timelineItems.filter((_, index) => index % 2 === 1);
 
-  // Get icon based on category
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'founding':
-        return (
-          <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-        );
-      case 'growth':
-        return (
-          <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-        );
-      case 'achievement':
-        return (
-          <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-          </svg>
-        );
-      case 'milestone':
-        return (
-          <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-          </svg>
-        );
-      default:
-        return (
-          <svg className="w-6 h-6 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        );
-    }
-  };
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -131,10 +95,8 @@ export default function HistorySection() {
                   className="relative pl-16"
                   variants={itemVariants}
                 >
-                  {/* Red Square Icon with Category Icon */}
-                  <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red flex items-center justify-center">
-                    {getCategoryIcon(item.category)}
-                  </div>
+                  {/* Red Square Marker (no icon) */}
+                  <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
                   
                   {/* Connector Line to Timeline */}
                   <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
@@ -171,10 +133,8 @@ export default function HistorySection() {
                   className="relative pl-16"
                   variants={itemVariants}
                 >
-                  {/* Red Square Icon with Category Icon */}
-                  <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red flex items-center justify-center">
-                    {getCategoryIcon(item.category)}
-                  </div>
+                  {/* Red Square Marker (no icon) */}
+                  <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
                   
                   {/* Connector Line to Timeline */}
                   <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />

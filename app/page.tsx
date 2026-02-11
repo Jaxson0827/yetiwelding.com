@@ -44,7 +44,7 @@ export default function Home() {
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
             name: 'Yeti Welding',
-            description: 'Professional welding services with 40+ years of experience. Specializing in custom fabrication, structural welding, and ornamental work.',
+            description: 'Professional welding and fabrication services. Founded in 2016. Specializing in custom fabrication, structural welding, and ornamental work.',
             url: 'https://yetiwelding.com',
             telephone: '801-995-8906',
             email: 'office@yetiwelding.com',

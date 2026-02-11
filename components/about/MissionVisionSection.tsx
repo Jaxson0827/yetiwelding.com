@@ -104,7 +104,7 @@ export default function MissionVisionSection() {
               {/* Image - using team photo as placeholder */}
               <Image
                 src="/homepage/team_photo.jpeg"
-                alt="Yeti Welding team members representing decades of combined experience in metal fabrication and welding services"
+                alt="Yeti Welding team members in the shop"
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -118,10 +118,10 @@ export default function MissionVisionSection() {
                   </span>
                   <div className="flex flex-col pb-1">
                     <span className="text-base md:text-lg font-bold text-accent-red uppercase leading-tight mb-0.5">
-                      YEARS OF
+                      YEARS IN
                     </span>
                     <span className="text-3xl md:text-4xl lg:text-5xl font-bold text-white uppercase leading-tight">
-                      EXPERIENCE
+                      BUSINESS
                     </span>
                   </div>
                 </div>

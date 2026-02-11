@@ -46,7 +46,7 @@ export default function AboutSection() {
       >
         <Image
           src={aboutPath}
-          alt="Yeti Welding founder mentoring the next generation of welders, demonstrating the company's commitment to passing down 40+ years of metal fabrication expertise and craftsmanship traditions"
+          alt="Yeti Welding founder mentoring the next generation of welders, demonstrating the company's commitment to craftsmanship and knowledge transfer"
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-110"
           sizes="(max-width: 1024px) 100vw, 50vw"
@@ -115,8 +115,8 @@ export default function AboutSection() {
             variants={itemVariants}
           >
             This photo tells our story—founder passing down knowledge to the next
-            generation. With decades of experience and a legacy built on
-            craftsmanship, we deliver results that speak for themselves.
+            generation. Founded in 2016, we bring a hands-on, problem-solving mindset
+            to every job and deliver results that speak for themselves.
           </motion.p>
 
           {/* Key Values/Statistics Grid */}
@@ -130,8 +130,8 @@ export default function AboutSection() {
               variants={itemVariants}
               className="border-l-2 border-accent-red pl-4"
             >
-              <div className="text-3xl font-bold text-accent-red mb-1">40+</div>
-              <div className="text-white/70 text-sm uppercase tracking-wide">Years Experience</div>
+              <div className="text-3xl font-bold text-accent-red mb-1">2016</div>
+              <div className="text-white/70 text-sm uppercase tracking-wide">Founded</div>
             </motion.div>
             <motion.div
               variants={itemVariants}

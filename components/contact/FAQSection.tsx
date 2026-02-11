@@ -18,7 +18,7 @@ const faqData: FAQItem[] = [
   },
   {
     question: 'How long has Yeti Welding been in business?',
-    answer: 'Yeti Welding has been serving customers with exceptional welding and fabrication services for decades. Our experience and commitment to quality craftsmanship have made us a trusted name in the industry.',
+    answer: 'Yeti Welding was founded in 2016 and has been serving customers with exceptional welding and fabrication services ever since. Our commitment to quality craftsmanship has made us a trusted name in the industry.',
     category: 'General',
   },
   
