@@ -100,7 +100,6 @@ export default function FeaturedProject() {
     category: 'Art/Sculpture',
     description: 'A monumental work of metal art that transforms a standard development entry into a sculptural landmark. Towering geometric forms rise from each side, joined by a custom-branded archway merging sculpture, structure, and architecture. Precision-fabricated from 3/16" Corten plate with 46,500 CNC-laser-cut holes creating the signature "firefly glow" effect.',
     image: '/homepage/featuredproject.JPG', // Note: File extension is .JPG
-    tags: ['Art', 'Sculpture', 'Custom'],
   };
 
   const sectionRef = useRef<HTMLElement>(null);
@@ -127,21 +126,6 @@ export default function FeaturedProject() {
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/20 to-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* Project Tags Overlay */}
-        <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-          {featuredProject.tags.map((tag, index) => (
-            <motion.span
-              key={tag}
-              className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white text-xs uppercase tracking-wide border border-white/20"
-              initial={{ opacity: 0, y: 10 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.5 + index * 0.1 }}
-            >
-              {tag}
-            </motion.span>
-          ))}
-        </div>
       </motion.div>
 
       {/* Right Column - Content */}

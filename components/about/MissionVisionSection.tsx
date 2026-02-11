@@ -110,22 +110,6 @@ export default function MissionVisionSection() {
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
               
-              {/* Stats Overlay at Bottom */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gray-800 px-6 py-4">
-                <div className="flex items-end gap-3">
-                  <span className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-none">
-                    {companyStats.yearsInBusiness}
-                  </span>
-                  <div className="flex flex-col pb-1">
-                    <span className="text-base md:text-lg font-bold text-accent-red uppercase leading-tight mb-0.5">
-                      YEARS IN
-                    </span>
-                    <span className="text-3xl md:text-4xl lg:text-5xl font-bold text-white uppercase leading-tight">
-                      BUSINESS
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </motion.div>
