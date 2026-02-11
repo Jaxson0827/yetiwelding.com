@@ -15,8 +15,8 @@ export default function HistorySection() {
   const leftColumnItems = sortedAscItems.slice(0, halfIdx);
   const rightColumnItems = sortedAscItems.slice(halfIdx);
 
-  // Mobile: descending order (latest first)
-  const mobileItemsDesc = [...sortedAscItems].sort((a, b) => b.year - a.year);
+  // Mobile: ascending order (earliest first)
+  const mobileItemsAsc = sortedAscItems;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -88,12 +88,12 @@ export default function HistorySection() {
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
         >
-          {/* Mobile: single column, descending order */}
+          {/* Mobile: single column, ascending order */}
           <div className="relative md:hidden">
             <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
 
             <div className="space-y-8">
-              {mobileItemsDesc.map((item) => (
+              {mobileItemsAsc.map((item) => (
                 <motion.div
                   key={item.year}
                   className="relative pl-16"
