@@ -21,7 +21,6 @@
     "@stripe/stripe-js": "^8.6.0",
     "@types/pdfkit": "^0.17.4",
     "@vercel/blob": "^1.1.1",
-    "@vercel/kv": "^3.0.0",
     "framer-motion": "^10.16.16",
     "next": "^16.0.10",
     "pdfkit": "^0.17.2",

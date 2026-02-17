@@ -123,3 +123,15 @@ model StripeWebhookEvent {
   processedAt     DateTime?
 }
 
+model RateLimitBucket {
+  // A single fixed-window bucket record.
+  // Example key: rl:contact:<ip>:<windowStartEpochSeconds>
+  key       String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+

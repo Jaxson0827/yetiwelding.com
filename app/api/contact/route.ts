@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { kvRateLimitFixedWindow, KvNotConfiguredError } from '@/lib/storage/kv';
+import { prisma } from '@/lib/db/prisma';
 let resend: Resend | null = null;
 
 function getResend(): Resend | null {
@@ -28,17 +28,55 @@ function getClientIp(request: NextRequest): string {
   return request.headers.get('x-real-ip') || 'unknown';
 }
 
+async function pgFixedWindowRateLimit(opts: {
+  keyPrefix: string;
+  identity: string;
+  limit: number;
+  windowSeconds: number;
+}): Promise<boolean> {
+  const now = Date.now();
+  const windowMs = opts.windowSeconds * 1000;
+  const windowStartMs = Math.floor(now / windowMs) * windowMs;
+  const bucketKey = `${opts.keyPrefix}:${opts.identity}:${Math.floor(windowStartMs / 1000)}`;
+  const expiresAt = new Date(windowStartMs + windowMs);
+
+  // Opportunistic cleanup; safe to ignore failures.
+  try {
+    await prisma.rateLimitBucket.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+  } catch {
+    // ignore
+  }
+
+  const bucket = await prisma.rateLimitBucket.upsert({
+    where: { key: bucketKey },
+    create: {
+      key: bucketKey,
+      count: 1,
+      expiresAt,
+    },
+    update: {
+      count: { increment: 1 },
+      expiresAt,
+    },
+  });
+
+  return bucket.count <= opts.limit;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit (best effort in dev; required in production)
-    try {
-      const ip = getClientIp(request);
-      const ok = await kvRateLimitFixedWindow(`rl:contact:${ip}`, 5, 10 * 60); // 5 requests / 10 minutes
-      if (!ok) {
-        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
-      }
-    } catch (e) {
-      if (!(e instanceof KvNotConfiguredError)) throw e;
+    // Rate limit (Postgres-backed fixed window): 5 requests / 10 minutes.
+    const ip = getClientIp(request);
+    const ok = await pgFixedWindowRateLimit({
+      keyPrefix: 'rl:contact',
+      identity: ip,
+      limit: 5,
+      windowSeconds: 10 * 60,
+    });
+    if (!ok) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }
 
     const formData = await request.formData();
@@ -248,6 +286,8 @@ ${safe.messageText}
     );
   }
 }
+
+export const runtime = 'nodejs';
 
 
 

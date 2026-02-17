@@ -278,6 +278,12 @@ After creating Postgres on Vercel/Neon and setting `DATABASE_URL`:
 - Apply migrations in production (Vercel build/deploy step):
   - `npx prisma migrate deploy`
 
+### Removing KV (Postgres-only mode)
+
+This repo no longer uses Vercel KV for checkout or rate limiting. If you previously configured KV, you can remove these from Vercel Environment Variables:
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
+
 ### Minimum code changes for production-grade reliability
 
 - Webhook must:
