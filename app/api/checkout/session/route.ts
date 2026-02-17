@@ -2,19 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
-import { calculateShipping, ShippingMethod } from '@/lib/shipping/calculator';
-import type { EmbedSpec } from '@/lib/steelEmbeds/types';
-import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import { calculateShippingLive, ShippingMethod } from '@/lib/shipping/calculator';
+import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { prisma } from '@/lib/db/prisma';
 import crypto from 'crypto';
-
-type CartItem = {
-  id: string;
-  productType: 'steel-plate-embeds' | 'dumpster-gate';
-  configuration: EmbedSpec | DumpsterGateConfig;
-  price?: number; // ignored (client-controlled)
-  isCustomFabrication?: boolean;
-};
 
 type CustomerInfo = {
   name: string;
@@ -47,12 +38,6 @@ function toCents(amountUsd: number): number {
   return Math.max(0, Math.round(amountUsd * 100));
 }
 
-function clampInt(n: unknown, min: number, max: number): number {
-  const parsed = typeof n === 'number' ? n : Number(n);
-  if (!Number.isFinite(parsed)) return min;
-  return Math.min(max, Math.max(min, Math.floor(parsed)));
-}
-
 function getClientIp(request: NextRequest): string {
   const xff = request.headers.get('x-forwarded-for');
   if (xff) return xff.split(',')[0].trim();
@@ -72,7 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { checkoutId, items, customerInfo, selectedShippingMethod } = body as {
       checkoutId?: string;
-      items?: CartItem[];
+      items?: unknown;
       customerInfo?: CustomerInfo;
       selectedShippingMethod?: ShippingMethod;
     };
@@ -81,31 +66,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'checkoutId is required' }, { status: 400 });
     }
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Cart items are required' }, { status: 400 });
+    const validated = normalizeAndValidateCartItems(items);
+    if (!validated.ok) {
+      return NextResponse.json({ error: 'Invalid cart items', details: validated.errors }, { status: 400 });
     }
 
     if (!customerInfo?.email || !customerInfo?.shippingAddress?.zip || !customerInfo?.shippingAddress?.state) {
       return NextResponse.json({ error: 'Customer email and shipping address (state + zip) are required' }, { status: 400 });
     }
 
-    // Normalize quantities server-side (never trust client values)
-    const normalizedItems: CartItem[] = items.map((item) => {
-      if (!item || (item.productType !== 'steel-plate-embeds' && item.productType !== 'dumpster-gate')) return item;
-      if (item.productType === 'steel-plate-embeds') {
-        const cfg = { ...(item.configuration as EmbedSpec) };
-        cfg.quantity = clampInt(cfg.quantity, 1, 999);
-        return { ...item, configuration: cfg };
-      }
-      const cfg = { ...(item.configuration as DumpsterGateConfig) };
-      cfg.quantity = clampInt(cfg.quantity, 1, 999);
-      return { ...item, configuration: cfg };
-    });
+    const normalizedItems = validated.normalizedItems;
 
     // Build Stripe line items from server pricing
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = normalizedItems.map((item) => {
       if (item.productType === 'steel-plate-embeds') {
-        const cfg = item.configuration as EmbedSpec;
+        const cfg = item.configuration as any;
         const breakdown = priceEmbed(cfg);
         const unitAmount = toCents(breakdown.unitPrice);
         return {
@@ -126,7 +101,7 @@ export async function POST(request: NextRequest) {
         };
       }
 
-      const cfg = item.configuration as DumpsterGateConfig;
+      const cfg = item.configuration as any;
       const breakdown = priceGate(cfg);
       const unitAmount = toCents(breakdown.unitPrice);
       const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
@@ -149,26 +124,33 @@ export async function POST(request: NextRequest) {
     });
 
     // Shipping options (server computed)
-    const shippingCalc = calculateShipping(
+    const shippingCalc = await calculateShippingLive(
       normalizedItems as any,
       customerInfo.shippingAddress as any,
       selectedShippingMethod
     );
 
-    const shipping_options: Stripe.Checkout.SessionCreateParams.ShippingOption[] = (shippingCalc.options || []).map((opt) => ({
-      shipping_rate_data: {
-        type: 'fixed_amount',
-        fixed_amount: { currency: 'usd', amount: toCents(opt.cost) },
-        display_name: opt.name,
-        delivery_estimate: {
-          minimum: { unit: 'business_day', value: 3 },
-          maximum: { unit: 'business_day', value: 14 },
+    const shipping_options: Stripe.Checkout.SessionCreateParams.ShippingOption[] = (shippingCalc.options || []).map(
+      (opt) => ({
+        shipping_rate_data: {
+          type: 'fixed_amount',
+          fixed_amount: { currency: 'usd', amount: toCents(opt.cost) },
+          tax_behavior: 'exclusive',
+          display_name: opt.name,
+          delivery_estimate: {
+            minimum: { unit: 'business_day', value: (opt as any).estimatedDaysMin || 3 },
+            maximum: { unit: 'business_day', value: (opt as any).estimatedDaysMax || 14 },
+          },
+          metadata: {
+            method: opt.method,
+            provider: (opt as any).provider || 'heuristic',
+            providerRateId: (opt as any).providerRateId || '',
+            carrier: (opt as any).carrier || '',
+            service: (opt as any).service || '',
+          },
         },
-        metadata: {
-          method: opt.method,
-        },
-      },
-    }));
+      })
+    );
 
     const baseUrlRaw = process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com';
     const baseUrl = (() => {

@@ -8,6 +8,8 @@ import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
+import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
 import crypto from 'crypto';
 
 let stripe: Stripe | null = null;
@@ -222,6 +224,32 @@ export async function POST(request: NextRequest) {
     const taxCents = typeof session.total_details?.amount_tax === 'number' ? session.total_details.amount_tax : null;
     const totalCents = typeof session.amount_total === 'number' ? session.amount_total : null;
 
+    // Resolve chosen shipping rate metadata (provider/carrier/service) from Stripe.
+    const stripeShippingRateId =
+      typeof (session as any)?.shipping_cost?.shipping_rate === 'string'
+        ? ((session as any).shipping_cost.shipping_rate as string)
+        : null;
+
+    let shippingMethod: string | null = (draft.selectedShippingMethod || null) as any;
+    let shippingProvider: string | null = null;
+    let shippingCarrier: string | null = null;
+    let shippingService: string | null = null;
+    let shippingQuoteId: string | null = null;
+
+    if (stripeShippingRateId) {
+      try {
+        const sr = await stripeInstance!.shippingRates.retrieve(stripeShippingRateId);
+        const md: any = (sr as any)?.metadata || {};
+        if (md.method) shippingMethod = String(md.method);
+        if (md.provider) shippingProvider = String(md.provider);
+        if (md.carrier) shippingCarrier = String(md.carrier);
+        if (md.service) shippingService = String(md.service);
+        if (md.providerRateId) shippingQuoteId = String(md.providerRateId);
+      } catch (e) {
+        console.warn('Failed to retrieve Stripe shipping rate metadata', e);
+      }
+    }
+
     const notes: string[] = [];
     const flags = needsReview ? { totalsMismatch: true, mismatches } : null;
     if (needsReview) notes.push(`needs_review: ${mismatches.join(' | ')}`);
@@ -238,6 +266,7 @@ export async function POST(request: NextRequest) {
         const unitCents = Math.max(0, Math.round(bd.unitPrice * 100));
         return {
           productType,
+          sku: getEmbedCartKey(cfg),
           quantity: qty,
           unitPriceCents: unitCents,
           totalPriceCents: unitCents * qty,
@@ -254,6 +283,7 @@ export async function POST(request: NextRequest) {
       const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
       return {
         productType,
+        sku: getGateCartKey(cfg),
         quantity: qty,
         unitPriceCents: unitCents,
         totalPriceCents: unitCents * qty,
@@ -289,7 +319,12 @@ export async function POST(request: NextRequest) {
           totalCents,
           customerEmail,
           customerInfo: mergedCustomerInfo as any,
-          shippingMethod: (draft.selectedShippingMethod || null) as any,
+          shippingMethod: shippingMethod as any,
+          shippingProvider: shippingProvider as any,
+          shippingCarrier: shippingCarrier as any,
+          shippingService: shippingService as any,
+          shippingQuoteId: shippingQuoteId as any,
+          stripeShippingRateId: stripeShippingRateId as any,
           // Only append notes if newly needs review.
           notes: needsReview ? Array.from(new Set([...(existing.notes || []), ...notes])) : existing.notes,
         };
@@ -328,7 +363,12 @@ export async function POST(request: NextRequest) {
           totalCents,
           customerEmail,
           customerInfo: mergedCustomerInfo as any,
-          shippingMethod: (draft.selectedShippingMethod || null) as any,
+          shippingMethod: shippingMethod as any,
+          shippingProvider: shippingProvider as any,
+          shippingCarrier: shippingCarrier as any,
+          shippingService: shippingService as any,
+          shippingQuoteId: shippingQuoteId as any,
+          stripeShippingRateId: stripeShippingRateId as any,
           notes,
           ...(flags ? { flags: flags as any } : {}),
           items: {
@@ -353,6 +393,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const appendNote = (existingNotes: string[] | null | undefined, note: string): string[] => {
+      const base = Array.isArray(existingNotes) ? existingNotes : [];
+      return Array.from(new Set([...base, note]));
+    };
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const res = await createOrUpdateOrderFromSession({ session, forceMarkPaid: false, reasonEventType: event.type });
@@ -361,6 +406,25 @@ export async function POST(request: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session;
       const res = await createOrUpdateOrderFromSession({ session, forceMarkPaid: true, reasonEventType: event.type });
       if (!res.ok) return NextResponse.json({ error: 'Failed to handle event' }, { status: 500 });
+    } else if (event.type === 'checkout.session.async_payment_failed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const res = await createOrUpdateOrderFromSession({ session, forceMarkPaid: false, reasonEventType: event.type });
+      if (!res.ok) return NextResponse.json({ error: 'Failed to handle event' }, { status: 500 });
+
+      const sessionId = typeof session.id === 'string' ? session.id : null;
+      if (sessionId) {
+        const existing = await prisma.order.findFirst({ where: { stripeSessionId: sessionId } });
+        if (existing && existing.paymentStatus !== 'paid' && existing.paymentStatus !== 'refunded') {
+          await prisma.order.update({
+            where: { id: existing.id },
+            data: {
+              paymentStatus: 'failed',
+              status: existing.status === 'needs_review' ? 'needs_review' : 'pending_payment',
+              notes: appendNote(existing.notes, `payment_failed: ${event.type}`),
+            },
+          });
+        }
+      }
     } else if (event.type === 'payment_intent.succeeded') {
       const pi = event.data.object as Stripe.PaymentIntent;
       const paymentIntentId = typeof pi.id === 'string' ? pi.id : null;
@@ -384,6 +448,59 @@ export async function POST(request: NextRequest) {
               orderTotalUsd: typeof updated.totalCents === 'number' ? updated.totalCents / 100 : 0,
             });
           }
+        }
+      }
+    } else if (event.type === 'payment_intent.payment_failed') {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      const paymentIntentId = typeof pi.id === 'string' ? pi.id : null;
+      if (paymentIntentId) {
+        const existing = await prisma.order.findFirst({ where: { paymentIntentId } });
+        if (existing && existing.paymentStatus !== 'paid' && existing.paymentStatus !== 'refunded') {
+          await prisma.order.update({
+            where: { id: existing.id },
+            data: {
+              paymentStatus: 'failed',
+              status: existing.status === 'needs_review' ? 'needs_review' : 'pending_payment',
+              notes: appendNote(existing.notes, `payment_failed: ${event.type}`),
+            },
+          });
+        }
+      }
+    } else if (event.type === 'checkout.session.expired') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const res = await createOrUpdateOrderFromSession({ session, forceMarkPaid: false, reasonEventType: event.type });
+      if (!res.ok) return NextResponse.json({ error: 'Failed to handle event' }, { status: 500 });
+
+      const sessionId = typeof session.id === 'string' ? session.id : null;
+      if (sessionId) {
+        const existing = await prisma.order.findFirst({ where: { stripeSessionId: sessionId } });
+        if (existing && existing.paymentStatus !== 'paid' && existing.paymentStatus !== 'refunded') {
+          await prisma.order.update({
+            where: { id: existing.id },
+            data: {
+              paymentStatus: 'failed',
+              status: existing.status === 'needs_review' ? 'needs_review' : 'cancelled',
+              notes: appendNote(existing.notes, `checkout_expired: ${event.type}`),
+            },
+          });
+        }
+      }
+    } else if (event.type === 'charge.refunded') {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntentId = typeof (charge as any)?.payment_intent === 'string' ? ((charge as any).payment_intent as string) : null;
+      if (paymentIntentId) {
+        const existing = await prisma.order.findFirst({ where: { paymentIntentId } });
+        if (existing) {
+          // Don't override "shipped/delivered" statuses; refunds can happen post-ship.
+          const keepStatus = existing.status === 'shipped' || existing.status === 'delivered';
+          await prisma.order.update({
+            where: { id: existing.id },
+            data: {
+              paymentStatus: 'refunded',
+              status: keepStatus ? existing.status : existing.status === 'needs_review' ? 'needs_review' : 'cancelled',
+              notes: appendNote(existing.notes, `refunded: ${event.type}`),
+            },
+          });
         }
       }
     } else {

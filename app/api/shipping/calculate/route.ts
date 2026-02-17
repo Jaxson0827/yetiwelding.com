@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateShipping } from '@/lib/shipping/calculator';
+import { calculateShippingLive } from '@/lib/shipping/calculator';
 import { CartItem } from '@/contexts/CartContext';
 import { ShippingAddress, ShippingMethod } from '@/lib/shipping/calculator';
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const shippingCalculation = calculateShipping(
+    const shippingCalculation = await calculateShippingLive(
       items as CartItem[],
       address as ShippingAddress,
       preferredMethod as ShippingMethod | undefined

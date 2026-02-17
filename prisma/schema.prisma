@@ -73,6 +73,11 @@ model Order {
   customerEmail   String
   customerInfo    Json
   shippingMethod  String?
+  shippingProvider String?
+  shippingCarrier  String?
+  shippingService  String?
+  shippingQuoteId  String?
+  stripeShippingRateId String?
 
   estimatedDeliveryDate DateTime?
   trackingNumber        String?
@@ -96,6 +101,7 @@ model OrderItem {
   order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   productType     String
+  sku             String?
   quantity        Int
   unitPriceCents  Int
   totalPriceCents Int
@@ -109,6 +115,7 @@ model OrderItem {
   createdAt       DateTime @default(now())
 
   @@index([orderId])
+  @@index([sku])
 }
 
 model StripeWebhookEvent {

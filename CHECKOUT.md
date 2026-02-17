@@ -67,7 +67,10 @@ This split is reasonable for fabrication/custom work where some orders are pay-n
   - Returns limited information unless the caller provides a matching `token`.
 
 - **Shipping calculation**: `app/api/shipping/calculate/route.ts` and `lib/shipping/calculator.ts`
-  - Returns shipping options based on estimated weight/zone rules (not a carrier integration).
+  - Returns shipping options using **live carrier rates** via Shippo when configured (with heuristic fallback).
+
+- **Admin (MVP)**: `app/admin/orders/page.tsx` + `app/api/admin/orders/*`
+  - Minimal protected order list/search + status/tracking updates (protected by `ADMIN_API_KEY`).
 
 - **Tax calculation**: `app/api/tax/calculate/route.ts` and `lib/tax/calculator.ts`
   - Exists, but Stripe flow uses `automatic_tax` in Checkout Sessions.
@@ -101,6 +104,9 @@ High-level tables/models:
   - Optional unique Stripe identifiers (`stripeSessionId`, `paymentIntentId`)
   - Stores money as **cents** (`subtotalCents`, `shippingCents`, `taxCents`, `totalCents`)
   - Stores `customerInfo` snapshot (JSON) + `customerEmail`
+  - Stores selected shipping details resolved from Stripe shipping rate metadata:
+    - `shippingProvider`, `shippingCarrier`, `shippingService`, `shippingQuoteId`, `stripeShippingRateId`
+  - Order items include optional `sku` (deterministic SKU-like identifier derived from configuration; internal ops/reporting only)
 
 - **`StripeWebhookEvent`**
   - One row per Stripe event id (`eventId` unique)
@@ -138,7 +144,7 @@ Webhook creates an order record including:
 4. Server:
    - clamps/normalizes quantities server-side
    - recomputes line_items from server pricing (`priceEmbed`, `priceGate`)
-   - computes shipping_options (`calculateShipping`)
+   - computes shipping_options (`calculateShippingLive`)
    - creates Stripe Checkout Session (mode=payment, `automatic_tax: { enabled: true }`)
    - stores a Postgres draft with expected totals (subtotal/shipping cents) to validate webhook totals later
 5. Client redirects to Stripe-hosted Checkout page.
@@ -200,7 +206,7 @@ Why this matters:
 
 ### 2) “Final” shipping/customer info may not match what’s stored
 
-In the Stripe flow, you store `customerInfo` from the pre-checkout form in the KV draft, but Stripe Checkout can collect/alter shipping details. The webhook currently persists draft customer/shipping info rather than reconciling with Stripe’s final session details. This can lead to fulfillment to an incorrect address.
+In the Stripe flow, you store `customerInfo` from the pre-checkout form in a Postgres draft, but Stripe Checkout can collect/alter shipping details. The webhook **merges** Stripe session shipping/customer details into the stored `customerInfo` snapshot to avoid fulfillment to an incorrect address.
 
 ### 3) Quote/manual endpoint allows incomplete addresses (can create bad orders)
 
@@ -212,7 +218,7 @@ In `app/checkout/page.tsx`, the code only submits the quote/manual flow if `paym
 
 ### 5) Cart is not cleared after Stripe checkout
 
-The cart is cleared in the quote/manual flow, but the Stripe Checkout flow redirects away and returns; the cart remains in localStorage unless cleared on confirmation. This is UX confusing and increases accidental re-order risk.
+Fixed: the confirmation page clears the cart in the Stripe flow once the webhook-created order exists.
 
 ### 6) Order status mismatch can break the tracking UI
 
@@ -232,6 +238,22 @@ Stripe:
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+
+Admin:
+- `ADMIN_API_KEY` (required to use `/admin/orders`; send as `x-admin-key` header to admin APIs)
+
+Shipping (live carrier rates via Shippo):
+- `SHIPPO_API_TOKEN`
+- Ship-from address (required for live rates):
+  - `SHIP_FROM_NAME`
+  - `SHIP_FROM_STREET1`
+  - `SHIP_FROM_STREET2` (optional)
+  - `SHIP_FROM_CITY`
+  - `SHIP_FROM_STATE`
+  - `SHIP_FROM_ZIP`
+  - `SHIP_FROM_COUNTRY` (usually `US`)
+  - `SHIP_FROM_PHONE` (optional)
+  - `SHIP_FROM_EMAIL` (optional)
 
 Database (Postgres):
 - `DATABASE_URL`
@@ -265,7 +287,11 @@ If checkout works in Production but fails in Preview (or vice versa), it is almo
 - Ensure it sends at least the event types you handle in code:
   - `checkout.session.completed`
   - `checkout.session.async_payment_succeeded`
+  - `checkout.session.async_payment_failed`
+  - `checkout.session.expired`
   - `payment_intent.succeeded` (optional; currently partially handled)
+  - `payment_intent.payment_failed`
+  - `charge.refunded`
 
 ### Prisma / Postgres setup (developer steps)
 
@@ -277,6 +303,12 @@ After creating Postgres on Vercel/Neon and setting `DATABASE_URL`:
   - `npx prisma migrate dev --name init`
 - Apply migrations in production (Vercel build/deploy step):
   - `npx prisma migrate deploy`
+
+Vercel deployment automation:
+- A `vercel-build` script exists in `package.json` and runs:
+  - `prisma migrate deploy`
+  - `prisma generate`
+  - `next build`
 
 ### Removing KV (Postgres-only mode)
 
@@ -291,7 +323,7 @@ This repo no longer uses Vercel KV for checkout or rate limiting. If you previou
   - **not** return 2xx when it failed to handle the event (so Stripe retries)
   - treat “draft missing” as retryable unless you have an alternative source of truth
 
-- Webhook order creation should use Stripe’s final session details for shipping/customer info (or reconcile).
+- Webhook order creation uses Stripe’s final session details for shipping/customer info (merged into stored snapshot).
 
 - Quote/manual endpoint should validate required fields (shipping zip/state at minimum) or explicitly treat it as “quote request without shipping computed”.
 
@@ -307,8 +339,7 @@ This repo no longer uses Vercel KV for checkout or rate limiting. If you previou
 
 ## Non-goals / “not implemented yet” (current repo state)
 
-- No admin UI for order management.
-- Shipping calculator is heuristic (no carrier quotes, no address validation).
+- Shipping labels are not auto-purchased yet (rates only).
 - Tax is handled by Stripe automatic tax for Stripe flow; local tax calculator exists but is not fully integrated into the display/quote flow.
 - Some legacy steel-embeds endpoints exist but are disabled (410) and should not be relied on for operational checkout.
 
@@ -326,14 +357,52 @@ This repo no longer uses Vercel KV for checkout or rate limiting. If you previou
 
 ### UX
 
-- [ ] Clear cart after successful Stripe checkout (on confirmation)
-- [ ] Show clear messaging when order is `needs_review` or `pending_payment`
+- [x] Clear cart after successful Stripe checkout (on confirmation)
+- [x] Show clear messaging when order is `needs_review` or `pending_payment`
 - [x] Disable “Track Order” button until tracking URL is ready (avoid linking to `/order/track/`)
+
+### Admin / ops
+
+- [x] Minimal admin order list/search + status/tracking updates (`/admin/orders`)
 
 ### Cleanup
 
 - [ ] Remove or fix deprecated PaymentIntent flow + update `STRIPE_SETUP.md`
 - [ ] Decide whether `/api/checkout` is “quote request” only vs “manual order”; validate inputs accordingly
+
+---
+
+## Prelaunch test checklist (end-to-end)
+
+Run these in **Preview** with Stripe **test mode**, then repeat in **Production** with **live keys**.
+
+### Environment + config checks
+
+- [ ] Vercel **Production** env vars set (Stripe live keys, Postgres URLs, Resend, `NEXT_PUBLIC_SITE_URL`, `ADMIN_API_KEY`)
+- [ ] Webhook endpoint configured in Stripe and pointing to `/api/stripe/webhook`
+- [ ] DB migrations auto-run on deploy (Vercel uses `vercel-build`)
+- [ ] (If using live shipping) Shippo env vars set and shipping rates show real carrier/service names
+
+### Stripe Checkout (happy path)
+
+- [ ] Add each product type to cart (embeds + gates), proceed to checkout
+- [ ] Shipping options load and selection changes total
+- [ ] Complete Stripe checkout successfully
+- [ ] Confirmation page shows jobId and cart is cleared (cart page is empty)
+- [ ] Tracking page shows correct totals including shipping + tax (when applicable)
+- [ ] Customer + internal emails received (Resend)
+
+### Webhook edge cases
+
+- [ ] Simulate a failure payment method (test card that fails) → order ends in `pending_payment`/`cancelled` with `paymentStatus=failed`
+- [ ] Expire a Checkout Session → order updates to `cancelled` (or remains pending with a clear note)
+- [ ] Issue a refund in Stripe → order updates to `paymentStatus=refunded` and is visible in admin
+
+### Admin ops
+
+- [ ] Visit `/admin/orders`, enter `ADMIN_API_KEY`, confirm orders list loads
+- [ ] Update an order status (e.g. `in_production` → `shipped`) and add tracking number
+- [ ] Verify tracking page reflects the updated status/tracking number (with token)
 
 ---
 

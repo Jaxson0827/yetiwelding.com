@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { EmbedSpec } from '@/lib/steelEmbeds/types';
-import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import type { EmbedSpec } from '@/lib/steelEmbeds/types';
+import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { generateOrderConfirmationEmail } from '@/lib/emails/orderConfirmation';
 import { generateInternalNotificationEmail } from '@/lib/emails/internalNotification';
 import { sendEmail } from '@/lib/emails/sendEmail';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
-import { calculateShipping } from '@/lib/shipping/calculator';
+import { calculateShippingLive } from '@/lib/shipping/calculator';
 import { prisma } from '@/lib/db/prisma';
+import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
+import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
+import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
 import crypto from 'crypto';
-
-interface CartItem {
-  id: string;
-  productType: 'steel-plate-embeds' | 'dumpster-gate';
-  configuration: EmbedSpec | DumpsterGateConfig;
-  price: number;
-  isCustomFabrication?: boolean;
-}
 
 interface CustomerInfo {
   name: string;
@@ -51,11 +46,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { items, customerInfo, shippingMethod } = body;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Cart items are required' },
-        { status: 400 }
-      );
+    const validated = normalizeAndValidateCartItems(items);
+    if (!validated.ok) {
+      return NextResponse.json({ error: 'Invalid cart items', details: validated.errors }, { status: 400 });
     }
 
     if (!customerInfo?.name || !customerInfo?.email || !customerInfo?.phone) {
@@ -65,14 +58,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Quote/Manual flow only (no Stripe payment here). Recompute totals server-side.
-    const embedSpecs: EmbedSpec[] = items
-      .filter((it: CartItem) => it.productType === 'steel-plate-embeds')
-      .map((it: CartItem) => it.configuration as EmbedSpec);
+    const normalizedItems = validated.normalizedItems;
 
-    const gateConfigs: DumpsterGateConfig[] = items
-      .filter((it: CartItem) => it.productType === 'dumpster-gate')
-      .map((it: CartItem) => it.configuration as DumpsterGateConfig);
+    // Quote/Manual flow only (no Stripe payment here). Recompute totals server-side.
+    const embedSpecs: EmbedSpec[] = normalizedItems
+      .filter((it) => it.productType === 'steel-plate-embeds')
+      .map((it) => it.configuration as EmbedSpec);
+
+    const gateConfigs: DumpsterGateConfig[] = normalizedItems
+      .filter((it) => it.productType === 'dumpster-gate')
+      .map((it) => it.configuration as DumpsterGateConfig);
 
     const embedsSubtotal = embedSpecs.reduce((sum, spec) => {
       const bd = priceEmbed(spec);
@@ -86,9 +81,10 @@ export async function POST(request: NextRequest) {
 
     const subtotalComputed = Math.round((embedsSubtotal + gatesSubtotal) * 100) / 100;
 
-    const shippingCalc = customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state
-      ? calculateShipping(items as any, customerInfo.shippingAddress as any, shippingMethod)
-      : { options: [], selectedMethod: shippingMethod || null };
+    const shippingCalc =
+      customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state
+        ? await calculateShippingLive(normalizedItems as any, customerInfo.shippingAddress as any, shippingMethod)
+        : { options: [], selectedMethod: shippingMethod || null };
     const chosen = shippingCalc.options?.find((o: any) => o.method === shippingMethod) || shippingCalc.options?.[0];
     const shippingCostComputed = chosen?.cost || 0;
     const totalComputed = Math.round((subtotalComputed + shippingCostComputed) * 100) / 100;
@@ -120,7 +116,7 @@ export async function POST(request: NextRequest) {
         shippingMethod: shippingMethod || (shippingCalc as any).selectedMethod || null,
         notes: [],
         items: {
-          create: (items as CartItem[]).map((it) => {
+          create: normalizedItems.map((it) => {
             if (it.productType === 'steel-plate-embeds') {
               const cfg = it.configuration as EmbedSpec;
               const breakdown = priceEmbed(cfg);
@@ -129,6 +125,7 @@ export async function POST(request: NextRequest) {
               const totalItemCents = unitCents * qty;
               return {
                 productType: it.productType,
+                sku: getEmbedCartKey(cfg),
                 quantity: qty,
                 unitPriceCents: unitCents,
                 totalPriceCents: totalItemCents,
@@ -145,6 +142,7 @@ export async function POST(request: NextRequest) {
             const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
             return {
               productType: it.productType,
+              sku: getGateCartKey(cfg),
               quantity: qty,
               unitPriceCents: unitCents,
               totalPriceCents: totalItemCents,
@@ -195,7 +193,7 @@ export async function POST(request: NextRequest) {
       // Send order confirmation email to customer
       const confirmationEmail = generateOrderConfirmationEmail(
         jobId,
-        items as CartItem[],
+        normalizedItems as any,
         customerInfo as CustomerInfo,
         totalComputed,
         {
@@ -231,7 +229,7 @@ export async function POST(request: NextRequest) {
       if (businessEmail) {
         const internalEmail = generateInternalNotificationEmail(
           jobId,
-          items as CartItem[],
+          normalizedItems as any,
           customerInfo as CustomerInfo,
           totalComputed,
           {

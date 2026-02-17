@@ -17,6 +17,8 @@ function ConfirmationContent() {
   const [orderData, setOrderData] = useState<any>(null);
   const [resolvedJobId, setResolvedJobId] = useState<string | null>(jobId);
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const canTrack = Boolean(trackingUrl || resolvedJobId);
 
   useEffect(() => {
@@ -46,6 +48,8 @@ function ConfirmationContent() {
 
         if (data?.status === 'ready' && data?.order?.jobId) {
           setResolvedJobId(data.order.jobId);
+          setOrderStatus(data.order.orderStatus || null);
+          setPaymentStatus(data.order.paymentStatus || null);
           const token = data.order.trackingToken;
           if (token) {
             setTrackingUrl(`/order/track/${encodeURIComponent(data.order.jobId)}?token=${encodeURIComponent(token)}`);
@@ -67,6 +71,32 @@ function ConfirmationContent() {
       cancelled = true;
     };
   }, [jobId, checkoutId, router]);
+
+  // Clear cart after Stripe success return, once we have an order.
+  useEffect(() => {
+    if (!checkoutId) return;
+    if (!resolvedJobId) return;
+    try {
+      window.localStorage.removeItem('yeti-welding-cart');
+      window.sessionStorage.removeItem('yeti-checkout-id');
+    } catch {
+      // ignore
+    }
+  }, [checkoutId, resolvedJobId]);
+
+  const headline =
+    orderStatus === 'needs_review'
+      ? 'Order Received'
+      : orderStatus === 'pending_payment'
+        ? 'Payment Processing'
+        : 'Order Confirmed!';
+
+  const subhead =
+    orderStatus === 'needs_review'
+      ? `We’re confirming a few details on your order. We’ll email you shortly.`
+      : orderStatus === 'pending_payment'
+        ? `Your payment is still processing. This page will update automatically.`
+        : `Thank you for your order. We've received it and will begin processing shortly.`;
 
   return (
     <main className="min-h-screen bg-black">
@@ -105,11 +135,11 @@ function ConfirmationContent() {
             </motion.div>
 
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 uppercase tracking-tight">
-              Order Confirmed!
+              {headline}
             </h1>
 
             <p className="text-white/80 text-lg mb-8">
-              Thank you for your order. We've received it and will begin processing shortly.
+              {subhead}
             </p>
 
             {resolvedJobId && (

@@ -171,6 +171,68 @@ export function isSlopeWithinTolerance(
   return getSlopeDiffIn(leftHeightFt, rightHeightFt) <= toleranceIn;
 }
 
+export type GateValidationError = { field: string; message: string };
+
+export function validateDumpsterGateConfig(config: any): GateValidationError[] {
+  const errors: GateValidationError[] = [];
+  if (!config || typeof config !== 'object') {
+    return [{ field: 'config', message: 'Invalid gate configuration' }];
+  }
+
+  const widthRes = validateWidth(Number(config.widthFt));
+  if (!widthRes.valid) errors.push({ field: 'widthFt', message: widthRes.error! });
+
+  const heightRes = validateHeight(Number(config.heightFt));
+  if (!heightRes.valid) errors.push({ field: 'heightFt', message: heightRes.error! });
+
+  if (typeof config.quantity !== 'number' || !Number.isFinite(config.quantity) || config.quantity < 1) {
+    errors.push({ field: 'quantity', message: 'Quantity must be at least 1' });
+  }
+
+  const style = config.style as GateStyle | undefined;
+  if (!style || !['double-swing', 'single-swing-left', 'single-swing-right'].includes(style)) {
+    errors.push({ field: 'style', message: 'Invalid gate style' });
+  } else if (Number.isFinite(Number(config.widthFt))) {
+    const styleRes = validateGateStyle(Number(config.widthFt), style);
+    if (!styleRes.valid) errors.push({ field: 'style', message: styleRes.error || 'Invalid gate style for width' });
+  }
+
+  if (!config.finish || !['raw-steel', 'prime-painted', 'powder-coat-black', 'galvanized'].includes(config.finish)) {
+    errors.push({ field: 'finish', message: 'Invalid finish' });
+  }
+
+  if (!config.mounting || !['with-posts', 'gate-only'].includes(config.mounting)) {
+    errors.push({ field: 'mounting', message: 'Invalid mounting option' });
+  }
+
+  // Custom-only fields (if present) should be sensible.
+  if (config.isCustom) {
+    const blockHeightRes = validateBlockHeight(Number(config.leftHeightFt));
+    if (!blockHeightRes.valid) errors.push({ field: 'leftHeightFt', message: blockHeightRes.error! });
+    const blockHeightRes2 = validateBlockHeight(Number(config.rightHeightFt));
+    if (!blockHeightRes2.valid) errors.push({ field: 'rightHeightFt', message: blockHeightRes2.error! });
+
+    if (!Number.isFinite(Number(config.blockWidthIn)) || Number(config.blockWidthIn) <= 0) {
+      errors.push({ field: 'blockWidthIn', message: 'Block width must be a positive number' });
+    }
+    if (![4, 5, 6, 7].includes(config.bottomGapIn)) {
+      errors.push({ field: 'bottomGapIn', message: 'Bottom gap must be 4, 5, 6, or 7 inches' });
+    }
+    if (!Number.isFinite(Number(config.enclosureLengthFt)) || Number(config.enclosureLengthFt) <= 0) {
+      errors.push({ field: 'enclosureLengthFt', message: 'Enclosure length must be a positive number' });
+    }
+    if (
+      Number.isFinite(Number(config.leftHeightFt)) &&
+      Number.isFinite(Number(config.rightHeightFt)) &&
+      !isSlopeWithinTolerance(Number(config.leftHeightFt), Number(config.rightHeightFt))
+    ) {
+      errors.push({ field: 'slope', message: 'Left/right block height slope exceeds tolerance' });
+    }
+  }
+
+  return errors;
+}
+
 
 
 

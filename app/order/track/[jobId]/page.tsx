@@ -217,6 +217,23 @@ export default function OrderTrackingPage() {
               <span className="font-bold text-lg">{STATUS_LABELS[order.status]}</span>
             </div>
 
+            {order.status === 'needs_review' && (
+              <div className="bg-red-500/10 border-2 border-red-500/30 rounded-lg p-4">
+                <p className="text-red-200 font-semibold mb-1">We’re confirming a few details</p>
+                <p className="text-red-200/80 text-sm">
+                  Your order is in a quick manual review to confirm totals/shipping details. We’ll email you shortly.
+                </p>
+              </div>
+            )}
+            {order.status === 'pending_payment' && (
+              <div className="bg-yellow-500/10 border-2 border-yellow-500/30 rounded-lg p-4">
+                <p className="text-yellow-200 font-semibold mb-1">Payment is still processing</p>
+                <p className="text-yellow-200/80 text-sm">
+                  This can take a little longer for some payment methods. This page will update automatically.
+                </p>
+              </div>
+            )}
+
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column: Status Timeline & Order Details */}

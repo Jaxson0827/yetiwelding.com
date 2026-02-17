@@ -1,6 +1,7 @@
 import { CartItem } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import { getShippoShippingOptions } from '@/lib/shipping/providers/shippo';
 
 export interface ShippingAddress {
   street: string;
@@ -18,6 +19,13 @@ export interface ShippingOption {
   description: string;
   cost: number;
   estimatedDays: string;
+  // Optional provider metadata (used for Stripe metadata + ops).
+  provider?: string;
+  providerRateId?: string;
+  carrier?: string;
+  service?: string | null;
+  estimatedDaysMin?: number | null;
+  estimatedDaysMax?: number | null;
 }
 
 export interface ShippingCalculation {
@@ -190,7 +198,7 @@ function getShippingZone(zip: string): number {
 /**
  * Check if order requires freight shipping
  */
-function requiresFreight(weight: number, dimensions: { length: number; width: number; height: number }): boolean {
+function requiresFreightHeuristic(weight: number, dimensions: { length: number; width: number; height: number }): boolean {
   // Require freight if:
   // - Weight > 500 lbs, OR
   // - Any dimension > 96 inches (8 feet), OR
@@ -223,7 +231,7 @@ export function calculateShipping(
   const totalWeight = calculateTotalWeight(items);
   const totalDimensions = calculateTotalDimensions(items);
   const zone = getShippingZone(address.zip);
-  const needsFreight = requiresFreight(totalWeight, totalDimensions);
+  const needsFreight = requiresFreightHeuristic(totalWeight, totalDimensions);
 
   const options: ShippingOption[] = [];
 
@@ -293,6 +301,44 @@ export function calculateShipping(
     totalWeight,
     totalDimensions,
   };
+}
+
+/**
+ * Live shipping calculation (carrier rates) with heuristic fallback.
+ *
+ * - Uses Shippo when configured and when package can be treated as parcel.
+ * - Falls back to heuristic rates if Shippo is unavailable or if the package requires freight.
+ */
+export async function calculateShippingLive(
+  items: CartItem[],
+  address: ShippingAddress,
+  preferredMethod?: ShippingMethod
+): Promise<ShippingCalculation> {
+  // Guard: basic address presence required for carrier rates.
+  const hasFullAddress =
+    !!address?.street && !!address?.city && !!address?.state && !!address?.zip && !!address?.country;
+
+  // Determine if we should treat this as freight. (Shippo parcel rates won't be reliable for oversize/LTL.)
+  const totalWeight = calculateTotalWeight(items);
+  const totalDimensions = calculateTotalDimensions(items);
+  const needsFreight = requiresFreightHeuristic(totalWeight, totalDimensions);
+
+  if (process.env.SHIPPO_API_TOKEN && hasFullAddress && !needsFreight) {
+    try {
+      const shippo = await getShippoShippingOptions({ items, address, preferredMethod });
+      return {
+        options: shippo.options,
+        selectedMethod: shippo.selectedMethod,
+        totalWeight: shippo.totalWeight,
+        totalDimensions: shippo.totalDimensions,
+      };
+    } catch (e) {
+      // Fall back to heuristic below.
+      console.warn('Live carrier rates failed; falling back to heuristic shipping.', e);
+    }
+  }
+
+  return calculateShipping(items, address, preferredMethod);
 }
 
 

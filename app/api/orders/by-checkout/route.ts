@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         jobId: true,
+        status: true,
         paymentStatus: true,
         totalCents: true,
         trackingToken: true,
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
         order: {
           orderId: order.id,
           jobId: order.jobId,
+          orderStatus: order.status,
           paymentStatus: order.paymentStatus,
           orderTotal: typeof order.totalCents === 'number' ? order.totalCents / 100 : null,
           trackingToken: order.trackingToken,
