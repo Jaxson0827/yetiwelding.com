@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  pending_payment
+  needs_review
+  in_review
+  in_production
+  ready
+  shipped
+  delivered
+  cancelled
+}
+
+enum PaymentStatus {
+  quote_requested
+  pending
+  paid
+  failed
+  refunded
+}
+
+model CheckoutDraft {
+  id                   String   @id @default(uuid())
+  checkoutId            String   @unique
+  stripeSessionId       String   @unique
+  paymentIntentId       String?  @unique
+  trackingToken         String
+
+  // Snapshots captured at session creation time (server-side repricing still happens).
+  items                 Json
+  customerInfo          Json
+  selectedShippingMethod String?
+  shippingOptions       Json?
+
+  expectedCurrency      String   @default("usd")
+  expectedSubtotalCents Int?
+  expectedShippingCents Int?
+  allowedShippingCents  Int[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  expiresAt             DateTime
+
+  @@index([stripeSessionId])
+  @@index([paymentIntentId])
+}
+
+model Order {
+  id              String        @id @default(uuid())
+  jobId           String        @unique
+  checkoutId      String?
+  stripeSessionId String?       @unique
+  paymentIntentId String?       @unique
+  trackingToken   String
+
+  status          OrderStatus
+  paymentStatus   PaymentStatus
+
+  currency        String        @default("usd")
+  subtotalCents   Int?
+  shippingCents   Int?
+  taxCents        Int?
+  totalCents      Int?
+
+  customerEmail   String
+  customerInfo    Json
+  shippingMethod  String?
+
+  estimatedDeliveryDate DateTime?
+  trackingNumber        String?
+  notes           String[]
+  flags           Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           OrderItem[]
+
+  @@index([checkoutId])
+  @@index([paymentStatus])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id              String   @id @default(uuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productType     String
+  quantity        Int
+  unitPriceCents  Int
+  totalPriceCents Int
+
+  // Snapshot of configuration at purchase/quote time.
+  configuration   Json
+
+  name            String?
+  description     String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model StripeWebhookEvent {
+  id              String   @id @default(uuid())
+  eventId         String   @unique
+  type            String
+  stripeSessionId String?
+  paymentIntentId String?
+  raw             Json?
+
+  createdAt       DateTime @default(now())
+  processedAt     DateTime?
+}
+

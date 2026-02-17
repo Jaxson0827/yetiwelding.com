@@ -5,8 +5,7 @@ import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { calculateShipping, ShippingMethod } from '@/lib/shipping/calculator';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
-import { kvRateLimitFixedWindow, kvSetJson, kvSetString, KvNotConfiguredError } from '@/lib/storage/kv';
-import { KV_KEYS } from '@/lib/storage/keys';
+import { prisma } from '@/lib/db/prisma';
 import crypto from 'crypto';
 
 type CartItem = {
@@ -67,16 +66,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
     }
 
-    // Rate limit (best effort in dev; required in production)
-    try {
-      const ip = getClientIp(request);
-      const ok = await kvRateLimitFixedWindow(`rl:checkout_session:${ip}`, 20, 10 * 60); // 20 requests / 10 minutes
-      if (!ok) {
-        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
-      }
-    } catch (e) {
-      if (!(e instanceof KvNotConfiguredError)) throw e;
-    }
+    // NOTE: Rate limiting previously used KV. With Postgres-only mode, rate limiting is not implemented here yet.
+    // If needed, add a Postgres-backed rate limit table or an external rate limiting service.
 
     const body = await request.json();
     const { checkoutId, items, customerInfo, selectedShippingMethod } = body as {
@@ -209,9 +200,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create Stripe Checkout session' }, { status: 500 });
     }
 
-    // Persist draft indices (best-effort in development; required in production).
+    // Persist draft in Postgres (required for confirmation polling + webhook reconciliation).
     // Draft TTL: 48 hours
-    const draftTtlSeconds = 48 * 60 * 60;
     const trackingToken = crypto.randomBytes(32).toString('hex');
 
     const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : null;
@@ -230,34 +220,40 @@ export async function POST(request: NextRequest) {
       null;
     const expectedShippingCents = chosenShipping ? toCents(chosenShipping.cost) : 0;
 
-    const draft = {
-      checkoutId,
-      sessionId: session.id,
-      paymentIntentId,
-      createdAt: new Date().toISOString(),
-      trackingToken,
-      items: normalizedItems,
-      customerInfo,
-      selectedShippingMethod: selectedShippingMethod || null,
-      shippingOptions: shippingCalc.options || [],
-      expectedCurrency,
-      expectedSubtotalCents,
-      expectedShippingCents,
-      allowedShippingCents,
-    };
-
-    try {
-      await kvSetString(KV_KEYS.draftByUser(checkoutId), session.id, draftTtlSeconds);
-      await kvSetJson(KV_KEYS.draftBySession(session.id), draft, draftTtlSeconds);
-      if (paymentIntentId) {
-        await kvSetString(KV_KEYS.draftByPi(paymentIntentId), session.id, draftTtlSeconds);
-      }
-    } catch (e) {
-      // In local dev KV may not be configured; for production this should be configured.
-      if (!(e instanceof KvNotConfiguredError)) {
-        throw e;
-      }
-    }
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    // Upsert by checkoutId so refresh/retry keeps a single draft per checkoutId.
+    await prisma.checkoutDraft.upsert({
+      where: { checkoutId },
+      create: {
+        checkoutId,
+        stripeSessionId: session.id,
+        paymentIntentId,
+        trackingToken,
+        items: normalizedItems as any,
+        customerInfo: customerInfo as any,
+        selectedShippingMethod: (selectedShippingMethod || null) as any,
+        shippingOptions: (shippingCalc.options || []) as any,
+        expectedCurrency,
+        expectedSubtotalCents,
+        expectedShippingCents,
+        allowedShippingCents,
+        expiresAt,
+      },
+      update: {
+        stripeSessionId: session.id,
+        paymentIntentId,
+        trackingToken,
+        items: normalizedItems as any,
+        customerInfo: customerInfo as any,
+        selectedShippingMethod: (selectedShippingMethod || null) as any,
+        shippingOptions: (shippingCalc.options || []) as any,
+        expectedCurrency,
+        expectedSubtotalCents,
+        expectedShippingCents,
+        allowedShippingCents,
+        expiresAt,
+      },
+    });
 
     return NextResponse.json({ url: session.url, sessionId: session.id });
   } catch (error) {
@@ -265,4 +261,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
   }
 }
+
+export const runtime = 'nodejs';
 

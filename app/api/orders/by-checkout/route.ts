@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kvGetJson, kvGetString, KvNotConfiguredError } from '@/lib/storage/kv';
-import { KV_KEYS } from '@/lib/storage/keys';
+import { prisma } from '@/lib/db/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,39 +8,45 @@ export async function GET(request: NextRequest) {
     if (!checkoutId) {
       return NextResponse.json({ error: 'checkoutId is required' }, { status: 400 });
     }
+    
+    const order = await prisma.order.findFirst({
+      where: { checkoutId },
+      select: {
+        id: true,
+        jobId: true,
+        paymentStatus: true,
+        totalCents: true,
+        trackingToken: true,
+      },
+    });
+    if (order) {
+      return NextResponse.json({
+        success: true,
+        status: 'ready',
+        order: {
+          orderId: order.id,
+          jobId: order.jobId,
+          paymentStatus: order.paymentStatus,
+          orderTotal: typeof order.totalCents === 'number' ? order.totalCents / 100 : null,
+          trackingToken: order.trackingToken,
+        },
+      });
+    }
 
-    const sessionId = await kvGetString(KV_KEYS.draftByUser(checkoutId));
-    if (!sessionId) {
+    const draft = await prisma.checkoutDraft.findUnique({
+      where: { checkoutId },
+      select: { stripeSessionId: true, expiresAt: true },
+    });
+    if (!draft || (draft.expiresAt && draft.expiresAt.getTime() < Date.now())) {
       return NextResponse.json({ success: true, status: 'not_found' });
     }
 
-    const orderId = await kvGetString(KV_KEYS.orderBySession(sessionId));
-    if (!orderId) {
-      return NextResponse.json({ success: true, status: 'pending', sessionId });
-    }
-
-    const order = await kvGetJson<any>(KV_KEYS.order(orderId));
-    if (!order) {
-      return NextResponse.json({ success: true, status: 'pending', sessionId });
-    }
-
-    return NextResponse.json({
-      success: true,
-      status: 'ready',
-      order: {
-        orderId: order.orderId,
-        jobId: order.jobId,
-        paymentStatus: order.paymentStatus,
-        orderTotal: order.orderTotal,
-        trackingToken: order.trackingToken,
-      },
-    });
+    return NextResponse.json({ success: true, status: 'pending', sessionId: draft.stripeSessionId });
   } catch (e) {
-    if (e instanceof KvNotConfiguredError) {
-      return NextResponse.json({ error: 'Order tracking is not configured' }, { status: 500 });
-    }
     console.error('by-checkout error:', e);
     return NextResponse.json({ error: 'Failed to fetch order status' }, { status: 500 });
   }
 }
+
+export const runtime = 'nodejs';
 

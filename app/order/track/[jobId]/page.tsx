@@ -10,24 +10,39 @@ import ShippingInfo from '@/components/order/ShippingInfo';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-type OrderStatus = 'pending' | 'in_review' | 'in_production' | 'ready' | 'shipped' | 'delivered';
+type OrderStatus =
+  | 'pending'
+  | 'pending_payment'
+  | 'needs_review'
+  | 'in_review'
+  | 'in_production'
+  | 'ready'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pending Review',
+  pending_payment: 'Pending Payment',
+  needs_review: 'Needs Review',
   in_review: 'In Review',
   in_production: 'In Production',
   ready: 'Ready for Pickup',
   shipped: 'Shipped',
   delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
   pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  pending_payment: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  needs_review: 'bg-red-500/20 text-red-300 border-red-500/30',
   in_review: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   in_production: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   ready: 'bg-green-500/20 text-green-400 border-green-500/30',
   shipped: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   delivered: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  cancelled: 'bg-white/5 text-white/60 border-white/10',
 };
 
 interface Order {
@@ -136,7 +151,9 @@ export default function OrderTrackingPage() {
   }
 
   const statusSteps: OrderStatus[] = ['pending', 'in_review', 'in_production', 'ready', 'shipped', 'delivered'];
-  const currentStatusIndex = statusSteps.indexOf(order.status);
+  const normalizedForTimeline: OrderStatus =
+    order.status === 'pending_payment' || order.status === 'needs_review' ? 'pending' : order.status;
+  const currentStatusIndex = statusSteps.indexOf(normalizedForTimeline);
 
   const formatDate = (dateString: string) => {
     try {

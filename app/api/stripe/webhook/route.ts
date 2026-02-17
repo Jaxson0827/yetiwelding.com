@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { kvGetJson, kvGetString, kvSetJson, kvSetString, kvSetStringIfNotExists, KvNotConfiguredError } from '@/lib/storage/kv';
-import { KV_KEYS } from '@/lib/storage/keys';
+import { prisma } from '@/lib/db/prisma';
 import { generateOrderConfirmationEmail } from '@/lib/emails/orderConfirmation';
 import { generateInternalNotificationEmail } from '@/lib/emails/internalNotification';
 import { sendEmail } from '@/lib/emails/sendEmail';
+import { priceEmbed } from '@/lib/steelEmbeds/pricing';
+import { priceGate } from '@/lib/dumpsterGates/pricing';
+import type { EmbedSpec } from '@/lib/steelEmbeds/types';
+import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import crypto from 'crypto';
 
 let stripe: Stripe | null = null;
@@ -52,41 +55,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const EVENT_TTL_SECONDS = 30 * 24 * 60 * 60;
-  const LOCK_TTL_SECONDS = 5 * 60;
-  const lockKey = `event_lock:${event.id}`;
-
+  // Postgres-only idempotency:
+  // - Store each Stripe event by eventId (unique).
+  // - If an earlier attempt crashed after inserting the event row but before marking processedAt,
+  //   we allow reprocessing until processedAt is set.
   try {
-    // Idempotency: if already processed, return early.
-    const already = await kvGetString(KV_KEYS.event(event.id));
-    if (already) {
-      return NextResponse.json({ received: true, deduped: true });
-    }
-
-    // Concurrency guard: avoid double-processing the same event in parallel.
-    const gotLock = await kvSetStringIfNotExists(lockKey, '1', LOCK_TTL_SECONDS);
-    if (!gotLock) {
-      return NextResponse.json({ received: true, deduped: true, locked: true });
-    }
+    await prisma.stripeWebhookEvent.create({
+      data: {
+        eventId: event.id,
+        type: event.type,
+        stripeSessionId:
+          event.type.startsWith('checkout.session.') ? (event.data.object as any)?.id : null,
+        paymentIntentId:
+          event.type.startsWith('payment_intent.') ? (event.data.object as any)?.id : (event.data.object as any)?.payment_intent || null,
+        raw: event as any,
+      },
+    });
   } catch (e) {
-    if (!(e instanceof KvNotConfiguredError)) throw e;
+    // If the row already exists, continue and check processedAt below.
+    if ((e as any)?.code !== 'P2002') {
+      console.error('Failed to record webhook event:', e);
+      return NextResponse.json({ error: 'Failed to record webhook event' }, { status: 500 });
+    }
   }
 
-  type Draft = {
-    checkoutId: string;
-    sessionId: string;
-    paymentIntentId: string | null;
-    createdAt: string;
-    trackingToken: string;
-    items: any[];
-    customerInfo: any;
-    selectedShippingMethod: string | null;
-    shippingOptions: any[];
-    expectedCurrency?: string;
-    expectedSubtotalCents?: number;
-    expectedShippingCents?: number;
-    allowedShippingCents?: number[];
-  };
+  const existingEvent = await prisma.stripeWebhookEvent.findUnique({
+    where: { eventId: event.id },
+    select: { processedAt: true },
+  });
+  if (existingEvent?.processedAt) {
+    return NextResponse.json({ received: true, deduped: true });
+  }
 
   async function maybeSendEmails(opts: { jobId: string; trackingToken: string; items: any[]; customerInfo: any; orderTotalUsd: number }) {
     // Best-effort; do not fail webhook.
@@ -119,17 +118,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  async function findExistingOrderId(opts: { sessionId?: string | null; paymentIntentId?: string | null }): Promise<string | null> {
-    const { sessionId, paymentIntentId } = opts;
-    if (sessionId) {
-      const bySession = await kvGetString(KV_KEYS.orderBySession(sessionId));
-      if (bySession) return bySession;
-    }
-    if (paymentIntentId) {
-      const byPi = await kvGetString(KV_KEYS.orderByPi(paymentIntentId));
-      if (byPi) return byPi;
-    }
-    return null;
+  function clampInt(n: unknown, min: number, max: number): number {
+    const parsed = typeof n === 'number' ? n : Number(n);
+    if (!Number.isFinite(parsed)) return min;
+    return Math.min(max, Math.max(min, Math.floor(parsed)));
+  }
+
+  function stripeAddressToShippingAddress(addr: Stripe.Address | null | undefined) {
+    if (!addr) return null;
+    const street = [addr.line1, addr.line2].filter(Boolean).join(' ').trim();
+    return {
+      street: street || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      zip: addr.postal_code || '',
+      country: addr.country || '',
+    };
   }
 
   async function createOrUpdateOrderFromSession(opts: { session: Stripe.Checkout.Session; forceMarkPaid?: boolean; reasonEventType: string }) {
@@ -143,35 +147,11 @@ export async function POST(request: NextRequest) {
       return { ok: false as const };
     }
 
-    // Idempotency: do not create duplicates for the same session/PI.
-    const existingOrderId = await findExistingOrderId({ sessionId, paymentIntentId });
-    if (existingOrderId) {
-      // If we got a late paid event, we still may need to mark paid.
-      if (opts.forceMarkPaid) {
-        const existing = await kvGetJson<any>(KV_KEYS.order(existingOrderId));
-        if (existing && existing.paymentStatus !== 'paid') {
-          existing.paymentStatus = 'paid';
-          existing.updatedAt = new Date().toISOString();
-          await kvSetJson(KV_KEYS.order(existingOrderId), existing);
-          // If it was pending payment and not flagged, send emails now.
-          if (existing.status !== 'needs_review') {
-            await maybeSendEmails({
-              jobId: existing.jobId,
-              trackingToken: existing.trackingToken,
-              items: existing.items,
-              customerInfo: existing.customerInfo,
-              orderTotalUsd: typeof existing.orderTotal === 'number' ? existing.orderTotal : 0,
-            });
-          }
-        }
-      }
-      return { ok: true as const, deduped: true as const };
-    }
-
-    const draft = await kvGetJson<Draft>(KV_KEYS.draftBySession(sessionId));
+    const draft =
+      (await prisma.checkoutDraft.findUnique({ where: { stripeSessionId: sessionId } })) ||
+      (await prisma.checkoutDraft.findUnique({ where: { checkoutId } }));
     if (!draft) {
-      console.error('Draft not found for session:', sessionId);
-      // Don't mark event processed: Stripe will retry and draft might exist later.
+      console.error('Draft not found for session/checkout:', { sessionId, checkoutId });
       return { ok: false as const };
     }
 
@@ -199,99 +179,210 @@ export async function POST(request: NextRequest) {
 
     const needsReview = mismatches.length > 0;
 
-    const paymentStatus =
-      opts.forceMarkPaid || session.payment_status === 'paid' ? ('paid' as const) : ('pending' as const);
+    const paymentStatus = opts.forceMarkPaid || session.payment_status === 'paid' ? ('paid' as const) : ('pending' as const);
+    const status = needsReview ? ('needs_review' as const) : paymentStatus === 'paid' ? ('pending' as const) : ('pending_payment' as const);
 
-    const orderId = crypto.randomUUID();
-    const jobId = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    // Merge Stripe-collected final details back into stored customerInfo snapshot.
+    const mergedCustomerInfo = (() => {
+      const base = (draft.customerInfo ?? {}) as any;
+      const next = JSON.parse(JSON.stringify(base));
+      const email = session.customer_details?.email || next.email;
+      if (email) next.email = email;
+      const phone = session.customer_details?.phone || next.phone;
+      if (phone) next.phone = phone;
 
-    const now = new Date().toISOString();
-    const orderRecord: any = {
-      orderId,
-      jobId,
-      status: needsReview ? ('needs_review' as const) : paymentStatus === 'paid' ? ('pending' as const) : ('pending_payment' as const),
-      createdAt: now,
-      updatedAt: now,
-      paymentStatus,
-      paymentIntentId,
-      checkoutSessionId: sessionId,
-      checkoutId,
-      trackingToken: draft.trackingToken,
-      items: draft.items,
-      customerInfo: draft.customerInfo,
-      shippingMethod: draft.selectedShippingMethod,
-      subtotal: stripeSubtotal !== null ? stripeSubtotal / 100 : null,
-      orderTotal: typeof session.amount_total === 'number' ? session.amount_total / 100 : null,
-      taxAmount: typeof session.total_details?.amount_tax === 'number' ? session.total_details.amount_tax / 100 : null,
-      shippingCost: stripeShipping !== null ? stripeShipping / 100 : null,
-      currency,
-      notes: [] as string[],
-      flags: needsReview ? { totalsMismatch: true, mismatches } : undefined,
-    };
+      const stripeShip = stripeAddressToShippingAddress((session as any).shipping_details?.address);
+      if (stripeShip) {
+        next.shippingAddress = {
+          ...(next.shippingAddress || {}),
+          ...stripeShip,
+        };
+      }
+      const stripeName = (session as any).shipping_details?.name || session.customer_details?.name;
+      if (stripeName) next.name = stripeName;
+      return next;
+    })();
 
-    if (needsReview) {
-      orderRecord.notes.push(`needs_review: ${mismatches.join(' | ')}`);
-    }
+    const customerEmail = (mergedCustomerInfo?.email || session.customer_details?.email || 'unknown@example.com') as string;
 
-    await kvSetJson(KV_KEYS.order(orderId), orderRecord);
-    await kvSetString(KV_KEYS.orderByJob(jobId), orderId, 365 * 24 * 60 * 60);
-    await kvSetString(KV_KEYS.orderBySession(sessionId), orderId, 365 * 24 * 60 * 60);
-    if (paymentIntentId) {
-      await kvSetString(KV_KEYS.orderByPi(paymentIntentId), orderId, 365 * 24 * 60 * 60);
-    }
+    // Upsert order by unique Stripe identifiers.
+    const existing = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { stripeSessionId: sessionId },
+          ...(paymentIntentId ? [{ paymentIntentId }] : []),
+          { checkoutId },
+        ],
+      },
+      include: { items: true },
+    });
 
-    // Only send emails when paid and not flagged for review.
-    if (!needsReview && paymentStatus === 'paid') {
+    const subtotalCents = stripeSubtotal ?? null;
+    const shippingCents = stripeShipping ?? null;
+    const taxCents = typeof session.total_details?.amount_tax === 'number' ? session.total_details.amount_tax : null;
+    const totalCents = typeof session.amount_total === 'number' ? session.amount_total : null;
+
+    const notes: string[] = [];
+    const flags = needsReview ? { totalsMismatch: true, mismatches } : null;
+    if (needsReview) notes.push(`needs_review: ${mismatches.join(' | ')}`);
+
+    const draftItems = Array.isArray(draft.items) ? (draft.items as any[]) : [];
+
+    const orderItemsCreate = draftItems.map((it) => {
+      const productType = String(it.productType || '');
+      if (productType === 'steel-plate-embeds') {
+        const cfg = { ...(it.configuration as EmbedSpec) };
+        cfg.quantity = clampInt(cfg.quantity, 1, 999);
+        const bd = priceEmbed(cfg);
+        const qty = cfg.quantity || 1;
+        const unitCents = Math.max(0, Math.round(bd.unitPrice * 100));
+        return {
+          productType,
+          quantity: qty,
+          unitPriceCents: unitCents,
+          totalPriceCents: unitCents * qty,
+          configuration: cfg as any,
+          name: 'Steel Plate Embed',
+          description: `${cfg.plate.length}" × ${cfg.plate.width}" × ${cfg.plate.thickness}" • ${cfg.plate.material}`,
+        };
+      }
+      const cfg = { ...(it.configuration as DumpsterGateConfig) };
+      cfg.quantity = clampInt(cfg.quantity, 1, 999);
+      const bd = priceGate(cfg);
+      const qty = cfg.quantity || 1;
+      const unitCents = Math.max(0, Math.round(bd.unitPrice * 100));
+      const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
+      return {
+        productType,
+        quantity: qty,
+        unitPriceCents: unitCents,
+        totalPriceCents: unitCents * qty,
+        configuration: cfg as any,
+        name: 'Dumpster Gate',
+        description: `Size: ${sizeDisplay} • Style: ${cfg.style.replace('-', ' ')}`,
+      };
+    });
+
+    const result = await prisma.$transaction(async (tx: any) => {
+      if (existing) {
+        const wasPaid = existing.paymentStatus === 'paid';
+        const nextPaymentStatus = existing.paymentStatus === 'paid' ? 'paid' : paymentStatus;
+        const nextStatus =
+          existing.status === 'needs_review'
+            ? 'needs_review'
+            : needsReview
+              ? 'needs_review'
+              : nextPaymentStatus === 'paid'
+                ? 'pending'
+                : 'pending_payment';
+
+        const updateData: any = {
+          checkoutId,
+          stripeSessionId: sessionId,
+          paymentIntentId,
+          paymentStatus: nextPaymentStatus,
+          status: nextStatus,
+          currency,
+          subtotalCents,
+          shippingCents,
+          taxCents,
+          totalCents,
+          customerEmail,
+          customerInfo: mergedCustomerInfo as any,
+          shippingMethod: (draft.selectedShippingMethod || null) as any,
+          // Only append notes if newly needs review.
+          notes: needsReview ? Array.from(new Set([...(existing.notes || []), ...notes])) : existing.notes,
+        };
+        if (needsReview && flags) {
+          updateData.flags = flags as any;
+        }
+
+        const updated = await tx.order.update({
+          where: { id: existing.id },
+          data: updateData,
+        });
+
+        // If this order was created earlier without items, populate them once.
+        if ((existing.items?.length || 0) === 0 && orderItemsCreate.length > 0) {
+          await tx.orderItem.createMany({
+            data: orderItemsCreate.map((oi) => ({ ...oi, orderId: updated.id })),
+          });
+        }
+
+        return { order: updated, shouldEmail: !wasPaid && nextPaymentStatus === 'paid' && nextStatus !== 'needs_review' };
+      }
+
+      const created = await tx.order.create({
+        data: {
+          jobId: `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+          checkoutId,
+          stripeSessionId: sessionId,
+          paymentIntentId,
+          trackingToken: draft.trackingToken,
+          status,
+          paymentStatus,
+          currency,
+          subtotalCents,
+          shippingCents,
+          taxCents,
+          totalCents,
+          customerEmail,
+          customerInfo: mergedCustomerInfo as any,
+          shippingMethod: (draft.selectedShippingMethod || null) as any,
+          notes,
+          ...(flags ? { flags: flags as any } : {}),
+          items: {
+            create: orderItemsCreate as any,
+          },
+        },
+      });
+      return { order: created, shouldEmail: paymentStatus === 'paid' && status !== 'needs_review' };
+    });
+
+    if (result.shouldEmail) {
       await maybeSendEmails({
-        jobId,
-        trackingToken: orderRecord.trackingToken,
-        items: draft.items,
-        customerInfo: draft.customerInfo,
-        orderTotalUsd: typeof orderRecord.orderTotal === 'number' ? orderRecord.orderTotal : 0,
+        jobId: result.order.jobId,
+        trackingToken: result.order.trackingToken,
+        items: draftItems,
+        customerInfo: mergedCustomerInfo,
+        orderTotalUsd: typeof totalCents === 'number' ? totalCents / 100 : 0,
       });
     }
 
-    return { ok: true as const, created: true as const, needsReview, paymentStatus };
+    return { ok: true as const, created: !existing, needsReview, paymentStatus };
   }
 
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      await createOrUpdateOrderFromSession({ session, forceMarkPaid: false, reasonEventType: event.type });
+      const res = await createOrUpdateOrderFromSession({ session, forceMarkPaid: false, reasonEventType: event.type });
+      if (!res.ok) return NextResponse.json({ error: 'Failed to handle event' }, { status: 500 });
     } else if (event.type === 'checkout.session.async_payment_succeeded') {
       const session = event.data.object as Stripe.Checkout.Session;
-      await createOrUpdateOrderFromSession({ session, forceMarkPaid: true, reasonEventType: event.type });
+      const res = await createOrUpdateOrderFromSession({ session, forceMarkPaid: true, reasonEventType: event.type });
+      if (!res.ok) return NextResponse.json({ error: 'Failed to handle event' }, { status: 500 });
     } else if (event.type === 'payment_intent.succeeded') {
       const pi = event.data.object as Stripe.PaymentIntent;
       const paymentIntentId = typeof pi.id === 'string' ? pi.id : null;
       if (paymentIntentId) {
-        const existingOrderId = await findExistingOrderId({ paymentIntentId, sessionId: null });
-        if (existingOrderId) {
-          const existing = await kvGetJson<any>(KV_KEYS.order(existingOrderId));
-          if (existing && existing.paymentStatus !== 'paid') {
-            existing.paymentStatus = 'paid';
-            existing.updatedAt = new Date().toISOString();
-            await kvSetJson(KV_KEYS.order(existingOrderId), existing);
-            if (existing.status !== 'needs_review') {
-              await maybeSendEmails({
-                jobId: existing.jobId,
-                trackingToken: existing.trackingToken,
-                items: existing.items,
-                customerInfo: existing.customerInfo,
-                orderTotalUsd: typeof existing.orderTotal === 'number' ? existing.orderTotal : 0,
-              });
-            }
-          }
-        } else {
-          // If we have a draft indexed by PI, try to locate the session and create the order now.
-          const sessionId = await kvGetString(KV_KEYS.draftByPi(paymentIntentId));
-          if (sessionId) {
-            const draft = await kvGetJson<Draft>(KV_KEYS.draftBySession(sessionId));
-            if (draft) {
-              // Fetch session from Stripe to validate totals + payment_status.
-              const session = await stripeInstance.checkout.sessions.retrieve(sessionId);
-              await createOrUpdateOrderFromSession({ session, forceMarkPaid: true, reasonEventType: event.type });
-            }
+        // Best-effort: if we already created the order but payment status is still pending, mark it paid.
+        const existing = await prisma.order.findFirst({ where: { paymentIntentId } });
+        if (existing && existing.paymentStatus !== 'paid') {
+          const updated = await prisma.order.update({
+            where: { id: existing.id },
+            data: {
+              paymentStatus: 'paid',
+              status: existing.status === 'needs_review' ? 'needs_review' : 'pending',
+            },
+          });
+          if (updated.status !== 'needs_review') {
+            await maybeSendEmails({
+              jobId: updated.jobId,
+              trackingToken: updated.trackingToken,
+              items: [],
+              customerInfo: updated.customerInfo,
+              orderTotalUsd: typeof updated.totalCents === 'number' ? updated.totalCents / 100 : 0,
+            });
           }
         }
       }
@@ -299,18 +390,16 @@ export async function POST(request: NextRequest) {
       // Keep logs minimal in production; other event types can be handled later.
     }
 
-    // Mark event processed only after successful handling.
-    try {
-      await kvSetString(KV_KEYS.event(event.id), '1', EVENT_TTL_SECONDS);
-    } catch (e) {
-      if (!(e instanceof KvNotConfiguredError)) throw e;
-    }
+    await prisma.stripeWebhookEvent.update({
+      where: { eventId: event.id },
+      data: { processedAt: new Date() },
+    });
 
     return NextResponse.json({ received: true });
   } catch (err) {
     console.error('Webhook handler error:', err);
-    // Do NOT mark event processed; Stripe can retry.
-    return NextResponse.json({ received: true });
+    // Return a non-2xx so Stripe retries (transient failures should not lose orders).
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 }
 

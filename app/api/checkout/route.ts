@@ -7,8 +7,7 @@ import { sendEmail } from '@/lib/emails/sendEmail';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { calculateShipping } from '@/lib/shipping/calculator';
-import { kvRateLimitFixedWindow, kvSetJson, kvSetString, KvNotConfiguredError } from '@/lib/storage/kv';
-import { KV_KEYS } from '@/lib/storage/keys';
+import { prisma } from '@/lib/db/prisma';
 import crypto from 'crypto';
 
 interface CartItem {
@@ -47,17 +46,7 @@ interface CustomerInfo {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit (best effort in dev; required in production)
-    try {
-      const xff = request.headers.get('x-forwarded-for');
-      const ip = xff ? xff.split(',')[0].trim() : request.headers.get('x-real-ip') || 'unknown';
-      const ok = await kvRateLimitFixedWindow(`rl:quote_checkout:${ip}`, 10, 10 * 60);
-      if (!ok) {
-        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
-      }
-    } catch (e) {
-      if (!(e instanceof KvNotConfiguredError)) throw e;
-    }
+    // NOTE: Rate limiting previously used KV. With Postgres-only mode, rate limiting is not implemented here yet.
 
     const body = await request.json();
     const { items, customerInfo, shippingMethod } = body;
@@ -69,9 +58,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!customerInfo) {
+    if (!customerInfo?.name || !customerInfo?.email || !customerInfo?.phone) {
       return NextResponse.json(
-        { error: 'Customer information is required' },
+        { error: 'Customer name, email, and phone are required' },
         { status: 400 }
       );
     }
@@ -97,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     const subtotalComputed = Math.round((embedsSubtotal + gatesSubtotal) * 100) / 100;
 
-    const shippingCalc = customerInfo?.shippingAddress?.zip
+    const shippingCalc = customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state
       ? calculateShipping(items as any, customerInfo.shippingAddress as any, shippingMethod)
       : { options: [], selectedMethod: shippingMethod || null };
     const chosen = shippingCalc.options?.find((o: any) => o.method === shippingMethod) || shippingCalc.options?.[0];
@@ -105,35 +94,96 @@ export async function POST(request: NextRequest) {
     const totalComputed = Math.round((subtotalComputed + shippingCostComputed) * 100) / 100;
 
     const jobId = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-    const orderId = crypto.randomUUID();
     const trackingToken = crypto.randomBytes(32).toString('hex');
 
-    // Prepare order data
+    const subtotalCents = Math.round(subtotalComputed * 100);
+    const shippingCents = Math.round(shippingCostComputed * 100);
+    const totalCents = Math.round(totalComputed * 100);
+
+    // Store in Postgres
+    const created = await prisma.order.create({
+      data: {
+        jobId,
+        checkoutId: null,
+        stripeSessionId: null,
+        paymentIntentId: null,
+        trackingToken,
+        status: 'pending',
+        paymentStatus: 'quote_requested',
+        currency: 'usd',
+        subtotalCents,
+        shippingCents,
+        taxCents: null,
+        totalCents,
+        customerEmail: (customerInfo as CustomerInfo).email,
+        customerInfo: customerInfo as any,
+        shippingMethod: shippingMethod || (shippingCalc as any).selectedMethod || null,
+        notes: [],
+        items: {
+          create: (items as CartItem[]).map((it) => {
+            if (it.productType === 'steel-plate-embeds') {
+              const cfg = it.configuration as EmbedSpec;
+              const breakdown = priceEmbed(cfg);
+              const qty = cfg.quantity || 1;
+              const unitCents = Math.round(breakdown.unitPrice * 100);
+              const totalItemCents = unitCents * qty;
+              return {
+                productType: it.productType,
+                quantity: qty,
+                unitPriceCents: unitCents,
+                totalPriceCents: totalItemCents,
+                configuration: cfg as any,
+                name: 'Steel Plate Embed',
+                description: `${cfg.plate.length}" × ${cfg.plate.width}" × ${cfg.plate.thickness}" • ${cfg.plate.material}`,
+              };
+            }
+            const cfg = it.configuration as DumpsterGateConfig;
+            const breakdown = priceGate(cfg);
+            const qty = cfg.quantity || 1;
+            const unitCents = Math.round(breakdown.unitPrice * 100);
+            const totalItemCents = unitCents * qty;
+            const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
+            return {
+              productType: it.productType,
+              quantity: qty,
+              unitPriceCents: unitCents,
+              totalPriceCents: totalItemCents,
+              configuration: cfg as any,
+              name: 'Dumpster Gate',
+              description: `Size: ${sizeDisplay} • Style: ${cfg.style.replace('-', ' ')}`,
+            };
+          }),
+        },
+      },
+      include: { items: true },
+    });
+
     const orderData = {
-      orderId,
-      jobId,
-      items: items as CartItem[],
+      orderId: created.id,
+      jobId: created.jobId,
+      items: created.items.map((it: any) => ({
+        id: it.id,
+        productType: it.productType,
+        configuration: it.configuration,
+        price: it.totalPriceCents / 100,
+      })),
       steelEmbeds: embedSpecs,
       dumpsterGates: gateConfigs,
       customerInfo: customerInfo as CustomerInfo,
       orderTotal: totalComputed,
       subtotal: subtotalComputed,
       shippingCost: shippingCostComputed,
-      shippingMethod: shippingMethod || shippingCalc.selectedMethod || null,
+      shippingMethod: shippingMethod || (shippingCalc as any).selectedMethod || null,
       taxAmount: null,
       taxRate: null,
       isTaxExempt: false,
       paymentIntentId: null,
       paymentStatus: 'quote_requested',
       trackingToken,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: 'pending',
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+      status: created.status,
     };
-
-    // Store in KV (required for serverless reliability)
-    await kvSetJson(KV_KEYS.order(orderId), orderData);
-    await kvSetString(KV_KEYS.orderByJob(jobId), orderId, 365 * 24 * 60 * 60);
 
     // Send emails (non-blocking - don't fail order if email fails)
     const emailResults = {
@@ -236,3 +286,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export const runtime = 'nodejs';

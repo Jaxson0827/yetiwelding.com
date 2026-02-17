@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kvGetJson, kvGetString, KvNotConfiguredError } from '@/lib/storage/kv';
-import { KV_KEYS } from '@/lib/storage/keys';
+import { prisma } from '@/lib/db/prisma';
 
 /**
  * Unified order API endpoint
@@ -22,17 +21,22 @@ export async function GET(
       );
     }
 
-    const orderId = await kvGetString(KV_KEYS.orderByJob(jobId));
-    if (!orderId) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
-
-    const order = await kvGetJson<any>(KV_KEYS.order(orderId));
+    const order = await prisma.order.findUnique({
+      where: { jobId },
+      include: { items: true },
+    });
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     const tokenOk = Boolean(token && order.trackingToken && token === order.trackingToken);
+
+    const items = order.items.map((it: any) => ({
+      id: it.id,
+      productType: it.productType,
+      configuration: it.configuration,
+      price: it.totalPriceCents / 100,
+    }));
 
     return NextResponse.json({
       success: true,
@@ -41,13 +45,13 @@ export async function GET(
         status: order.status,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
-        items: tokenOk ? order.items : undefined,
-        customerInfo: tokenOk ? order.customerInfo : undefined,
-        orderTotal: order.orderTotal,
-        subtotal: order.subtotal,
-        shippingCost: order.shippingCost,
+        items: tokenOk ? (items as any) : undefined,
+        customerInfo: tokenOk ? (order.customerInfo as any) : undefined,
+        orderTotal: typeof order.totalCents === 'number' ? order.totalCents / 100 : null,
+        subtotal: typeof order.subtotalCents === 'number' ? order.subtotalCents / 100 : null,
+        shippingCost: typeof order.shippingCents === 'number' ? order.shippingCents / 100 : null,
         shippingMethod: order.shippingMethod,
-        taxAmount: order.taxAmount,
+        taxAmount: typeof order.taxCents === 'number' ? order.taxCents / 100 : null,
         paymentIntentId: tokenOk ? order.paymentIntentId : undefined,
         paymentStatus: order.paymentStatus,
         estimatedDeliveryDate: order.estimatedDeliveryDate,
@@ -56,9 +60,6 @@ export async function GET(
       },
     });
   } catch (error) {
-    if (error instanceof KvNotConfiguredError) {
-      return NextResponse.json({ error: 'Order tracking is not configured' }, { status: 500 });
-    }
     console.error('Order fetch error:', error);
     return NextResponse.json(
       { error: 'An error occurred while fetching order' },
@@ -67,3 +68,4 @@ export async function GET(
   }
 }
 
+export const runtime = 'nodejs';
