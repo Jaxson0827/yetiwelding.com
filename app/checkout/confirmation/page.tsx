@@ -17,6 +17,7 @@ function ConfirmationContent() {
   const [orderData, setOrderData] = useState<any>(null);
   const [resolvedJobId, setResolvedJobId] = useState<string | null>(jobId);
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
+  const canTrack = Boolean(trackingUrl || resolvedJobId);
 
   useEffect(() => {
     // Legacy path: if jobId present, keep current behavior.
@@ -170,12 +171,23 @@ function ConfirmationContent() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href={trackingUrl || `/order/track/${resolvedJobId || ''}`}
-                className="inline-block bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
-              >
-                Track Order
-              </Link>
+              {canTrack ? (
+                <Link
+                  href={trackingUrl || `/order/track/${encodeURIComponent(resolvedJobId as string)}`}
+                  className="inline-block bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+                >
+                  Track Order
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-block bg-white/10 text-white/50 font-semibold py-3 px-8 rounded-lg cursor-not-allowed"
+                  title="Tracking becomes available once your order is finalized."
+                >
+                  Track Order
+                </button>
+              )}
               <Link
                 href="/"
                 className="inline-block bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg transition-colors"

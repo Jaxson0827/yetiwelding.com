@@ -245,6 +245,19 @@ Email (Resend):
 Site URL (links in emails + Stripe redirect URLs):
 - `NEXT_PUBLIC_SITE_URL` (should be fully qualified, e.g. `https://yetiwelding.com`)
 
+### Vercel environments (Preview vs Production)
+
+Vercel has **separate env var scopes**:
+- **Production** (your main domain)
+- **Preview** (your preview deployment URLs)
+- **Development** (local `vercel dev`)
+
+If checkout works in Production but fails in Preview (or vice versa), it is almost always because one of these is missing in that environment:
+- `DATABASE_URL`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
 ### Stripe Dashboard configuration
 
 - Create a webhook endpoint pointing to:
@@ -309,6 +322,7 @@ After creating Postgres on Vercel/Neon and setting `DATABASE_URL`:
 
 - [ ] Clear cart after successful Stripe checkout (on confirmation)
 - [ ] Show clear messaging when order is `needs_review` or `pending_payment`
+- [x] Disable “Track Order” button until tracking URL is ready (avoid linking to `/order/track/`)
 
 ### Cleanup
 
