@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Send internal notification email to team
-      const businessEmail = process.env.BUSINESS_EMAIL || process.env.RESEND_FROM_EMAIL;
+      const businessEmail = process.env.BUSINESS_EMAIL;
       
       if (businessEmail) {
         const internalEmail = generateInternalNotificationEmail(

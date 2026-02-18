@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
   async function maybeSendEmails(opts: { jobId: string; trackingToken: string; items: any[]; customerInfo: any; orderTotalUsd: number }) {
     // Best-effort; do not fail webhook.
     try {
-      const businessEmail = process.env.BUSINESS_EMAIL || process.env.RESEND_FROM_EMAIL;
+      const businessEmail = process.env.BUSINESS_EMAIL || '';
       const site = (process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com').replace(/\/+$/, '');
       const trackingUrl = `${site}/order/track/${encodeURIComponent(opts.jobId)}?token=${encodeURIComponent(opts.trackingToken)}`;
 
@@ -117,6 +117,58 @@ export async function POST(request: NextRequest) {
       }
     } catch (emailErr) {
       console.error('Webhook email error:', emailErr);
+    }
+  }
+
+  async function maybeSendInternalAlertEmail(opts: {
+    jobId: string;
+    trackingToken: string;
+    customerEmail: string;
+    status: string;
+    paymentStatus: string;
+    orderTotalUsd: number | null;
+    reason: string;
+  }) {
+    // Best-effort; do not fail webhook.
+    try {
+      const businessEmail = process.env.BUSINESS_EMAIL || '';
+      if (!businessEmail) return;
+
+      const site = (process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com').replace(/\/+$/, '');
+      const trackingUrl = `${site}/order/track/${encodeURIComponent(opts.jobId)}?token=${encodeURIComponent(opts.trackingToken)}`;
+      const totalText = typeof opts.orderTotalUsd === 'number' ? `$${opts.orderTotalUsd.toFixed(2)}` : '(unknown)';
+
+      const subject = `⚠️ Order alert: ${opts.jobId} (${opts.status}/${opts.paymentStatus})`;
+      const html = `
+        <div style="font-family: Arial, sans-serif; line-height:1.5; color:#222;">
+          <h2 style="margin:0 0 12px 0;">Order alert</h2>
+          <p style="margin:0 0 12px 0;"><strong>Reason:</strong> ${opts.reason}</p>
+          <ul style="margin:0 0 12px 18px; padding:0;">
+            <li><strong>Job ID:</strong> ${opts.jobId}</li>
+            <li><strong>Status:</strong> ${opts.status}</li>
+            <li><strong>Payment:</strong> ${opts.paymentStatus}</li>
+            <li><strong>Total:</strong> ${totalText}</li>
+            <li><strong>Customer:</strong> ${opts.customerEmail}</li>
+          </ul>
+          <p style="margin:0 0 12px 0;">
+            <a href="${trackingUrl}">View tracking/details</a>
+          </p>
+          <p style="margin:0; color:#666; font-size:12px;">
+            Note: Use <code>/admin/orders</code> to update status and tracking number.
+          </p>
+        </div>
+      `;
+      const text = `Order alert\n\nReason: ${opts.reason}\nJob ID: ${opts.jobId}\nStatus: ${opts.status}\nPayment: ${opts.paymentStatus}\nTotal: ${totalText}\nCustomer: ${opts.customerEmail}\nTracking/details: ${trackingUrl}\n`;
+
+      await sendEmail({
+        to: businessEmail,
+        subject,
+        html,
+        text,
+        replyTo: opts.customerEmail || undefined,
+      });
+    } catch (e) {
+      console.error('Webhook internal alert email error:', e);
     }
   }
 
@@ -296,6 +348,8 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction(async (tx: any) => {
       if (existing) {
         const wasPaid = existing.paymentStatus === 'paid';
+        const prevStatus = existing.status;
+        const prevPaymentStatus = existing.paymentStatus;
         const nextPaymentStatus = existing.paymentStatus === 'paid' ? 'paid' : paymentStatus;
         const nextStatus =
           existing.status === 'needs_review'
@@ -344,7 +398,17 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        return { order: updated, shouldEmail: !wasPaid && nextPaymentStatus === 'paid' && nextStatus !== 'needs_review' };
+        const shouldCustomerEmail = !wasPaid && nextPaymentStatus === 'paid' && nextStatus !== 'needs_review';
+        const becameNeedsReview = prevStatus !== 'needs_review' && nextStatus === 'needs_review';
+        return {
+          order: updated,
+          shouldCustomerEmail,
+          prevStatus,
+          prevPaymentStatus,
+          nextStatus,
+          nextPaymentStatus,
+          becameNeedsReview,
+        };
       }
 
       const created = await tx.order.create({
@@ -376,16 +440,49 @@ export async function POST(request: NextRequest) {
           },
         },
       });
-      return { order: created, shouldEmail: paymentStatus === 'paid' && status !== 'needs_review' };
+      return {
+        order: created,
+        shouldCustomerEmail: paymentStatus === 'paid' && status !== 'needs_review',
+        prevStatus: null,
+        prevPaymentStatus: null,
+        nextStatus: status,
+        nextPaymentStatus: paymentStatus,
+        becameNeedsReview: status === 'needs_review',
+      };
     });
 
-    if (result.shouldEmail) {
+    if (result.shouldCustomerEmail) {
       await maybeSendEmails({
         jobId: result.order.jobId,
         trackingToken: result.order.trackingToken,
         items: draftItems,
         customerInfo: mergedCustomerInfo,
         orderTotalUsd: typeof totalCents === 'number' ? totalCents / 100 : 0,
+      });
+    }
+
+    // Internal alerting:
+    // - Always notify on order creation
+    // - Notify when an order enters needs_review
+    if (result.prevStatus === null) {
+      await maybeSendInternalAlertEmail({
+        jobId: result.order.jobId,
+        trackingToken: result.order.trackingToken,
+        customerEmail,
+        status: String(result.nextStatus),
+        paymentStatus: String(result.nextPaymentStatus),
+        orderTotalUsd: typeof totalCents === 'number' ? totalCents / 100 : null,
+        reason: 'new_order',
+      });
+    } else if (result.becameNeedsReview) {
+      await maybeSendInternalAlertEmail({
+        jobId: result.order.jobId,
+        trackingToken: result.order.trackingToken,
+        customerEmail,
+        status: String(result.nextStatus),
+        paymentStatus: String(result.nextPaymentStatus),
+        orderTotalUsd: typeof totalCents === 'number' ? totalCents / 100 : null,
+        reason: 'needs_review',
       });
     }
 
@@ -415,13 +512,22 @@ export async function POST(request: NextRequest) {
       if (sessionId) {
         const existing = await prisma.order.findFirst({ where: { stripeSessionId: sessionId } });
         if (existing && existing.paymentStatus !== 'paid' && existing.paymentStatus !== 'refunded') {
-          await prisma.order.update({
+          const updated = await prisma.order.update({
             where: { id: existing.id },
             data: {
               paymentStatus: 'failed',
               status: existing.status === 'needs_review' ? 'needs_review' : 'pending_payment',
               notes: appendNote(existing.notes, `payment_failed: ${event.type}`),
             },
+          });
+          await maybeSendInternalAlertEmail({
+            jobId: updated.jobId,
+            trackingToken: updated.trackingToken,
+            customerEmail: updated.customerEmail,
+            status: String(updated.status),
+            paymentStatus: String(updated.paymentStatus),
+            orderTotalUsd: typeof updated.totalCents === 'number' ? updated.totalCents / 100 : null,
+            reason: 'payment_failed',
           });
         }
       }
@@ -456,13 +562,22 @@ export async function POST(request: NextRequest) {
       if (paymentIntentId) {
         const existing = await prisma.order.findFirst({ where: { paymentIntentId } });
         if (existing && existing.paymentStatus !== 'paid' && existing.paymentStatus !== 'refunded') {
-          await prisma.order.update({
+          const updated = await prisma.order.update({
             where: { id: existing.id },
             data: {
               paymentStatus: 'failed',
               status: existing.status === 'needs_review' ? 'needs_review' : 'pending_payment',
               notes: appendNote(existing.notes, `payment_failed: ${event.type}`),
             },
+          });
+          await maybeSendInternalAlertEmail({
+            jobId: updated.jobId,
+            trackingToken: updated.trackingToken,
+            customerEmail: updated.customerEmail,
+            status: String(updated.status),
+            paymentStatus: String(updated.paymentStatus),
+            orderTotalUsd: typeof updated.totalCents === 'number' ? updated.totalCents / 100 : null,
+            reason: 'payment_failed',
           });
         }
       }
@@ -475,13 +590,22 @@ export async function POST(request: NextRequest) {
       if (sessionId) {
         const existing = await prisma.order.findFirst({ where: { stripeSessionId: sessionId } });
         if (existing && existing.paymentStatus !== 'paid' && existing.paymentStatus !== 'refunded') {
-          await prisma.order.update({
+          const updated = await prisma.order.update({
             where: { id: existing.id },
             data: {
               paymentStatus: 'failed',
               status: existing.status === 'needs_review' ? 'needs_review' : 'cancelled',
               notes: appendNote(existing.notes, `checkout_expired: ${event.type}`),
             },
+          });
+          await maybeSendInternalAlertEmail({
+            jobId: updated.jobId,
+            trackingToken: updated.trackingToken,
+            customerEmail: updated.customerEmail,
+            status: String(updated.status),
+            paymentStatus: String(updated.paymentStatus),
+            orderTotalUsd: typeof updated.totalCents === 'number' ? updated.totalCents / 100 : null,
+            reason: 'checkout_expired',
           });
         }
       }
@@ -493,13 +617,22 @@ export async function POST(request: NextRequest) {
         if (existing) {
           // Don't override "shipped/delivered" statuses; refunds can happen post-ship.
           const keepStatus = existing.status === 'shipped' || existing.status === 'delivered';
-          await prisma.order.update({
+          const updated = await prisma.order.update({
             where: { id: existing.id },
             data: {
               paymentStatus: 'refunded',
               status: keepStatus ? existing.status : existing.status === 'needs_review' ? 'needs_review' : 'cancelled',
               notes: appendNote(existing.notes, `refunded: ${event.type}`),
             },
+          });
+          await maybeSendInternalAlertEmail({
+            jobId: updated.jobId,
+            trackingToken: updated.trackingToken,
+            customerEmail: updated.customerEmail,
+            status: String(updated.status),
+            paymentStatus: String(updated.paymentStatus),
+            orderTotalUsd: typeof updated.totalCents === 'number' ? updated.totalCents / 100 : null,
+            reason: 'refunded',
           });
         }
       }
