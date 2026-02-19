@@ -190,6 +190,247 @@ export async function POST(request: NextRequest) {
     };
   }
 
+  async function listSessionLineItems(sessionId: string): Promise<any[]> {
+    try {
+      const resp = await stripeInstance!.checkout.sessions.listLineItems(sessionId, {
+        limit: 100,
+        // Expand product so we can recover metadata (productType) when possible.
+        expand: ['data.price.product'],
+      } as any);
+      return Array.isArray((resp as any)?.data) ? ((resp as any).data as any[]) : [];
+    } catch (e) {
+      console.warn('Failed to list Stripe line items for reconstruction', e);
+      return [];
+    }
+  }
+
+  function buildCustomerInfoFromStripeSession(session: Stripe.Checkout.Session): any {
+    const customerDetails = session.customer_details || null;
+    const shippingDetails = (session as any).shipping_details || null;
+    const stripeShip = stripeAddressToShippingAddress(shippingDetails?.address);
+    const name = shippingDetails?.name || customerDetails?.name || '';
+    const email = customerDetails?.email || '';
+    const phone = customerDetails?.phone || '';
+    return {
+      name,
+      email,
+      phone,
+      shippingAddress: stripeShip || { street: '', city: '', state: '', zip: '', country: '' },
+    };
+  }
+
+  function stripeLineItemToOrderItem(li: any): any {
+    const qty = typeof li?.quantity === 'number' ? li.quantity : 1;
+    const price = li?.price || null;
+    const productObj = price?.product && typeof price.product === 'object' ? price.product : null;
+    const productType = productObj?.metadata?.productType ? String(productObj.metadata.productType) : 'unknown';
+
+    const unitCents =
+      typeof price?.unit_amount === 'number'
+        ? price.unit_amount
+        : typeof li?.amount_total === 'number' && qty > 0
+          ? Math.round(li.amount_total / qty)
+          : 0;
+    const totalCents = unitCents * qty;
+
+    const name = productObj?.name || li?.description || 'Item';
+    const description = productObj?.description || li?.description || null;
+
+    return {
+      productType,
+      sku: null,
+      quantity: qty,
+      unitPriceCents: Math.max(0, unitCents),
+      totalPriceCents: Math.max(0, totalCents),
+      configuration: {
+        source: 'stripe_reconstructed',
+        stripe: {
+          lineItemId: li?.id || null,
+          priceId: price?.id || null,
+          productId: typeof price?.product === 'string' ? price.product : productObj?.id || null,
+        },
+      },
+      name,
+      description,
+    };
+  }
+
+  async function reconstructOrderWithoutDraft(opts: {
+    session: Stripe.Checkout.Session;
+    forceMarkPaid?: boolean;
+    reasonEventType: string;
+    checkoutId: string;
+    sessionId: string;
+    paymentIntentId: string | null;
+  }): Promise<{ ok: true; order: any } | { ok: false }> {
+    const session = opts.session;
+    const currency = (session.currency || 'usd').toLowerCase();
+    const stripeSubtotal = typeof session.amount_subtotal === 'number' ? session.amount_subtotal : null;
+    const stripeShipping = typeof session.total_details?.amount_shipping === 'number' ? session.total_details.amount_shipping : null;
+    const taxCents = typeof session.total_details?.amount_tax === 'number' ? session.total_details.amount_tax : null;
+    const totalCents = typeof session.amount_total === 'number' ? session.amount_total : null;
+
+    const paymentStatus = opts.forceMarkPaid || session.payment_status === 'paid' ? ('paid' as const) : ('pending' as const);
+    const status = 'needs_review' as const;
+
+    const customerInfo = buildCustomerInfoFromStripeSession(session);
+    const customerEmail = (customerInfo?.email || 'unknown@example.com') as string;
+
+    const stripeShippingRateId =
+      typeof (session as any)?.shipping_cost?.shipping_rate === 'string'
+        ? ((session as any).shipping_cost.shipping_rate as string)
+        : null;
+
+    let shippingMethod: string | null = null;
+    let shippingProvider: string | null = null;
+    let shippingCarrier: string | null = null;
+    let shippingService: string | null = null;
+    let shippingQuoteId: string | null = null;
+    let freightMeta: any = null;
+
+    if (stripeShippingRateId) {
+      try {
+        const sr = await stripeInstance!.shippingRates.retrieve(stripeShippingRateId);
+        const md: any = (sr as any)?.metadata || {};
+        if (md.method) shippingMethod = String(md.method);
+        if (md.provider) shippingProvider = String(md.provider);
+        if (md.carrier) shippingCarrier = String(md.carrier);
+        if (md.service) shippingService = String(md.service);
+        if (md.providerRateId) shippingQuoteId = String(md.providerRateId);
+        freightMeta = {
+          zone: md.freightZone ? String(md.freightZone) : null,
+          kind: md.freightKind ? String(md.freightKind) : null,
+          tier: md.freightTier ? String(md.freightTier) : null,
+          baseUsd: md.freightBaseUsd ? Number(md.freightBaseUsd) : null,
+          addonsUsd: md.freightAddonsUsd ? Number(md.freightAddonsUsd) : null,
+          deliveryType: md.freightDeliveryType ? String(md.freightDeliveryType) : null,
+          liftgateRequired: typeof md.freightLiftgateRequired === 'string' ? md.freightLiftgateRequired === 'true' : null,
+        };
+      } catch (e) {
+        console.warn('Failed to retrieve Stripe shipping rate metadata (reconstruction)', e);
+      }
+    }
+
+    if (freightMeta && (freightMeta.zone || freightMeta.tier || freightMeta.kind)) {
+      customerInfo.freight = {
+        ...(customerInfo.freight || {}),
+        ...(freightMeta.deliveryType ? { deliveryType: freightMeta.deliveryType } : {}),
+        ...(typeof freightMeta.liftgateRequired === 'boolean' ? { liftgateRequired: freightMeta.liftgateRequired } : {}),
+        ...(freightMeta.zone ? { zone: freightMeta.zone } : {}),
+        ...(freightMeta.kind ? { kind: freightMeta.kind } : {}),
+        ...(freightMeta.tier ? { tier: freightMeta.tier } : {}),
+        ...(typeof freightMeta.baseUsd === 'number' && Number.isFinite(freightMeta.baseUsd) ? { baseUsd: freightMeta.baseUsd } : {}),
+        ...(typeof freightMeta.addonsUsd === 'number' && Number.isFinite(freightMeta.addonsUsd) ? { addonsUsd: freightMeta.addonsUsd } : {}),
+      };
+    }
+
+    const lineItems = await listSessionLineItems(opts.sessionId);
+    const orderItemsCreate = lineItems.map(stripeLineItemToOrderItem);
+
+    const trackingToken = crypto.randomBytes(32).toString('hex');
+    const notes = [
+      `needs_review: draft_missing_reconstructed event=${opts.reasonEventType}`,
+      `draft_missing_reconstructed: stripeSessionId=${opts.sessionId}`,
+    ];
+    const flags = { draftMissing: true, reconstructedFromStripe: true, reasonEventType: opts.reasonEventType };
+
+    // Upsert by unique Stripe identifiers (same pattern as normal flow).
+    const existing = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { stripeSessionId: opts.sessionId },
+          ...(opts.paymentIntentId ? [{ paymentIntentId: opts.paymentIntentId }] : []),
+          { checkoutId: opts.checkoutId },
+        ],
+      },
+      include: { items: true },
+    });
+
+    const result = await prisma.$transaction(async (tx: any) => {
+      if (existing) {
+        const existingFlags =
+          existing.flags && typeof existing.flags === 'object' && !Array.isArray(existing.flags) ? (existing.flags as any) : {};
+
+        const updated = await tx.order.update({
+          where: { id: existing.id },
+          data: {
+            checkoutId: opts.checkoutId,
+            stripeSessionId: opts.sessionId,
+            paymentIntentId: opts.paymentIntentId,
+            paymentStatus,
+            status,
+            currency,
+            subtotalCents: stripeSubtotal ?? null,
+            shippingCents: stripeShipping ?? null,
+            taxCents,
+            totalCents,
+            customerEmail,
+            customerInfo: customerInfo as any,
+            shippingMethod: shippingMethod as any,
+            shippingProvider: shippingProvider as any,
+            shippingCarrier: shippingCarrier as any,
+            shippingService: shippingService as any,
+            shippingQuoteId: shippingQuoteId as any,
+            stripeShippingRateId: stripeShippingRateId as any,
+            notes: Array.from(new Set([...(existing.notes || []), ...notes])),
+            flags: { ...existingFlags, ...flags } as any,
+          },
+        });
+
+        if ((existing.items?.length || 0) === 0 && orderItemsCreate.length > 0) {
+          await tx.orderItem.createMany({
+            data: orderItemsCreate.map((oi: any) => ({ ...oi, orderId: updated.id })),
+          });
+        }
+
+        return updated;
+      }
+
+      const created = await tx.order.create({
+        data: {
+          jobId: `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+          checkoutId: opts.checkoutId,
+          stripeSessionId: opts.sessionId,
+          paymentIntentId: opts.paymentIntentId,
+          trackingToken,
+          status,
+          paymentStatus,
+          currency,
+          subtotalCents: stripeSubtotal ?? null,
+          shippingCents: stripeShipping ?? null,
+          taxCents,
+          totalCents,
+          customerEmail,
+          customerInfo: customerInfo as any,
+          shippingMethod: shippingMethod as any,
+          shippingProvider: shippingProvider as any,
+          shippingCarrier: shippingCarrier as any,
+          shippingService: shippingService as any,
+          shippingQuoteId: shippingQuoteId as any,
+          stripeShippingRateId: stripeShippingRateId as any,
+          notes,
+          flags: flags as any,
+          items: {
+            create: orderItemsCreate as any,
+          },
+        },
+      });
+      return created;
+    });
+
+    await maybeSendInternalAlertEmail({
+      jobId: result.jobId,
+      trackingToken: result.trackingToken,
+      customerEmail,
+      status: String(result.status),
+      paymentStatus: String(result.paymentStatus),
+      orderTotalUsd: typeof result.totalCents === 'number' ? result.totalCents / 100 : null,
+      reason: 'draft_missing_reconstructed',
+    });
+
+    return { ok: true, order: result };
+  }
+
   async function createOrUpdateOrderFromSession(opts: { session: Stripe.Checkout.Session; forceMarkPaid?: boolean; reasonEventType: string }) {
     const session = opts.session;
     const checkoutId = session.client_reference_id || session.metadata?.checkoutId || null;
@@ -206,7 +447,16 @@ export async function POST(request: NextRequest) {
       (await prisma.checkoutDraft.findUnique({ where: { checkoutId } }));
     if (!draft) {
       console.error('Draft not found for session/checkout:', { sessionId, checkoutId });
-      return { ok: false as const };
+      const reconstructed = await reconstructOrderWithoutDraft({
+        session,
+        forceMarkPaid: opts.forceMarkPaid,
+        reasonEventType: opts.reasonEventType,
+        checkoutId,
+        sessionId,
+        paymentIntentId,
+      });
+      if (!reconstructed.ok) return { ok: false as const };
+      return { ok: true as const, created: true, needsReview: true, paymentStatus: session.payment_status } as any;
     }
 
     // Validate totals vs expected draft totals.

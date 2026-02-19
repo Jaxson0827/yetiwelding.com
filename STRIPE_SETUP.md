@@ -1,126 +1,68 @@
-# Stripe Payment Integration Setup Guide
+# Stripe checkout setup (Checkout Sessions + webhook)
 
-## Overview
-This application uses Stripe for secure payment processing. Follow these steps to configure Stripe payments.
+This repo uses **Stripe Checkout Sessions** for payment collection, with a **webhook-driven** backend that creates/updates orders in Postgres.
 
-## Prerequisites
-1. A Stripe account (sign up at https://stripe.com)
-2. Access to your Stripe Dashboard
+The canonical operational doc is `CHECKOUT.md`. This file focuses on the Stripe-specific pieces.
 
-## Setup Steps
+---
 
-### 1. Get Your Stripe API Keys
+## Required environment variables
 
-1. Log in to your [Stripe Dashboard](https://dashboard.stripe.com)
-2. Navigate to **Developers** → **API keys**
-3. Copy your **Publishable key** (starts with `pk_`)
-4. Copy your **Secret key** (starts with `sk_`)
-
-**Important:** 
-- Use **Test keys** for development/testing
-- Use **Live keys** for production
-
-### 2. Configure Environment Variables
-
-Add these to your `.env.local` file:
+Set these in Vercel (and locally in `.env.local` if needed):
 
 ```env
-# Stripe Configuration
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... (or pk_live_... for production)
-STRIPE_SECRET_KEY=sk_test_... (or sk_live_... for production)
-STRIPE_WEBHOOK_SECRET=whsec_... (for webhook verification)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_...
+STRIPE_SECRET_KEY=sk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_SITE_URL=https://yetiwelding.com
 ```
 
-### 3. Set Up Webhook (Production)
+---
 
-For production, you need to set up a webhook endpoint:
+## How payment works (high level)
 
-1. In Stripe Dashboard, go to **Developers** → **Webhooks**
-2. Click **Add endpoint**
-3. Enter your endpoint URL: `https://yourdomain.com/api/stripe/webhook`
-4. Select events to listen for:
-   - `payment_intent.succeeded`
-   - `payment_intent.payment_failed`
-   - `charge.refunded`
-5. Copy the **Signing secret** (starts with `whsec_`) and add it to your `.env.local`
+### Client
+- The checkout page posts to `POST /api/checkout/session`.
+- The server returns a `session.url`.
+- The browser redirects to Stripe-hosted Checkout.
 
-### 4. Test the Integration
+### Server
+- `POST /api/checkout/session` recomputes item pricing, computes shipping options, and creates a Stripe Checkout Session.
+- `POST /api/stripe/webhook` receives Stripe events and creates/updates the `Order` row.
 
-#### Test Cards (Test Mode Only)
-- **Success:** `4242 4242 4242 4242`
-- **Decline:** `4000 0000 0000 0002`
-- **3D Secure:** `4000 0025 0000 3155`
+Key routes:
+- `app/api/checkout/session/route.ts`
+- `app/api/stripe/webhook/route.ts`
 
-Use any future expiry date, any 3-digit CVC, and any ZIP code.
+---
 
-## Features
+## Stripe webhook configuration (Dashboard)
 
-### Payment Flow
-1. Customer fills out checkout form
-2. Payment form appears with Stripe Elements
-3. Customer enters payment information
-4. Payment is processed securely
-5. Order is confirmed after successful payment
+Create a webhook endpoint pointing to:
+- `https://<your-domain>/api/stripe/webhook`
 
-### Payment Methods
-- **Online Payment:** Secure payment via Stripe (credit/debit cards)
-- **Request Quote:** For custom fabrication items (no payment required)
+Enable at least these events (matching `CHECKOUT.md`):
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `checkout.session.expired`
+- `payment_intent.succeeded` (optional; best-effort handler exists)
+- `payment_intent.payment_failed`
+- `charge.refunded`
 
-### Security
-- All payment data is handled by Stripe (PCI compliant)
-- No sensitive card data touches your server
-- Payment verification before order processing
-- Webhook support for payment status updates
+Copy the signing secret (`whsec_...`) into `STRIPE_WEBHOOK_SECRET`.
 
-## API Routes
+---
 
-### `/api/stripe/create-payment-intent`
-Creates a Stripe PaymentIntent for the order amount.
+## Testing (Stripe test mode)
 
-**Request:**
-```json
-{
-  "amount": 1500.00,
-  "currency": "usd",
-  "metadata": {}
-}
-```
+Use Stripe test keys and Stripe test cards:
+- Success: `4242 4242 4242 4242`
+- Decline: `4000 0000 0000 0002`
+- 3DS: `4000 0025 0000 3155`
 
-**Response:**
-```json
-{
-  "clientSecret": "pi_xxx_secret_xxx",
-  "paymentIntentId": "pi_xxx"
-}
-```
+---
 
-### `/api/stripe/webhook`
-Handles Stripe webhook events for payment status updates.
+## Note on deprecated PaymentIntent flow
 
-## Troubleshooting
-
-### Payment Form Not Loading
-- Check that `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set correctly
-- Verify the key starts with `pk_test_` or `pk_live_`
-- Check browser console for errors
-
-### Payment Fails
-- Verify `STRIPE_SECRET_KEY` is set correctly
-- Check Stripe Dashboard for error logs
-- Ensure you're using test keys in development
-
-### Webhook Not Working
-- Verify webhook URL is accessible
-- Check `STRIPE_WEBHOOK_SECRET` matches your webhook endpoint
-- Test webhook in Stripe Dashboard → Webhooks → Send test webhook
-
-## Support
-
-For Stripe-specific issues, refer to:
-- [Stripe Documentation](https://stripe.com/docs)
-- [Stripe Support](https://support.stripe.com)
-
-
-
-
-
+This repo previously had a PaymentIntent + PaymentElement flow. It is deprecated and not used for checkout.

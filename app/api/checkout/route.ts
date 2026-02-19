@@ -123,7 +123,11 @@ export async function POST(request: NextRequest) {
         customerEmail: (customerInfo as CustomerInfo).email,
         customerInfo: customerInfo as any,
         shippingMethod: shippingMethod || (shippingCalc as any).selectedMethod || null,
-        notes: [],
+        notes: customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state ? [] : ['shipping_tbd: quote_request_missing_state_zip'],
+        flags:
+          customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state
+            ? null
+            : ({ shippingTbd: true } as any),
         items: {
           create: normalizedItems.map((it) => {
             if (it.productType === 'steel-plate-embeds') {

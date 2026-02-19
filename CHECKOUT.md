@@ -67,7 +67,9 @@ This split is reasonable for fabrication/custom work where some orders are pay-n
   - Returns limited information unless the caller provides a matching `token`.
 
 - **Shipping calculation**: `app/api/shipping/calculate/route.ts` and `lib/shipping/calculator.ts`
-  - Returns shipping options using **live carrier rates** via Shippo when configured (with heuristic fallback).
+  - Returns shipping options using **live carrier rates** via Shippo for parcel-eligible shipments.
+  - Uses **flat-rate freight tiers** (zone + tier table + add-ons) for freight shipments.
+  - Shipping rules + how to update the freight table are documented in `shipping.md`.
 
 - **Admin (MVP)**: `app/admin/orders/page.tsx` + `app/api/admin/orders/*`
   - Minimal protected order list/search + status/tracking updates (protected by `ADMIN_API_KEY`).
@@ -79,7 +81,7 @@ This split is reasonable for fabrication/custom work where some orders are pay-n
 
 - **PaymentIntent route is deprecated**: `app/api/stripe/create-payment-intent/route.ts` returns HTTP 410.
 - **PaymentElement client component exists**: `components/checkout/PaymentForm.tsx` calls the deprecated endpoint and will not work as-is.
-- `STRIPE_SETUP.md` currently documents a PaymentIntent flow that is no longer active; it should be updated to reflect the Checkout Session + webhook flow.
+- `STRIPE_SETUP.md` documents Stripe Checkout Sessions + webhook flow.
 
 ---
 
@@ -351,7 +353,7 @@ This repo no longer uses Vercel KV for checkout or rate limiting. If you previou
 
 - [x] Webhook only acknowledges success when work succeeded (and retries on failures)
 - [x] Event “processed” marker is only set after successful order creation/update
-- [ ] Draft-not-found cases are handled safely (retry, backoff, or Stripe session lookup fallback)
+- [x] Draft-not-found cases are handled safely (Stripe-only order reconstruction fallback + internal alert)
 - [x] Persist Stripe final shipping/customer details (merge Stripe session details into stored customerInfo)
 - [x] Align order status enum across API + UI
 
@@ -367,8 +369,8 @@ This repo no longer uses Vercel KV for checkout or rate limiting. If you previou
 
 ### Cleanup
 
-- [ ] Remove or fix deprecated PaymentIntent flow + update `STRIPE_SETUP.md`
-- [ ] Decide whether `/api/checkout` is “quote request” only vs “manual order”; validate inputs accordingly
+- [x] Remove or fix deprecated PaymentIntent flow + update `STRIPE_SETUP.md`
+- [x] Decide whether `/api/checkout` is “quote request” only vs “manual order”; validate inputs accordingly
 
 ---
 
@@ -378,10 +380,10 @@ Run these in **Preview** with Stripe **test mode**, then repeat in **Production*
 
 ### Environment + config checks
 
-- [ ] Vercel **Production** env vars set (Stripe live keys, Postgres URLs, Resend, `NEXT_PUBLIC_SITE_URL`, `ADMIN_API_KEY`)
-- [ ] Webhook endpoint configured in Stripe and pointing to `/api/stripe/webhook`
+- [x] Vercel **Production** env vars set (Stripe live keys, Postgres URLs, Resend, `NEXT_PUBLIC_SITE_URL`, `ADMIN_API_KEY`)
+- [x] Webhook endpoint configured in Stripe and pointing to `/api/stripe/webhook`
 - [ ] DB migrations auto-run on deploy (Vercel uses `vercel-build`)
-- [ ] (If using live shipping) Shippo env vars set and shipping rates show real carrier/service names
+- [x] (If using live shipping) Shippo env vars set and shipping rates show real carrier/service names
 
 ### Stripe Checkout (happy path)
 
@@ -400,9 +402,9 @@ Run these in **Preview** with Stripe **test mode**, then repeat in **Production*
 
 ### Admin ops
 
-- [ ] Visit `/admin/orders`, enter `ADMIN_API_KEY`, confirm orders list loads
-- [ ] Update an order status (e.g. `in_production` → `shipped`) and add tracking number
-- [ ] Verify tracking page reflects the updated status/tracking number (with token)
+- [x] Visit `/admin/orders`, enter `ADMIN_API_KEY`, confirm orders list loads
+- [x] Update an order status (e.g. `in_production` → `shipped`) and add tracking number
+- [x] Verify tracking page reflects the updated status/tracking number (with token)
 
 ---
 

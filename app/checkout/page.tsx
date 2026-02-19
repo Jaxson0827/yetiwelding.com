@@ -322,6 +322,7 @@ export default function CheckoutPage() {
                         onAddressChange={handleAddressChange}
                         onFreightChange={handleFreightChange}
                         freightRequired={freightRequired}
+                        requireShippingAddress={paymentMethod !== 'quote'}
                       />
                     </div>
 

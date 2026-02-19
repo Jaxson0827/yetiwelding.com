@@ -35,6 +35,7 @@ interface CheckoutFormProps {
   onAddressChange?: (address: CustomerInfo['shippingAddress']) => void;
   onFreightChange?: (freight: NonNullable<CustomerInfo['freight']>) => void;
   freightRequired?: boolean;
+  requireShippingAddress?: boolean;
 }
 
 export default function CheckoutForm({
@@ -43,6 +44,7 @@ export default function CheckoutForm({
   onAddressChange,
   onFreightChange,
   freightRequired = false,
+  requireShippingAddress = true,
 }: CheckoutFormProps) {
   const [formData, setFormData] = useState<CustomerInfo>({
     name: '',
@@ -87,13 +89,25 @@ export default function CheckoutForm({
     } else if (!/^[\d\s\-\(\)]+$/.test(formData.phone)) {
       newErrors.phone = 'Invalid phone format';
     }
-    if (!formData.shippingAddress.street.trim()) newErrors['shippingAddress.street'] = 'Street address is required';
-    if (!formData.shippingAddress.city.trim()) newErrors['shippingAddress.city'] = 'City is required';
-    if (!formData.shippingAddress.state.trim()) newErrors['shippingAddress.state'] = 'State is required';
-    if (!formData.shippingAddress.zip.trim()) {
-      newErrors['shippingAddress.zip'] = 'ZIP code is required';
-    } else if (!/^\d{5}(-\d{4})?$/.test(formData.shippingAddress.zip)) {
-      newErrors['shippingAddress.zip'] = 'Invalid ZIP code format';
+    const ship = formData.shippingAddress;
+    const anyShipProvided = !!(ship.street || ship.city || ship.state || ship.zip);
+
+    if (requireShippingAddress) {
+      if (!ship.street.trim()) newErrors['shippingAddress.street'] = 'Street address is required';
+      if (!ship.city.trim()) newErrors['shippingAddress.city'] = 'City is required';
+      if (!ship.state.trim()) newErrors['shippingAddress.state'] = 'State is required';
+      if (!ship.zip.trim()) {
+        newErrors['shippingAddress.zip'] = 'ZIP code is required';
+      } else if (!/^\d{5}(-\d{4})?$/.test(ship.zip)) {
+        newErrors['shippingAddress.zip'] = 'Invalid ZIP code format';
+      }
+    } else if (anyShipProvided) {
+      // Quote mode: shipping is optional, but if provided, require state+zip for estimation.
+      if (!!ship.state.trim() !== !!ship.zip.trim()) {
+        newErrors['shippingAddress.zip'] = 'Enter both state and ZIP for a shipping estimate (or leave blank)';
+      } else if (ship.zip.trim() && !/^\d{5}(-\d{4})?$/.test(ship.zip)) {
+        newErrors['shippingAddress.zip'] = 'Invalid ZIP code format';
+      }
     }
 
     if (freightRequired) {
