@@ -6,7 +6,7 @@ import { ShippingAddress, ShippingMethod } from '@/lib/shipping/calculator';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, address, preferredMethod } = body;
+    const { items, address, preferredMethod, freight } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
     const shippingCalculation = await calculateShippingLive(
       items as CartItem[],
       address as ShippingAddress,
-      preferredMethod as ShippingMethod | undefined
+      preferredMethod as ShippingMethod | undefined,
+      freight
     );
 
     return NextResponse.json({

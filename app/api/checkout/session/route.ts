@@ -19,6 +19,10 @@ type CustomerInfo = {
     zip: string;
     country: string;
   };
+  freight?: {
+    deliveryType?: 'commercial' | 'residential';
+    liftgateRequired?: boolean;
+  };
   specialInstructions?: string;
 };
 
@@ -127,7 +131,8 @@ export async function POST(request: NextRequest) {
     const shippingCalc = await calculateShippingLive(
       normalizedItems as any,
       customerInfo.shippingAddress as any,
-      selectedShippingMethod
+      selectedShippingMethod,
+      customerInfo.freight as any
     );
 
     const shipping_options: Stripe.Checkout.SessionCreateParams.ShippingOption[] = (shippingCalc.options || []).map(
@@ -147,6 +152,17 @@ export async function POST(request: NextRequest) {
             providerRateId: (opt as any).providerRateId || '',
             carrier: (opt as any).carrier || '',
             service: (opt as any).service || '',
+            // Freight tier metadata (persisted to Order via webhook for ops).
+            freightZone: (opt as any).freightZone || '',
+            freightKind: (opt as any).freightKind || '',
+            freightTier: (opt as any).freightTier || '',
+            freightBaseUsd: Number.isFinite((opt as any).freightBaseUsd) ? String((opt as any).freightBaseUsd) : '',
+            freightAddonsUsd: Number.isFinite((opt as any).freightAddonsUsd) ? String((opt as any).freightAddonsUsd) : '',
+            freightDeliveryType: (opt as any).freightDeliveryType || '',
+            freightLiftgateRequired:
+              typeof (opt as any).freightLiftgateRequired === 'boolean'
+                ? String((opt as any).freightLiftgateRequired)
+                : '',
           },
         },
       })

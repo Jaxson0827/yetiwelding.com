@@ -1,7 +1,15 @@
 import { CartItem } from '@/contexts/CartContext';
-import { EmbedSpec } from '@/lib/steelEmbeds/types';
-import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getShippoShippingOptions } from '@/lib/shipping/providers/shippo';
+import { estimateTotalDimensionsIn, estimateTotalWeightLb } from '@/lib/shipping/packaging';
+import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import {
+  calculateFreightUsd,
+  type FreightInputs,
+  type FreightKind,
+  getEmbedFreightTierFromWeightLb,
+  getFreightZoneFromState,
+  getGateFreightTierFromWidthFt,
+} from '@/lib/shipping/freightPricing';
 
 export interface ShippingAddress {
   street: string;
@@ -26,6 +34,14 @@ export interface ShippingOption {
   service?: string | null;
   estimatedDaysMin?: number | null;
   estimatedDaysMax?: number | null;
+  // Freight-only metadata (used for Stripe metadata + ops).
+  freightZone?: string;
+  freightKind?: FreightKind;
+  freightTier?: string;
+  freightBaseUsd?: number;
+  freightAddonsUsd?: number;
+  freightDeliveryType?: string;
+  freightLiftgateRequired?: boolean;
 }
 
 export interface ShippingCalculation {
@@ -38,18 +54,6 @@ export interface ShippingCalculation {
     height: number;
   };
 }
-
-// Weight estimates (in pounds)
-const WEIGHT_ESTIMATES = {
-  'steel-plate-embeds': {
-    baseWeight: 0.5, // per embed base weight
-    plateWeightPerCubicInch: 0.283, // A36 steel density
-  },
-  'dumpster-gate': {
-    baseWeight: 150, // base weight per gate
-    weightPerSqFt: 5, // additional weight per square foot
-  },
-};
 
 // Shipping zones (based on ZIP code prefixes)
 const SHIPPING_ZONES: Record<string, number> = {
@@ -122,69 +126,23 @@ const DELIVERY_DAYS: Record<ShippingMethod, string> = {
 };
 
 /**
- * Calculate total weight of cart items
+ * Estimate shipment weight for business decisions (parcel vs freight).
+ *
+ * This intentionally includes a small packaging buffer so we don't under-route
+ * a borderline-heavy embed order into parcel.
  */
-function calculateTotalWeight(items: CartItem[]): number {
-  let totalWeight = 0;
-
-  for (const item of items) {
-    if (item.productType === 'steel-plate-embeds') {
-      const config = item.configuration as EmbedSpec;
-      const plateVolume = 
-        (config.plate.length * config.plate.width * config.plate.thickness) / 1728; // Convert to cubic feet
-      const plateWeight = plateVolume * WEIGHT_ESTIMATES['steel-plate-embeds'].plateWeightPerCubicInch * 12 * 12 * 12; // Convert to pounds
-      const baseWeight = WEIGHT_ESTIMATES['steel-plate-embeds'].baseWeight;
-      
-      // Add weight for studs if present
-      const studWeight = config.studs?.positions?.length 
-        ? config.studs.positions.length * 0.5 // ~0.5 lbs per stud
-        : 0;
-      
-      totalWeight += (plateWeight + baseWeight + studWeight) * config.quantity;
-    } else if (item.productType === 'dumpster-gate') {
-      const config = item.configuration as DumpsterGateConfig;
-      const area = config.widthFt * config.heightFt;
-      const gateWeight = 
-        WEIGHT_ESTIMATES['dumpster-gate'].baseWeight + 
-        (area * WEIGHT_ESTIMATES['dumpster-gate'].weightPerSqFt);
-      
-      totalWeight += gateWeight * config.quantity;
-    }
-  }
-
-  return Math.ceil(totalWeight); // Round up to nearest pound
+function estimateShipmentWeightForDecisionLb(items: CartItem[]): number {
+  const productWeight = estimateTotalWeightLb(items);
+  // Small buffer for packaging variance (especially embeds).
+  const bufferLb = Math.ceil(productWeight * 0.05 + 5);
+  return Math.max(1, Math.ceil(productWeight + bufferLb));
 }
 
 /**
  * Calculate total dimensions (for freight calculation)
  */
 function calculateTotalDimensions(items: CartItem[]): { length: number; width: number; height: number } {
-  // Simplified: assume items are packed efficiently
-  // For dumpster gates, they're typically flat-packed
-  // For steel embeds, they're small
-  
-  let maxLength = 0;
-  let maxWidth = 0;
-  let totalHeight = 0;
-
-  for (const item of items) {
-    if (item.productType === 'dumpster-gate') {
-      const config = item.configuration as DumpsterGateConfig;
-      // Gates are typically flat-packed, so length/width are the gate dimensions
-      maxLength = Math.max(maxLength, config.widthFt * 12); // Convert to inches
-      maxWidth = Math.max(maxWidth, config.heightFt * 12);
-      totalHeight += 2; // ~2 inches per gate when flat-packed
-    } else {
-      // Steel embeds are small, assume 12x12x2 inch box per embed
-      totalHeight += 2 * (item.configuration as EmbedSpec).quantity;
-    }
-  }
-
-  return {
-    length: Math.max(maxLength, 12), // Minimum 12 inches
-    width: Math.max(maxWidth, 12),
-    height: Math.max(totalHeight, 6), // Minimum 6 inches
-  };
+  return estimateTotalDimensionsIn(items);
 }
 
 /**
@@ -196,20 +154,68 @@ function getShippingZone(zip: string): number {
 }
 
 /**
- * Check if order requires freight shipping
+ * Business rule: when do we force freight?
  */
-function requiresFreightHeuristic(weight: number, dimensions: { length: number; width: number; height: number }): boolean {
-  // Require freight if:
-  // - Weight > 500 lbs, OR
-  // - Any dimension > 96 inches (8 feet), OR
-  // - Total volume > 50 cubic feet
-  const volume = (dimensions.length * dimensions.width * dimensions.height) / 1728; // Convert to cubic feet
-  
-  return weight > 500 || 
-         dimensions.length > 96 || 
-         dimensions.width > 96 || 
-         dimensions.height > 96 ||
-         volume > 50;
+function requiresFreightBusiness(items: CartItem[], decisionWeightLb: number): boolean {
+  const hasGate = items.some((it) => it.productType === 'dumpster-gate');
+  if (hasGate) return true;
+  return decisionWeightLb > 150;
+}
+
+function getFreightKind(items: CartItem[]): FreightKind {
+  return items.some((it) => it.productType === 'dumpster-gate') ? 'gate' : 'embeds';
+}
+
+function getMaxGateWidthFt(items: CartItem[]): number {
+  let max = 0;
+  for (const it of items) {
+    if (it.productType !== 'dumpster-gate') continue;
+    const cfg = it.configuration as DumpsterGateConfig;
+    const w = Number(cfg.widthFt || 0);
+    if (Number.isFinite(w)) max = Math.max(max, w);
+  }
+  return max;
+}
+
+function buildFreightOption(params: {
+  items: CartItem[];
+  address: ShippingAddress;
+  freight?: FreightInputs;
+  totalWeightLb: number;
+  totalDimensions: { length: number; width: number; height: number };
+}): ShippingOption {
+  const zone = getFreightZoneFromState(params.address.state);
+  const kind = getFreightKind(params.items);
+  const tier =
+    kind === 'gate'
+      ? getGateFreightTierFromWidthFt(getMaxGateWidthFt(params.items))
+      : getEmbedFreightTierFromWeightLb(params.totalWeightLb);
+
+  const priced = calculateFreightUsd({
+    zone,
+    kind,
+    tier,
+    freight: params.freight,
+  });
+
+  return {
+    method: 'freight',
+    name: 'Freight Shipping',
+    description: 'LTL freight delivery. Carrier will call to schedule. Curbside delivery.',
+    cost: Math.round(priced.totalUsd * 100) / 100,
+    estimatedDays: DELIVERY_DAYS.freight,
+    provider: 'freight_tiers',
+    providerRateId: '',
+    carrier: '',
+    service: null,
+    freightZone: zone,
+    freightKind: kind,
+    freightTier: tier,
+    freightBaseUsd: priced.baseUsd,
+    freightAddonsUsd: priced.addonsUsd,
+    freightDeliveryType: params.freight?.deliveryType || 'commercial',
+    freightLiftgateRequired: !!params.freight?.liftgateRequired,
+  };
 }
 
 /**
@@ -218,7 +224,8 @@ function requiresFreightHeuristic(weight: number, dimensions: { length: number; 
 export function calculateShipping(
   items: CartItem[],
   address: ShippingAddress,
-  preferredMethod?: ShippingMethod
+  preferredMethod?: ShippingMethod,
+  freight?: FreightInputs
 ): ShippingCalculation {
   if (items.length === 0) {
     return {
@@ -228,60 +235,40 @@ export function calculateShipping(
     };
   }
 
-  const totalWeight = calculateTotalWeight(items);
+  const totalWeight = estimateShipmentWeightForDecisionLb(items);
   const totalDimensions = calculateTotalDimensions(items);
   const zone = getShippingZone(address.zip);
-  const needsFreight = requiresFreightHeuristic(totalWeight, totalDimensions);
+  const needsFreight = requiresFreightBusiness(items, totalWeight);
 
   const options: ShippingOption[] = [];
 
-  // Always offer standard shipping
-  const standardRate = BASE_RATES[zone]?.standard || BASE_RATES[3].standard;
-  const standardCost = Math.max(
-    totalWeight * standardRate,
-    MINIMUM_SHIPPING.standard
-  );
-  
-  options.push({
-    method: 'standard',
-    name: 'Standard Shipping',
-    description: 'Ground shipping via standard carrier',
-    cost: Math.round(standardCost * 100) / 100,
-    estimatedDays: DELIVERY_DAYS.standard,
-  });
-
-  // Offer expedited if weight < 200 lbs
-  if (totalWeight < 200 && !needsFreight) {
-    const expeditedRate = BASE_RATES[zone]?.expedited || BASE_RATES[3].expedited;
-    const expeditedCost = Math.max(
-      totalWeight * expeditedRate,
-      MINIMUM_SHIPPING.expedited
-    );
-    
+  if (needsFreight) {
+    options.push(buildFreightOption({ items, address, freight, totalWeightLb: totalWeight, totalDimensions }));
+  } else {
+    // Heuristic fallback for parcel pricing (only used if Shippo is unavailable/fails).
+    const standardRate = BASE_RATES[zone]?.standard || BASE_RATES[3].standard;
+    const standardCost = Math.max(totalWeight * standardRate, MINIMUM_SHIPPING.standard);
     options.push({
-      method: 'expedited',
-      name: 'Expedited Shipping',
-      description: 'Faster delivery for urgent orders',
-      cost: Math.round(expeditedCost * 100) / 100,
-      estimatedDays: DELIVERY_DAYS.expedited,
+      method: 'standard',
+      name: 'Standard Shipping',
+      description: 'Ground shipping via standard carrier',
+      cost: Math.round(standardCost * 100) / 100,
+      estimatedDays: DELIVERY_DAYS.standard,
+      provider: 'heuristic',
     });
-  }
 
-  // Offer freight for large/heavy items
-  if (needsFreight || totalWeight > 300) {
-    const freightRate = BASE_RATES[zone]?.freight || BASE_RATES[3].freight;
-    const freightCost = Math.max(
-      totalWeight * freightRate,
-      MINIMUM_SHIPPING.freight
-    );
-    
-    options.push({
-      method: 'freight',
-      name: 'Freight Shipping',
-      description: 'LTL freight for large/heavy items',
-      cost: Math.round(freightCost * 100) / 100,
-      estimatedDays: DELIVERY_DAYS.freight,
-    });
+    if (totalWeight < 200) {
+      const expeditedRate = BASE_RATES[zone]?.expedited || BASE_RATES[3].expedited;
+      const expeditedCost = Math.max(totalWeight * expeditedRate, MINIMUM_SHIPPING.expedited);
+      options.push({
+        method: 'expedited',
+        name: 'Expedited Shipping',
+        description: 'Faster delivery for urgent orders',
+        cost: Math.round(expeditedCost * 100) / 100,
+        estimatedDays: DELIVERY_DAYS.expedited,
+        provider: 'heuristic',
+      });
+    }
   }
 
   // Select default method
@@ -312,16 +299,16 @@ export function calculateShipping(
 export async function calculateShippingLive(
   items: CartItem[],
   address: ShippingAddress,
-  preferredMethod?: ShippingMethod
+  preferredMethod?: ShippingMethod,
+  freight?: FreightInputs
 ): Promise<ShippingCalculation> {
   // Guard: basic address presence required for carrier rates.
   const hasFullAddress =
     !!address?.street && !!address?.city && !!address?.state && !!address?.zip && !!address?.country;
 
-  // Determine if we should treat this as freight. (Shippo parcel rates won't be reliable for oversize/LTL.)
-  const totalWeight = calculateTotalWeight(items);
+  const totalWeight = estimateShipmentWeightForDecisionLb(items);
   const totalDimensions = calculateTotalDimensions(items);
-  const needsFreight = requiresFreightHeuristic(totalWeight, totalDimensions);
+  const needsFreight = requiresFreightBusiness(items, totalWeight);
 
   if (process.env.SHIPPO_API_TOKEN && hasFullAddress && !needsFreight) {
     try {
@@ -338,7 +325,7 @@ export async function calculateShippingLive(
     }
   }
 
-  return calculateShipping(items, address, preferredMethod);
+  return calculateShipping(items, address, preferredMethod, freight);
 }
 
 

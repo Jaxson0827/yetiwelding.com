@@ -287,6 +287,7 @@ export async function POST(request: NextRequest) {
     let shippingCarrier: string | null = null;
     let shippingService: string | null = null;
     let shippingQuoteId: string | null = null;
+    let freightMeta: any = null;
 
     if (stripeShippingRateId) {
       try {
@@ -297,9 +298,45 @@ export async function POST(request: NextRequest) {
         if (md.carrier) shippingCarrier = String(md.carrier);
         if (md.service) shippingService = String(md.service);
         if (md.providerRateId) shippingQuoteId = String(md.providerRateId);
+
+        // Persist freight tier context into Order.customerInfo for ops visibility.
+        const maybeNumber = (v: any): number | null => {
+          const n = typeof v === 'number' ? v : Number(String(v || '').trim());
+          return Number.isFinite(n) ? n : null;
+        };
+        const maybeBool = (v: any): boolean | null => {
+          if (typeof v === 'boolean') return v;
+          const s = String(v || '').trim().toLowerCase();
+          if (s === 'true') return true;
+          if (s === 'false') return false;
+          return null;
+        };
+        freightMeta = {
+          zone: md.freightZone ? String(md.freightZone) : null,
+          kind: md.freightKind ? String(md.freightKind) : null,
+          tier: md.freightTier ? String(md.freightTier) : null,
+          baseUsd: maybeNumber(md.freightBaseUsd),
+          addonsUsd: maybeNumber(md.freightAddonsUsd),
+          deliveryType: md.freightDeliveryType ? String(md.freightDeliveryType) : null,
+          liftgateRequired: maybeBool(md.freightLiftgateRequired),
+        };
       } catch (e) {
         console.warn('Failed to retrieve Stripe shipping rate metadata', e);
       }
+    }
+
+    if (freightMeta && (freightMeta.zone || freightMeta.tier || freightMeta.kind)) {
+      const next: any = mergedCustomerInfo as any;
+      next.freight = {
+        ...(next.freight || {}),
+        ...(freightMeta.deliveryType ? { deliveryType: freightMeta.deliveryType } : {}),
+        ...(typeof freightMeta.liftgateRequired === 'boolean' ? { liftgateRequired: freightMeta.liftgateRequired } : {}),
+        ...(freightMeta.zone ? { zone: freightMeta.zone } : {}),
+        ...(freightMeta.kind ? { kind: freightMeta.kind } : {}),
+        ...(freightMeta.tier ? { tier: freightMeta.tier } : {}),
+        ...(typeof freightMeta.baseUsd === 'number' ? { baseUsd: freightMeta.baseUsd } : {}),
+        ...(typeof freightMeta.addonsUsd === 'number' ? { addonsUsd: freightMeta.addonsUsd } : {}),
+      };
     }
 
     const notes: string[] = [];

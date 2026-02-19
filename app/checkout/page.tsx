@@ -8,6 +8,7 @@ import CheckoutForm, { CustomerInfo } from '@/components/checkout/CheckoutForm';
 import OrderReview from '@/components/checkout/OrderReview';
 import ShippingMethodSelector from '@/components/checkout/ShippingMethodSelector';
 import { ShippingOption, ShippingMethod } from '@/lib/shipping/calculator';
+import { estimateTotalWeightLb } from '@/lib/shipping/packaging';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -24,6 +25,20 @@ export default function CheckoutPage() {
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [checkoutId, setCheckoutId] = useState<string>('');
+
+  const freightRequired = React.useMemo(() => {
+    const hasGate = items.some((it) => it.productType === 'dumpster-gate');
+    if (hasGate) return true;
+    const productWeight = estimateTotalWeightLb(items as any);
+    const buffer = Math.ceil(productWeight * 0.05 + 5);
+    const decisionWeight = Math.ceil(productWeight + buffer);
+    return decisionWeight > 150;
+  }, [items]);
+
+  const [freightInputs, setFreightInputs] = useState<NonNullable<CustomerInfo['freight']>>({
+    deliveryType: 'commercial',
+    liftgateRequired: false,
+  });
 
   const generateCheckoutId = () => {
     // Prefer strong randomness; avoid Math.random fallbacks.
@@ -68,6 +83,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items,
           address,
+          freight: freightRequired ? freightInputs : undefined,
           preferredMethod: selectedShippingMethod,
         }),
       });
@@ -94,7 +110,11 @@ export default function CheckoutPage() {
     } finally {
       setIsCalculatingShipping(false);
     }
-  }, [items, selectedShippingMethod]);
+  }, [items, selectedShippingMethod, freightInputs, freightRequired]);
+
+  const handleFreightChange = (freight: NonNullable<CustomerInfo['freight']>) => {
+    setFreightInputs(freight);
+  };
 
   const handleShippingMethodChange = (method: ShippingMethod) => {
     setSelectedShippingMethod(method);
@@ -223,7 +243,7 @@ export default function CheckoutPage() {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [addressForShipping, calculateShippingCost]);
+  }, [addressForShipping, calculateShippingCost, freightInputs, freightRequired]);
 
   const handleAddressChange = (address: CustomerInfo['shippingAddress']) => {
     setAddressForShipping(address);
@@ -300,6 +320,8 @@ export default function CheckoutPage() {
                         onSubmit={handleCustomerInfoSubmit} 
                         isSubmitting={isSubmitting}
                         onAddressChange={handleAddressChange}
+                        onFreightChange={handleFreightChange}
+                        freightRequired={freightRequired}
                       />
                     </div>
 

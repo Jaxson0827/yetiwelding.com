@@ -14,6 +14,10 @@ export interface CustomerInfo {
     zip: string;
     country: string;
   };
+  freight?: {
+    deliveryType: 'commercial' | 'residential';
+    liftgateRequired: boolean;
+  };
   billingAddress?: {
     street: string;
     city: string;
@@ -29,9 +33,17 @@ interface CheckoutFormProps {
   onSubmit: (customerInfo: CustomerInfo) => void;
   isSubmitting?: boolean;
   onAddressChange?: (address: CustomerInfo['shippingAddress']) => void;
+  onFreightChange?: (freight: NonNullable<CustomerInfo['freight']>) => void;
+  freightRequired?: boolean;
 }
 
-export default function CheckoutForm({ onSubmit, isSubmitting = false, onAddressChange }: CheckoutFormProps) {
+export default function CheckoutForm({
+  onSubmit,
+  isSubmitting = false,
+  onAddressChange,
+  onFreightChange,
+  freightRequired = false,
+}: CheckoutFormProps) {
   const [formData, setFormData] = useState<CustomerInfo>({
     name: '',
     email: '',
@@ -43,6 +55,10 @@ export default function CheckoutForm({ onSubmit, isSubmitting = false, onAddress
       state: '',
       zip: '',
       country: 'United States',
+    },
+    freight: {
+      deliveryType: 'commercial',
+      liftgateRequired: false,
     },
     billingAddress: {
       street: '',
@@ -78,6 +94,13 @@ export default function CheckoutForm({ onSubmit, isSubmitting = false, onAddress
       newErrors['shippingAddress.zip'] = 'ZIP code is required';
     } else if (!/^\d{5}(-\d{4})?$/.test(formData.shippingAddress.zip)) {
       newErrors['shippingAddress.zip'] = 'Invalid ZIP code format';
+    }
+
+    if (freightRequired) {
+      const dt = formData.freight?.deliveryType;
+      if (dt !== 'commercial' && dt !== 'residential') {
+        newErrors['freight.deliveryType'] = 'Delivery type is required';
+      }
     }
 
     if (formData.useBillingAddress) {
@@ -117,6 +140,10 @@ export default function CheckoutForm({ onSubmit, isSubmitting = false, onAddress
         // Trigger shipping calculation when shipping address changes
         if (parent === 'shippingAddress' && onAddressChange) {
           onAddressChange(updated.shippingAddress);
+        }
+
+        if (parent === 'freight' && onFreightChange && updated.freight) {
+          onFreightChange(updated.freight);
         }
         
         return updated;
@@ -275,6 +302,66 @@ export default function CheckoutForm({ onSubmit, isSubmitting = false, onAddress
           </div>
         </div>
       </div>
+
+      {/* Freight details (only when freight is required) */}
+      {freightRequired && (
+        <div>
+          <h3 className="text-white text-xl font-bold mb-4">Freight Delivery Details</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-white/80 text-sm font-medium mb-2">
+                Delivery Type *
+              </label>
+              <div className="space-y-3">
+                <label className="flex items-center p-4 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="commercial"
+                    checked={formData.freight?.deliveryType === 'commercial'}
+                    onChange={() => updateField('freight.deliveryType', 'commercial')}
+                    className="w-4 h-4 text-[#DC143C] bg-white/10 border-white/20 focus:ring-[#DC143C]"
+                  />
+                  <div className="ml-3">
+                    <div className="text-white font-medium">Commercial</div>
+                    <div className="text-white/60 text-sm">Business address (dock/forklift access)</div>
+                  </div>
+                </label>
+                <label className="flex items-center p-4 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="residential"
+                    checked={formData.freight?.deliveryType === 'residential'}
+                    onChange={() => updateField('freight.deliveryType', 'residential')}
+                    className="w-4 h-4 text-[#DC143C] bg-white/10 border-white/20 focus:ring-[#DC143C]"
+                  />
+                  <div className="ml-3">
+                    <div className="text-white font-medium">Residential</div>
+                    <div className="text-white/60 text-sm">Home delivery (often requires extra fees)</div>
+                  </div>
+                </label>
+              </div>
+              {errors['freight.deliveryType'] && (
+                <p className="text-red-400 text-sm mt-1">{errors['freight.deliveryType']}</p>
+              )}
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="liftgateRequired"
+                checked={!!formData.freight?.liftgateRequired}
+                onChange={(e) => updateField('freight.liftgateRequired', e.target.checked)}
+                className="w-4 h-4 text-[#DC143C] bg-white/10 border-white/20 rounded focus:ring-[#DC143C]"
+              />
+              <label htmlFor="liftgateRequired" className="ml-2 text-white/80 text-sm">
+                Liftgate required at delivery
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Billing Address */}
       <div>

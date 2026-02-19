@@ -25,6 +25,10 @@ interface CustomerInfo {
     zip: string;
     country: string;
   };
+  freight?: {
+    deliveryType?: 'commercial' | 'residential';
+    liftgateRequired?: boolean;
+  };
   billingAddress?: {
     street: string;
     city: string;
@@ -83,7 +87,12 @@ export async function POST(request: NextRequest) {
 
     const shippingCalc =
       customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state
-        ? await calculateShippingLive(normalizedItems as any, customerInfo.shippingAddress as any, shippingMethod)
+        ? await calculateShippingLive(
+            normalizedItems as any,
+            customerInfo.shippingAddress as any,
+            shippingMethod,
+            (customerInfo as CustomerInfo).freight as any
+          )
         : { options: [], selectedMethod: shippingMethod || null };
     const chosen = shippingCalc.options?.find((o: any) => o.method === shippingMethod) || shippingCalc.options?.[0];
     const shippingCostComputed = chosen?.cost || 0;
