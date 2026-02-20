@@ -4,7 +4,7 @@ This repo supports **three delivery options**:
 
 - **Local Pickup**: $0. Pick up at our facility in Springville, UT. Always available for all cart types.
 - **Parcel (Shippo)**: used for small **steel embed plate** orders that are parcel-eligible.
-- **Freight (flat-rate tiers you control)**: used for **dumpster gates**, **mixed carts**, and **heavy embed orders**.
+- **Freight (flat-rate tiers you control)**: used for **dumpster gates**, **pergolas**, **mixed carts**, and **heavy embed orders**.
 
 The goal is to avoid “broken shipping quotes” by using **live parcel rates** where they’re reliable, and **freight tiers** where LTL is unpredictable.
 
@@ -40,9 +40,11 @@ These rules are implemented in:
 ### Freight required if:
 
 - **Any dumpster gate is in the cart** → Freight
+- **Any pergola is in the cart** → Freight
 - Else, embeds-only cart:
   - Compute decision weight (product weight + small packaging buffer)
   - **If decision weight > 150 lb** → Freight
+  - **If any dimension > 96 inches** → Freight
   - Otherwise → Parcel
 
 ### Why the “buffer” exists
@@ -86,13 +88,28 @@ Freight pricing is defined in:
 To update zones, edit the state sets in `lib/shipping/freightPricing.ts`.
 
 ### Gate tiers (by width in feet)
-Used when a cart contains at least one `dumpster-gate`:
+Used when a cart contains **only** dumpster gates (no pergolas):
 - **GateTierA**: up to 4 ft
 - **GateTierB**: >4–6 ft
 - **GateTierC**: >6–8 ft
 - **GateTierD**: >8 ft (covers 8–10 ft and above)
 
 Tier selection uses the **max gate width** across gate items in the cart.
+
+### Pergola tiers (by max dimension in feet)
+Used when a cart contains **only** pergolas (no dumpster gates):
+- **PergolaTierA**: up to 12 ft (e.g., 12×12)
+- **PergolaTierB**: >12–16 ft (e.g., 12×16)
+- **PergolaTierC**: >16–20 ft (e.g., 12×20)
+- **PergolaTierD**: >20 ft (custom larger sizes)
+
+Tier selection uses the **max of span or depth** across pergola items in the cart.
+
+### Mixed carts (gate + pergola)
+When a cart contains **both** dumpster gates and pergolas, we compute freight for each product type separately and charge the **higher** of the two. This ensures we don't undercharge for combined heavy shipments.
+
+### Embed freight — pallet consistency
+Embed freight tiers are **weight-based only**. To keep freight pricing predictable, always ship embed freight on the **same pallet footprint** (e.g. standard 48×40 in). Document your standard in OPS.md and use it consistently so density/freight class stays stable.
 
 ### Embed freight tiers (by shipment weight in pounds)
 Used when embeds-only cart is >150 lb:
@@ -117,15 +134,19 @@ freightPricing:
   zones:
     Zone1_local:
       gate: { GateTierA: 220, GateTierB: 260, GateTierC: 320, GateTierD: 390 }
+      pergola: { PergolaTierA: 800, PergolaTierB: 950, PergolaTierC: 1100, PergolaTierD: 1300 }
       embeds: { EmbedFreightTier1: 180, EmbedFreightTier2: 240, EmbedFreightTier3: 310, EmbedFreightTier4: 380 }
     Zone2_west:
       gate: { GateTierA: 280, GateTierB: 330, GateTierC: 400, GateTierD: 490 }
+      pergola: { PergolaTierA: 1000, PergolaTierB: 1200, PergolaTierC: 1400, PergolaTierD: 1650 }
       embeds: { EmbedFreightTier1: 230, EmbedFreightTier2: 300, EmbedFreightTier3: 380, EmbedFreightTier4: 470 }
     Zone3_central:
       gate: { GateTierA: 320, GateTierB: 380, GateTierC: 460, GateTierD: 560 }
+      pergola: { PergolaTierA: 1150, PergolaTierB: 1380, PergolaTierC: 1600, PergolaTierD: 1900 }
       embeds: { EmbedFreightTier1: 260, EmbedFreightTier2: 340, EmbedFreightTier3: 430, EmbedFreightTier4: 540 }
     Zone4_east:
       gate: { GateTierA: 390, GateTierB: 460, GateTierC: 560, GateTierD: 690 }
+      pergola: { PergolaTierA: 1400, PergolaTierB: 1680, PergolaTierC: 1950, PergolaTierD: 2300 }
       embeds: { EmbedFreightTier1: 310, EmbedFreightTier2: 410, EmbedFreightTier3: 520, EmbedFreightTier4: 650 }
 ```
 
@@ -142,12 +163,11 @@ Rate flow:
 - If **Shippo is configured** and **freight is not required**, we send Shippo:
   - ship-from address (from env vars)
   - ship-to address
-  - a single parcel with estimated dimensions + weight (`lib/shipping/packaging.ts`)
+  - one or more parcels via `splitIntoParcels()` — orders over 70 lb are auto-split into multiple boxes
 - If Shippo fails/unavailable, we fall back to heuristic parcel pricing (standard/expedited) in `lib/shipping/calculator.ts`.
 
-### Important limitation (known)
-Shippo is currently sent **one parcel** for the whole cart. For embed plates, a more accurate next step is:
-- auto-split into multiple boxes (e.g., max 70 lb per box), then send Shippo multiple parcels.
+### Parcel multi-box (embeds)
+Embed orders over 70 lb per box are split into multiple parcels (max 70 lb each). Shippo returns combined rates for the multi-piece shipment. See `lib/shipping/packaging.ts` — `splitIntoParcels()`, `MAX_PARCEL_WEIGHT_LB`.
 
 ---
 
@@ -217,11 +237,12 @@ Add fields to:
 Most common causes:
 - missing/incorrect ship-from env vars (see `SHIP_FROM_*`)
 - unrealistic parcel dimensions/weight (see `lib/shipping/packaging.ts`)
-- trying to parcel-quote something that should be freight (confirm cart is below 150 lb and has no gates)
+- trying to parcel-quote something that should be freight (confirm cart is below 150 lb and has no gates or pergolas)
 
 ### “Freight price seems wrong”
 Check:
 - customer selected Residential / Liftgate flags correctly
 - `address.state` is a valid 2-letter code (zone mapping is state-based)
-- the selected tier (gate width / embed weight tier) matches expectations
+- the selected tier (gate width / pergola dimension / embed weight tier) matches expectations
+- for mixed carts (gate + pergola), we charge the higher of the two freight costs
 

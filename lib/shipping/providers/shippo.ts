@@ -1,6 +1,10 @@
 import type { ShippingAddress, ShippingMethod, ShippingOption } from '@/lib/shipping/calculator';
 import type { CartItem } from '@/contexts/CartContext';
-import { estimateTotalDimensionsIn, estimateTotalWeightLb } from '@/lib/shipping/packaging';
+import {
+  estimateTotalDimensionsIn,
+  estimateTotalWeightLb,
+  splitIntoParcels,
+} from '@/lib/shipping/packaging';
 
 type ShippoRate = {
   object_id: string;
@@ -82,6 +86,7 @@ export async function getShippoShippingOptions(params: {
     throw new Error('SHIPPO_API_TOKEN not configured');
   }
 
+  const parcels = splitIntoParcels(params.items);
   const totalWeight = estimateTotalWeightLb(params.items);
   const totalDimensions = estimateTotalDimensionsIn(params.items);
 
@@ -98,16 +103,14 @@ export async function getShippoShippingOptions(params: {
     async: false,
     address_from: buildShipFromAddress(),
     address_to: addressTo,
-    parcels: [
-      {
-        length: String(Math.max(1, Math.round(totalDimensions.length))),
-        width: String(Math.max(1, Math.round(totalDimensions.width))),
-        height: String(Math.max(1, Math.round(totalDimensions.height))),
-        distance_unit: 'in',
-        weight: String(Math.max(1, Math.round(totalWeight))),
-        mass_unit: 'lb',
-      },
-    ],
+    parcels: parcels.map((p) => ({
+      length: String(Math.max(1, Math.round(p.length))),
+      width: String(Math.max(1, Math.round(p.width))),
+      height: String(Math.max(1, Math.round(p.height))),
+      distance_unit: 'in',
+      weight: String(Math.max(1, Math.round(p.weight))),
+      mass_unit: 'lb',
+    })),
   };
 
   const resp = await fetch('https://api.goshippo.com/shipments/', {

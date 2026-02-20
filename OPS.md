@@ -44,7 +44,11 @@ When an order is `needs_review`:
 - `paymentStatus=failed`: contact the customer to retry payment; you can send them back to checkout to place a new order.
 - `pending_payment`: wait briefly (some payment methods are async). If it stays pending, contact customer.
 
-### 5) Shipping + tracking workflow
+### 5) Embed freight — pallet standards
+
+For embed-only freight shipments, use a **consistent pallet size** (e.g. standard 48×40 in) so freight class and pricing stay predictable. Document your chosen standard here and use it for all embed freight.
+
+### 6) Shipping + tracking workflow
 
 When you ship:
 
@@ -58,7 +62,7 @@ For local pickup:
 
 - Set `status` → `ready`
 
-### 6) Admin access key (security)
+### 7) Admin access key (security)
 
 - Create a strong secret `ADMIN_API_KEY`
 - Add it to Vercel env vars for **Production + Preview**

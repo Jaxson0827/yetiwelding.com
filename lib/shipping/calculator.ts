@@ -9,6 +9,7 @@ import {
   getEmbedFreightTierFromWeightLb,
   getFreightZoneFromState,
   getGateFreightTierFromWidthFt,
+  getPergolaFreightTierFromMaxDimensionFt,
 } from '@/lib/shipping/freightPricing';
 
 export interface ShippingAddress {
@@ -163,23 +164,55 @@ function getShippingZone(zip: string): number {
 /**
  * Business rule: when do we force freight?
  */
-function requiresFreightBusiness(items: CartItem[], decisionWeightLb: number): boolean {
+function requiresFreightBusiness(
+  items: CartItem[],
+  decisionWeightLb: number,
+  dimensionsIn: { length: number; width: number; height: number }
+): boolean {
   const hasGate = items.some((it) => it.productType === 'dumpster-gate');
-  if (hasGate) return true;
-  return decisionWeightLb > 150;
+  const hasPergola = items.some((it) => it.productType === 'pergola');
+  if (hasGate || hasPergola) return true;
+  if (decisionWeightLb > 150) return true;
+  if (
+    dimensionsIn.length > 96 ||
+    dimensionsIn.width > 96 ||
+    dimensionsIn.height > 96
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function getFreightKind(items: CartItem[]): FreightKind {
-  return items.some((it) => it.productType === 'dumpster-gate') ? 'gate' : 'embeds';
+  const hasGate = items.some((it) => it.productType === 'dumpster-gate');
+  const hasPergola = items.some((it) => it.productType === 'pergola');
+  if (hasGate && hasPergola) return 'mixed';
+  if (hasGate) return 'gate';
+  if (hasPergola) return 'pergola';
+  return 'embeds';
 }
 
 function getMaxGateWidthFt(items: CartItem[]): number {
   let max = 0;
   for (const it of items) {
-    if (it.productType !== 'dumpster-gate') continue;
-    const cfg = it.configuration as DumpsterGateConfig;
-    const w = Number(cfg.widthFt || 0);
-    if (Number.isFinite(w)) max = Math.max(max, w);
+    if (it.productType === 'dumpster-gate') {
+      const cfg = it.configuration as DumpsterGateConfig;
+      const w = Number(cfg.widthFt || 0);
+      if (Number.isFinite(w)) max = Math.max(max, w);
+    }
+  }
+  return max;
+}
+
+function getMaxPergolaDimensionFt(items: CartItem[]): number {
+  let max = 0;
+  for (const it of items) {
+    if (it.productType === 'pergola') {
+      const cfg = it.configuration as { span?: number; depth?: number };
+      const span = Number(cfg.span || 12);
+      const depth = Number(cfg.depth || 12);
+      if (Number.isFinite(span) && Number.isFinite(depth)) max = Math.max(max, span, depth);
+    }
   }
   return max;
 }
@@ -219,17 +252,41 @@ function buildFreightOption(params: {
 }): ShippingOption {
   const zone = getFreightZoneFromState(params.address.state);
   const kind = getFreightKind(params.items);
-  const tier =
-    kind === 'gate'
-      ? getGateFreightTierFromWidthFt(getMaxGateWidthFt(params.items))
-      : getEmbedFreightTierFromWeightLb(params.totalWeightLb);
 
-  const priced = calculateFreightUsd({
-    zone,
-    kind,
-    tier,
-    freight: params.freight,
-  });
+  let priced: { baseUsd: number; addonsUsd: number; totalUsd: number };
+  let tier: string;
+
+  if (kind === 'mixed') {
+    const gateTier = getGateFreightTierFromWidthFt(getMaxGateWidthFt(params.items));
+    const pergolaTier = getPergolaFreightTierFromMaxDimensionFt(getMaxPergolaDimensionFt(params.items));
+    const gatePriced = calculateFreightUsd({
+      zone,
+      kind: 'gate',
+      tier: gateTier,
+      freight: params.freight,
+    });
+    const pergolaPriced = calculateFreightUsd({
+      zone,
+      kind: 'pergola',
+      tier: pergolaTier,
+      freight: params.freight,
+    });
+    priced =
+      gatePriced.totalUsd >= pergolaPriced.totalUsd ? gatePriced : pergolaPriced;
+    tier = `mixed:${gateTier}+${pergolaTier}`;
+  } else if (kind === 'gate') {
+    const gateTier = getGateFreightTierFromWidthFt(getMaxGateWidthFt(params.items));
+    tier = gateTier;
+    priced = calculateFreightUsd({ zone, kind, tier: gateTier, freight: params.freight });
+  } else if (kind === 'pergola') {
+    const pergolaTier = getPergolaFreightTierFromMaxDimensionFt(getMaxPergolaDimensionFt(params.items));
+    tier = pergolaTier;
+    priced = calculateFreightUsd({ zone, kind, tier: pergolaTier, freight: params.freight });
+  } else {
+    const embedTier = getEmbedFreightTierFromWeightLb(params.totalWeightLb);
+    tier = embedTier;
+    priced = calculateFreightUsd({ zone, kind, tier: embedTier, freight: params.freight });
+  }
 
   return {
     method: 'freight',
@@ -271,7 +328,7 @@ export function calculateShipping(
   const totalWeight = estimateShipmentWeightForDecisionLb(items);
   const totalDimensions = calculateTotalDimensions(items);
   const zone = getShippingZone(address.zip);
-  const needsFreight = requiresFreightBusiness(items, totalWeight);
+  const needsFreight = requiresFreightBusiness(items, totalWeight, totalDimensions);
 
   const options: ShippingOption[] = [buildPickupOption()];
 
@@ -341,7 +398,7 @@ export async function calculateShippingLive(
 
   const totalWeight = estimateShipmentWeightForDecisionLb(items);
   const totalDimensions = calculateTotalDimensions(items);
-  const needsFreight = requiresFreightBusiness(items, totalWeight);
+  const needsFreight = requiresFreightBusiness(items, totalWeight, totalDimensions);
 
   if (process.env.SHIPPO_API_TOKEN && hasFullAddress && !needsFreight) {
     try {
