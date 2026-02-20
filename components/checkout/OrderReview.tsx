@@ -5,6 +5,9 @@ import { CartItem } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import type { PergolaConfig } from '@/lib/pergolas/types';
+import { COLORS } from '@/lib/pergolas/colors';
+import { getDesign } from '@/lib/pergolas/panels';
 
 interface OrderReviewProps {
   items: CartItem[];
@@ -37,8 +40,25 @@ export default function OrderReview({
           </p>
         </div>
       );
-    } else {
-      const config = item.configuration as DumpsterGateConfig;
+    }
+    if (item.productType === 'pergola') {
+      const config = item.configuration as PergolaConfig;
+      const colorName = COLORS.find((c) => c.id === config.colorId)?.name ?? config.colorId;
+      const roofName = getDesign(config.roofDesignId).name;
+      return (
+        <div className="space-y-1">
+          <h4 className="text-white font-semibold">Custom Pergola</h4>
+          <p className="text-white/70 text-sm">
+            {config.span}×{config.depth}×{config.height} ft
+          </p>
+          <p className="text-white/70 text-sm">
+            Color: {colorName} • Roof: {roofName}
+          </p>
+          <p className="text-white/70 text-sm">Qty: {config.quantity ?? 1}</p>
+        </div>
+      );
+    }
+    const config = item.configuration as DumpsterGateConfig;
       const sizeDisplay = getDumpsterGateSizeDisplay(config);
       const powderCoatColorLabel =
         config.finish === 'powder-coat-black' && config.powderCoatColor
@@ -60,7 +80,6 @@ export default function OrderReview({
           <p className="text-white/70 text-sm">Qty: {config.quantity}</p>
         </div>
       );
-    }
   };
 
   return (

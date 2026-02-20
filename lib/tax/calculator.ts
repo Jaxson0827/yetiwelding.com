@@ -82,6 +82,7 @@ const POTENTIALLY_TAX_EXEMPT_STATES = [
 const TAX_EXEMPT_PRODUCT_TYPES = [
   'steel-plate-embeds', // Custom fabrication
   'dumpster-gate', // Custom fabrication
+  'pergola', // Custom fabrication
 ];
 
 /**

@@ -1,14 +1,16 @@
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import type { PergolaConfig } from '@/lib/pergolas/types';
 import { validateEmbedSpec, isEmbedSpecComplete } from '@/lib/steelEmbeds/validation';
 import { validateDumpsterGateConfig } from '@/lib/dumpsterGates/validation';
+import { validatePergolaConfig } from '@/lib/pergolas/validation';
 
-export type CartProductType = 'steel-plate-embeds' | 'dumpster-gate';
+export type CartProductType = 'steel-plate-embeds' | 'dumpster-gate' | 'pergola';
 
 export type CartItem = {
   id: string;
   productType: CartProductType;
-  configuration: EmbedSpec | DumpsterGateConfig;
+  configuration: EmbedSpec | DumpsterGateConfig | PergolaConfig;
   price?: number; // client-controlled; ignored server-side
   isCustomFabrication?: boolean;
 };
@@ -43,6 +45,11 @@ export function normalizeAndValidateCartItems(items: unknown): {
       cfg.quantity = clampInt(cfg.quantity, 1, 999);
       return { ...raw, productType, configuration: cfg } as CartItem;
     }
+    if (productType === 'pergola') {
+      const cfg = { ...(raw?.configuration as PergolaConfig) };
+      cfg.quantity = clampInt(cfg.quantity, 1, 999);
+      return { ...raw, productType, configuration: cfg } as CartItem;
+    }
     return raw as CartItem;
   });
 
@@ -63,6 +70,11 @@ export function normalizeAndValidateCartItems(items: unknown): {
     } else if (item.productType === 'dumpster-gate') {
       const gateErrors = validateDumpsterGateConfig(item.configuration as any);
       for (const e of gateErrors) {
+        errors.push({ itemId: item.id, field: e.field, message: e.message });
+      }
+    } else if (item.productType === 'pergola') {
+      const pergolaErrors = validatePergolaConfig(item.configuration as Partial<PergolaConfig>);
+      for (const e of pergolaErrors) {
         errors.push({ itemId: item.id, field: e.field, message: e.message });
       }
     } else {

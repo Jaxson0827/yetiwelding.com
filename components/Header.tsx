@@ -28,6 +28,7 @@ export default function Header() {
       dropdownItems: [
         { label: 'Dumpster Gates', href: '/order/dumpster-gates' },
         { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
+        { label: 'Pergolas', href: '/order/pergolas' },
       ]
     },
     { label: 'SERVICES', href: '/services' },

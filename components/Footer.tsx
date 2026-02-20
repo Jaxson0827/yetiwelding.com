@@ -51,6 +51,7 @@ export default function Footer() {
   const products: FooterLink[] = [
     { label: 'Dumpster Gates', href: '/order/dumpster-gates' },
     { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
+    { label: 'Pergolas', href: '/order/pergolas' },
   ];
 
   // Services

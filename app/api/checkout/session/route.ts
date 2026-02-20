@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
+import { pricePergola } from '@/lib/pergolas/pricing';
 import { calculateShippingLive, ShippingMethod } from '@/lib/shipping/calculator';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
@@ -103,6 +104,29 @@ export async function POST(request: NextRequest) {
               description: `${cfg.plate.length}" × ${cfg.plate.width}" × ${cfg.plate.thickness}" • ${cfg.plate.material}`,
               metadata: {
                 productType: 'steel-plate-embeds',
+                cartItemId: item.id,
+              },
+            },
+          },
+        };
+      }
+
+      if (item.productType === 'pergola') {
+        const cfg = item.configuration as any;
+        const breakdown = pricePergola(cfg, cfg.quantity ?? 1);
+        const unitAmount = toCents(breakdown.unitPrice);
+        const qty = cfg.quantity ?? 1;
+        return {
+          quantity: qty,
+          price_data: {
+            currency: 'usd',
+            tax_behavior: 'exclusive',
+            unit_amount: unitAmount,
+            product_data: {
+              name: 'Custom Pergola',
+              description: `${cfg.span}×${cfg.depth}×${cfg.height} ft • ${cfg.colorId} • ${cfg.roofDesignId}`,
+              metadata: {
+                productType: 'pergola',
                 cartItemId: item.id,
               },
             },

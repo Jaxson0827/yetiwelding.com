@@ -6,11 +6,16 @@ import { generateInternalNotificationEmail } from '@/lib/emails/internalNotifica
 import { sendEmail } from '@/lib/emails/sendEmail';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
+import { pricePergola } from '@/lib/pergolas/pricing';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import type { PergolaConfig } from '@/lib/pergolas/types';
 import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
+import { getCartKey as getPergolaCartKey } from '@/lib/pergolas/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
+import { COLORS } from '@/lib/pergolas/colors';
+import { getDesign } from '@/lib/pergolas/panels';
 import crypto from 'crypto';
 
 let stripe: Stripe | null = null;
@@ -613,6 +618,25 @@ export async function POST(request: NextRequest) {
           configuration: cfg as any,
           name: 'Steel Plate Embed',
           description: `${cfg.plate.length}" × ${cfg.plate.width}" × ${cfg.plate.thickness}" • ${cfg.plate.material}`,
+        };
+      }
+      if (productType === 'pergola') {
+        const cfg = { ...(it.configuration as PergolaConfig) };
+        cfg.quantity = clampInt(cfg.quantity, 1, 999);
+        const bd = pricePergola(cfg);
+        const qty = cfg.quantity ?? 1;
+        const unitCents = Math.max(0, Math.round(bd.unitPrice * 100));
+        const colorName = COLORS.find((c) => c.id === cfg.colorId)?.name ?? cfg.colorId;
+        const roofName = getDesign(cfg.roofDesignId).name;
+        return {
+          productType,
+          sku: getPergolaCartKey(cfg),
+          quantity: qty,
+          unitPriceCents: unitCents,
+          totalPriceCents: unitCents * qty,
+          configuration: cfg as any,
+          name: 'Custom Pergola',
+          description: `${cfg.span}×${cfg.depth}×${cfg.height} ft • ${colorName} • ${roofName}`,
         };
       }
       const cfg = { ...(it.configuration as DumpsterGateConfig) };

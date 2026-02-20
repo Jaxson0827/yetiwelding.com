@@ -2,6 +2,9 @@ import { CartItem } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import type { PergolaConfig } from '@/lib/pergolas/types';
+import { COLORS } from '@/lib/pergolas/colors';
+import { getDesign } from '@/lib/pergolas/panels';
 
 interface CustomerInfo {
   name: string;
@@ -42,10 +45,30 @@ export function generateOrderConfirmationEmail(
           </td>
         </tr>
       `;
-    } else {
-      const config = item.configuration as DumpsterGateConfig;
-      const sizeDisplay = getDumpsterGateSizeDisplay(config);
+    }
+    if (item.productType === 'pergola') {
+      const config = item.configuration as PergolaConfig;
+      const colorName = COLORS.find((c) => c.id === config.colorId)?.name ?? config.colorId;
+      const roofName = getDesign(config.roofDesignId).name;
       return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">
+            <strong>Custom Pergola #${index + 1}</strong><br>
+            <span style="color: #666; font-size: 14px;">
+              ${config.span}×${config.depth}×${config.height} ft<br>
+              Color: ${colorName} • Roof: ${roofName}<br>
+              Qty: ${config.quantity ?? 1}
+            </span>
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: right;">
+            $${item.price.toFixed(2)}
+          </td>
+        </tr>
+      `;
+    }
+    const config = item.configuration as DumpsterGateConfig;
+    const sizeDisplay = getDumpsterGateSizeDisplay(config);
+    return `
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">
             <strong>Dumpster Gate #${index + 1}</strong><br>
@@ -60,7 +83,6 @@ export function generateOrderConfirmationEmail(
           </td>
         </tr>
       `;
-    }
   };
 
   const itemsHtml = items.map((item, index) => renderItemDetails(item, index)).join('');
@@ -319,11 +341,14 @@ ${items.map((item, index) => {
   if (item.productType === 'steel-plate-embeds') {
     const config = item.configuration as EmbedSpec;
     return `${index + 1}. Steel Plate Embed: ${config.plate.length}" × ${config.plate.width}" × ${config.plate.thickness}" • $${item.price.toFixed(2)}`;
-  } else {
-    const config = item.configuration as DumpsterGateConfig;
-    const sizeDisplay = getDumpsterGateSizeDisplay(config);
-    return `${index + 1}. Dumpster Gate: ${sizeDisplay} • $${item.price.toFixed(2)}`;
   }
+  if (item.productType === 'pergola') {
+    const config = item.configuration as PergolaConfig;
+    return `${index + 1}. Custom Pergola: ${config.span}×${config.depth}×${config.height} ft • $${item.price.toFixed(2)}`;
+  }
+  const config = item.configuration as DumpsterGateConfig;
+  const sizeDisplay = getDumpsterGateSizeDisplay(config);
+  return `${index + 1}. Dumpster Gate: ${sizeDisplay} • $${item.price.toFixed(2)}`;
 }).join('\n')}
 
 Total: $${orderTotal.toFixed(2)}

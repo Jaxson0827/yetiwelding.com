@@ -4,7 +4,10 @@ import React from 'react';
 import { CartItem as CartItemType } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import type { PergolaConfig } from '@/lib/pergolas/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import { COLORS } from '@/lib/pergolas/colors';
+import { getDesign } from '@/lib/pergolas/panels';
 
 interface CartItemProps {
   item: CartItemType;
@@ -16,9 +19,11 @@ export default function CartItem({ item, onRemove, onQuantityChange }: CartItemP
   const getCurrentQuantity = () => {
     if (item.productType === 'steel-plate-embeds') {
       return (item.configuration as EmbedSpec).quantity;
-    } else {
-      return (item.configuration as DumpsterGateConfig).quantity;
     }
+    if (item.productType === 'pergola') {
+      return (item.configuration as PergolaConfig).quantity ?? 1;
+    }
+    return (item.configuration as DumpsterGateConfig).quantity;
   };
 
   const currentQuantity = getCurrentQuantity();
@@ -63,8 +68,24 @@ export default function CartItem({ item, onRemove, onQuantityChange }: CartItemP
           </p>
         </div>
       );
-    } else {
-      const config = item.configuration as DumpsterGateConfig;
+    }
+    if (item.productType === 'pergola') {
+      const config = item.configuration as PergolaConfig;
+      const colorName = COLORS.find((c) => c.id === config.colorId)?.name ?? config.colorId;
+      const roofName = getDesign(config.roofDesignId).name;
+      return (
+        <div className="space-y-1">
+          <h4 className="text-white font-semibold">Custom Pergola</h4>
+          <p className="text-white/70 text-sm">
+            {config.span}×{config.depth}×{config.height} ft
+          </p>
+          <p className="text-white/70 text-sm">
+            Color: {colorName} • Roof: {roofName}
+          </p>
+        </div>
+      );
+    }
+    const config = item.configuration as DumpsterGateConfig;
       const sizeDisplay = getDumpsterGateSizeDisplay(config);
       const powderCoatColorLabel =
         config.finish === 'powder-coat-black' && config.powderCoatColor
@@ -87,8 +108,8 @@ export default function CartItem({ item, onRemove, onQuantityChange }: CartItemP
           </p>
         </div>
       );
-    }
   };
+
 
   return (
     <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">

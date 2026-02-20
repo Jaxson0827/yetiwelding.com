@@ -6,10 +6,12 @@ import { generateInternalNotificationEmail } from '@/lib/emails/internalNotifica
 import { sendEmail } from '@/lib/emails/sendEmail';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
+import { pricePergola } from '@/lib/pergolas/pricing';
 import { calculateShippingLive, getPickupOnlyCalculation } from '@/lib/shipping/calculator';
 import { prisma } from '@/lib/db/prisma';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
+import { getCartKey as getPergolaCartKey } from '@/lib/pergolas/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
 import { getClientIp, pgFixedWindowRateLimit } from '@/lib/rateLimit';
@@ -85,6 +87,10 @@ export async function POST(request: NextRequest) {
       .filter((it) => it.productType === 'dumpster-gate')
       .map((it) => it.configuration as DumpsterGateConfig);
 
+    const pergolaConfigs = normalizedItems
+      .filter((it) => it.productType === 'pergola')
+      .map((it) => it.configuration as { span: number; depth: number; height: number; colorId: string; roofDesignId: string; quantity?: number });
+
     const embedsSubtotal = embedSpecs.reduce((sum, spec) => {
       const bd = priceEmbed(spec);
       return sum + bd.unitPrice * (spec.quantity || 1);
@@ -95,7 +101,12 @@ export async function POST(request: NextRequest) {
       return sum + bd.totalPrice;
     }, 0);
 
-    const subtotalComputed = Math.round((embedsSubtotal + gatesSubtotal) * 100) / 100;
+    const pergolasSubtotal = pergolaConfigs.reduce((sum, cfg) => {
+      const pr = pricePergola(cfg, cfg.quantity ?? 1);
+      return sum + pr.totalPrice;
+    }, 0);
+
+    const subtotalComputed = Math.round((embedsSubtotal + gatesSubtotal + pergolasSubtotal) * 100) / 100;
 
     const shippingCalc =
       customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state
@@ -159,6 +170,23 @@ export async function POST(request: NextRequest) {
                 description: `${cfg.plate.length}" × ${cfg.plate.width}" × ${cfg.plate.thickness}" • ${cfg.plate.material}`,
               };
             }
+            if (it.productType === 'pergola') {
+              const cfg = it.configuration as { span: number; depth: number; height: number; colorId: string; roofDesignId: string; quantity?: number };
+              const breakdown = pricePergola(cfg, cfg.quantity ?? 1);
+              const qty = cfg.quantity ?? 1;
+              const unitCents = Math.round(breakdown.unitPrice * 100);
+              const totalItemCents = unitCents * qty;
+              return {
+                productType: it.productType,
+                sku: getPergolaCartKey(cfg as any),
+                quantity: qty,
+                unitPriceCents: unitCents,
+                totalPriceCents: totalItemCents,
+                configuration: cfg as any,
+                name: 'Custom Pergola',
+                description: `${cfg.span}×${cfg.depth}×${cfg.height} ft • ${cfg.colorId} • ${cfg.roofDesignId}`,
+              };
+            }
             const cfg = it.configuration as DumpsterGateConfig;
             const breakdown = priceGate(cfg);
             const qty = cfg.quantity || 1;
@@ -192,6 +220,7 @@ export async function POST(request: NextRequest) {
       })),
       steelEmbeds: embedSpecs,
       dumpsterGates: gateConfigs,
+      pergolas: pergolaConfigs,
       customerInfo: customerInfo as CustomerInfo,
       orderTotal: totalComputed,
       subtotal: subtotalComputed,
