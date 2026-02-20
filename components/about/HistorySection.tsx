@@ -22,8 +22,8 @@ export default function HistorySection() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.1,
+        staggerChildren: 0.05,
+        delayChildren: 0.05,
       },
     },
   };
@@ -34,7 +34,7 @@ export default function HistorySection() {
       opacity: 1,
       x: 0,
       transition: {
-        duration: 0.6,
+        duration: 0.35,
         ease: [0.6, -0.05, 0.01, 0.99] as [number, number, number, number],
       },
     },
@@ -46,7 +46,7 @@ export default function HistorySection() {
       opacity: 1,
       x: 0,
       transition: {
-        duration: 0.6,
+        duration: 0.35,
         ease: [0.6, -0.05, 0.01, 0.99] as [number, number, number, number],
       },
     },
@@ -58,7 +58,7 @@ export default function HistorySection() {
       opacity: 1,
       x: 0,
       transition: {
-        duration: 0.6,
+        duration: 0.35,
         ease: [0.6, -0.05, 0.01, 0.99] as [number, number, number, number],
       },
     },
@@ -90,7 +90,7 @@ export default function HistorySection() {
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.4 }}
         >
           <h2
             id="history-heading"

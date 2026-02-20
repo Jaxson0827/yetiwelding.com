@@ -31,7 +31,7 @@ export default function CheckoutPage() {
       setPaymentMethod('quote');
     }
   }, [hasCustomFabrication]);
-  const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingMethod>('standard');
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingMethod>('pickup');
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [checkoutId, setCheckoutId] = useState<string>('');
@@ -75,14 +75,8 @@ export default function CheckoutPage() {
     }
   }, [items, router]);
 
-  // Calculate shipping when address is available
-  const calculateShippingCost = useCallback(async (address: CustomerInfo['shippingAddress']) => {
-    if (!address.zip || !address.state || address.zip.length < 5) {
-      setShippingOptions([]);
-      setShippingCost(0);
-      return;
-    }
-
+  // Calculate shipping (pickup always available; carrier options when address provided)
+  const calculateShippingCost = useCallback(async (address: CustomerInfo['shippingAddress'] | null) => {
     setIsCalculatingShipping(true);
     try {
       const response = await fetch('/api/shipping/calculate', {
@@ -92,7 +86,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           items,
-          address,
+          address: address || { street: '', city: '', state: '', zip: '', country: 'United States' },
           freight: freightRequired ? freightInputs : undefined,
           preferredMethod: selectedShippingMethod,
         }),
@@ -237,17 +231,12 @@ export default function CheckoutPage() {
   // Store address for shipping/tax calculation (debounced)
   const [addressForShipping, setAddressForShipping] = useState<CustomerInfo['shippingAddress'] | null>(null);
 
-  // Calculate shipping when address changes (debounced)
+  // Calculate shipping on mount (pickup-only) and when address changes (debounced)
   useEffect(() => {
-    if (!addressForShipping?.zip || addressForShipping.zip.length < 5) {
-      setShippingOptions([]);
-      setShippingCost(0);
-      return;
-    }
-
+    const address = addressForShipping || { street: '', city: '', state: '', zip: '', country: 'United States' };
     const timeoutId = setTimeout(() => {
-      calculateShippingCost(addressForShipping);
-    }, 500);
+      calculateShippingCost(address);
+    }, addressForShipping?.zip && addressForShipping.zip.length >= 5 ? 500 : 0);
 
     return () => clearTimeout(timeoutId);
   }, [addressForShipping, calculateShippingCost, freightInputs, freightRequired]);

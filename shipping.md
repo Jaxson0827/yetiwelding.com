@@ -1,7 +1,8 @@
-# Shipping (Parcel + Flat-Rate Freight)
+# Shipping (Parcel + Flat-Rate Freight + Local Pickup)
 
-This repo supports **two shipping modes**:
+This repo supports **three delivery options**:
 
+- **Local Pickup**: $0. Pick up at our facility in Springville, UT. Always available for all cart types.
 - **Parcel (Shippo)**: used for small **steel embed plate** orders that are parcel-eligible.
 - **Freight (flat-rate tiers you control)**: used for **dumpster gates**, **mixed carts**, and **heavy embed orders**.
 
@@ -19,7 +20,19 @@ We do **not** split shipments (e.g., gates freight + embeds parcel). If any item
 
 ---
 
-## 2) Decision rules (current)
+## 2) Local Pickup
+
+**Local Pickup** is always offered as the first shipping option:
+
+- **Cost**: $0
+- **Location**: Springville, UT (origin ZIP 84663)
+- **Availability**: All cart types (embeds, gates, mixed)
+- **When address is missing**: The shipping API returns pickup-only options so users can select pickup before entering an address
+- **Implementation**: `lib/shipping/calculator.ts` — `buildPickupOption()`, `getPickupOnlyCalculation()`
+
+---
+
+## 3) Decision rules (current)
 
 These rules are implemented in:
 - `lib/shipping/calculator.ts`
@@ -37,7 +50,7 @@ The freight/parcel cutoff uses a small buffer so we don’t route borderline-hea
 
 ---
 
-## 3) What the customer must enter
+## 4) What the customer must enter
 
 ### Always collected (all shipments)
 Collected in `components/checkout/CheckoutForm.tsx`:
@@ -56,7 +69,7 @@ Why: these two toggles commonly swing freight cost materially and are simple eno
 
 ---
 
-## 4) Freight pricing (flat-rate tiers)
+## 5) Freight pricing (flat-rate tiers)
 
 Freight pricing is defined in:
 - `lib/shipping/freightPricing.ts`
@@ -118,7 +131,7 @@ freightPricing:
 
 ---
 
-## 5) Parcel (Shippo) behavior
+## 6) Parcel (Shippo) behavior
 
 Parcel rates are fetched through Shippo in:
 - `lib/shipping/providers/shippo.ts`
@@ -159,7 +172,7 @@ Behavior:
 
 ---
 
-## 7) How to update shipping later (safe checklist)
+## 8) How to update shipping later (safe checklist)
 
 ### Updating freight prices
 Edit:
@@ -198,7 +211,7 @@ Add fields to:
 
 ---
 
-## 8) Troubleshooting
+## 9) Troubleshooting
 
 ### “Parcel rates are wrong”
 Most common causes:

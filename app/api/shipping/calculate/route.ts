@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateShippingLive } from '@/lib/shipping/calculator';
+import { calculateShippingLive, getPickupOnlyCalculation } from '@/lib/shipping/calculator';
 import { CartItem } from '@/contexts/CartContext';
 import { ShippingAddress, ShippingMethod } from '@/lib/shipping/calculator';
 
@@ -15,19 +15,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!address) {
-      return NextResponse.json(
-        { error: 'Shipping address is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate address fields
-    if (!address.zip || !address.state) {
-      return NextResponse.json(
-        { error: 'ZIP code and state are required for shipping calculation' },
-        { status: 400 }
-      );
+    // When address is missing or incomplete, return pickup-only options
+    const hasAddressForRates = address?.zip && address?.state && String(address.zip).length >= 5;
+    if (!hasAddressForRates) {
+      const pickupOnly = getPickupOnlyCalculation(preferredMethod as ShippingMethod | undefined);
+      return NextResponse.json({
+        success: true,
+        ...pickupOnly,
+      });
     }
 
     const shippingCalculation = await calculateShippingLive(

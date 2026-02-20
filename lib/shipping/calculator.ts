@@ -19,7 +19,7 @@ export interface ShippingAddress {
   country: string;
 }
 
-export type ShippingMethod = 'standard' | 'expedited' | 'freight';
+export type ShippingMethod = 'standard' | 'expedited' | 'freight' | 'pickup';
 
 export interface ShippingOption {
   method: ShippingMethod;
@@ -88,26 +88,31 @@ const BASE_RATES: Record<number, Record<ShippingMethod, number>> = {
     standard: 0.50, // $0.50 per lb
     expedited: 0.75, // $0.75 per lb
     freight: 0.40, // $0.40 per lb (for large/heavy items)
+    pickup: 0,
   },
   2: {
     standard: 0.65,
     expedited: 0.90,
     freight: 0.55,
+    pickup: 0,
   },
   3: {
     standard: 0.80,
     expedited: 1.10,
     freight: 0.70,
+    pickup: 0,
   },
   4: {
     standard: 0.95,
     expedited: 1.30,
     freight: 0.85,
+    pickup: 0,
   },
   5: {
     standard: 1.50,
     expedited: 2.00,
     freight: 1.20,
+    pickup: 0,
   },
 };
 
@@ -116,6 +121,7 @@ const MINIMUM_SHIPPING: Record<ShippingMethod, number> = {
   standard: 25.00,
   expedited: 45.00,
   freight: 50.00,
+  pickup: 0,
 };
 
 // Estimated delivery days by method
@@ -123,6 +129,7 @@ const DELIVERY_DAYS: Record<ShippingMethod, string> = {
   standard: '7-14 business days',
   expedited: '3-5 business days',
   freight: '5-10 business days',
+  pickup: '1-3 business days',
 };
 
 /**
@@ -175,6 +182,32 @@ function getMaxGateWidthFt(items: CartItem[]): number {
     if (Number.isFinite(w)) max = Math.max(max, w);
   }
   return max;
+}
+
+function buildPickupOption(): ShippingOption {
+  return {
+    method: 'pickup',
+    name: 'Local Pickup',
+    description: 'Pick up at our facility in Springville, UT',
+    cost: 0,
+    estimatedDays: "We'll notify you when your order is ready for pickup",
+    provider: 'local_pickup',
+    estimatedDaysMin: 1,
+    estimatedDaysMax: 3,
+  };
+}
+
+/**
+ * Returns shipping options when address is missing (pickup only).
+ */
+export function getPickupOnlyCalculation(preferredMethod?: ShippingMethod): ShippingCalculation {
+  const pickupOption = buildPickupOption();
+  return {
+    options: [pickupOption],
+    selectedMethod: preferredMethod === 'pickup' ? 'pickup' : 'pickup',
+    totalWeight: 0,
+    totalDimensions: { length: 0, width: 0, height: 0 },
+  };
 }
 
 function buildFreightOption(params: {
@@ -240,7 +273,7 @@ export function calculateShipping(
   const zone = getShippingZone(address.zip);
   const needsFreight = requiresFreightBusiness(items, totalWeight);
 
-  const options: ShippingOption[] = [];
+  const options: ShippingOption[] = [buildPickupOption()];
 
   if (needsFreight) {
     options.push(buildFreightOption({ items, address, freight, totalWeightLb: totalWeight, totalDimensions }));
@@ -272,9 +305,9 @@ export function calculateShipping(
   }
 
   // Select default method
-  let selectedMethod: ShippingMethod = preferredMethod || 'standard';
-  if (needsFreight && selectedMethod !== 'freight') {
-    selectedMethod = 'freight'; // Auto-select freight if required
+  let selectedMethod: ShippingMethod = preferredMethod || 'pickup';
+  if (needsFreight && selectedMethod !== 'freight' && selectedMethod !== 'pickup') {
+    selectedMethod = 'freight'; // Auto-select freight if required (unless pickup preferred)
   }
 
   // If preferred method not available, use first option
@@ -313,9 +346,12 @@ export async function calculateShippingLive(
   if (process.env.SHIPPO_API_TOKEN && hasFullAddress && !needsFreight) {
     try {
       const shippo = await getShippoShippingOptions({ items, address, preferredMethod });
+      const optionsWithPickup = [buildPickupOption(), ...shippo.options];
+      const candidateMethod = (preferredMethod === 'pickup' ? 'pickup' : shippo.selectedMethod) as ShippingMethod;
+      const selectedMethod = optionsWithPickup.some((o) => o.method === candidateMethod) ? candidateMethod : 'pickup';
       return {
-        options: shippo.options,
-        selectedMethod: shippo.selectedMethod,
+        options: optionsWithPickup,
+        selectedMethod,
         totalWeight: shippo.totalWeight,
         totalDimensions: shippo.totalDimensions,
       };

@@ -45,28 +45,38 @@ export default function ShippingInfo({
       <h3 className="text-white text-xl font-bold mb-4">Shipping Information</h3>
       
       <div className="space-y-4">
-        {customerInfo?.shippingAddress && (
+        {shippingMethod === 'pickup' ? (
           <div>
-            <p className="text-white/60 text-sm mb-2">Shipping Address</p>
+            <p className="text-white/60 text-sm mb-2">Pickup Location</p>
             <div className="text-white">
-              {customerInfo.name && <p className="font-semibold">{customerInfo.name}</p>}
-              <p>{customerInfo.shippingAddress.street}</p>
-              <p>
-                {customerInfo.shippingAddress.city}, {customerInfo.shippingAddress.state}{' '}
-                {customerInfo.shippingAddress.zip}
-              </p>
-              {customerInfo.shippingAddress.country && (
-                <p>{customerInfo.shippingAddress.country}</p>
-              )}
+              <p className="font-semibold">Local Pickup</p>
+              <p>Pick up at our facility in Springville, UT</p>
             </div>
           </div>
+        ) : (
+          customerInfo?.shippingAddress && (
+            <div>
+              <p className="text-white/60 text-sm mb-2">Shipping Address</p>
+              <div className="text-white">
+                {customerInfo.name && <p className="font-semibold">{customerInfo.name}</p>}
+                <p>{customerInfo.shippingAddress.street}</p>
+                <p>
+                  {customerInfo.shippingAddress.city}, {customerInfo.shippingAddress.state}{' '}
+                  {customerInfo.shippingAddress.zip}
+                </p>
+                {customerInfo.shippingAddress.country && (
+                  <p>{customerInfo.shippingAddress.country}</p>
+                )}
+              </div>
+            </div>
+          )
         )}
 
         {shippingMethod && (
           <div>
             <p className="text-white/60 text-sm mb-1">Shipping Method</p>
-            <p className="text-white capitalize">
-              {shippingMethod.replace('-', ' ')}
+            <p className="text-white">
+              {shippingMethod === 'pickup' ? 'Local Pickup' : shippingMethod.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
             </p>
           </div>
         )}

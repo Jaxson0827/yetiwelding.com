@@ -67,7 +67,8 @@ This split is reasonable for fabrication/custom work where some orders are pay-n
   - Returns limited information unless the caller provides a matching `token`.
 
 - **Shipping calculation**: `app/api/shipping/calculate/route.ts` and `lib/shipping/calculator.ts`
-  - Returns shipping options using **live carrier rates** via Shippo for parcel-eligible shipments.
+  - Returns **Local Pickup** ($0) always; when address is provided, also returns parcel/freight options.
+  - Uses **live carrier rates** via Shippo for parcel-eligible shipments.
   - Uses **flat-rate freight tiers** (zone + tier table + add-ons) for freight shipments.
   - Shipping rules + how to update the freight table are documented in `shipping.md`.
 
@@ -137,7 +138,7 @@ Webhook creates an order record including:
 ### A) Stripe “Pay Online” flow (Checkout Session)
 
 1. User visits `/checkout` (`app/checkout/page.tsx`), fills `CheckoutForm`.
-2. Client calculates shipping options using `POST /api/shipping/calculate` (debounced).
+2. Client calculates shipping options using `POST /api/shipping/calculate` (debounced). **Local Pickup** ($0) is always available; carrier options appear when address is entered.
 3. Client starts Stripe by calling `POST /api/checkout/session` with:
    - `checkoutId`
    - cart `items`

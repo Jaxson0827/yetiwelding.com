@@ -6,7 +6,7 @@ import { generateInternalNotificationEmail } from '@/lib/emails/internalNotifica
 import { sendEmail } from '@/lib/emails/sendEmail';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
-import { calculateShippingLive } from '@/lib/shipping/calculator';
+import { calculateShippingLive, getPickupOnlyCalculation } from '@/lib/shipping/calculator';
 import { prisma } from '@/lib/db/prisma';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
             shippingMethod,
             (customerInfo as CustomerInfo).freight as any
           )
-        : { options: [], selectedMethod: shippingMethod || null };
+        : getPickupOnlyCalculation(shippingMethod);
     const chosen = shippingCalc.options?.find((o: any) => o.method === shippingMethod) || shippingCalc.options?.[0];
     const shippingCostComputed = chosen?.cost || 0;
     const totalComputed = Math.round((subtotalComputed + shippingCostComputed) * 100) / 100;

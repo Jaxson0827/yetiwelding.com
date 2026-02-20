@@ -2,7 +2,6 @@
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ContactHero from '@/components/contact/ContactHero';
 import ContactMethods, { ContactSocial } from '@/components/contact/ContactMethods';
 import ContactForm from '@/components/contact/ContactForm';
 import FAQSection from '@/components/contact/FAQSection';
@@ -46,10 +45,9 @@ export default function ContactPage() {
 
       <main id="main-content" className="min-h-screen bg-black">
         <Header />
-        <ContactHero />
 
-        {/* Contact Form Section */}
-        <section id="contact-form" className="w-full pt-20 pb-12 px-4 bg-black">
+        {/* Contact Form Section - visible immediately below header */}
+        <section id="contact-form" className="w-full pt-32 pb-20 px-4 bg-black">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               className="text-center mb-12"
@@ -88,8 +86,10 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* Team Section */}
-        <TeamSection />
+        {/* Team Section - negative margin creates content peek */}
+        <div className="-mt-20">
+          <TeamSection />
+        </div>
 
         <ContactSocial />
 

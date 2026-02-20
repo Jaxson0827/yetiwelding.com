@@ -64,7 +64,9 @@ export default function ShippingMethodSelector({
                   <div className="text-white font-semibold">{option.name}</div>
                   <div className="text-white/60 text-sm mt-1">{option.description}</div>
                   <div className="text-white/60 text-xs mt-1">
-                    Estimated delivery: {option.estimatedDays}
+                    {option.method === 'pickup'
+                      ? option.estimatedDays
+                      : `Estimated delivery: ${option.estimatedDays}`}
                   </div>
                 </div>
                 <div className="text-white font-bold text-lg ml-4">

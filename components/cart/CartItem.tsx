@@ -61,9 +61,6 @@ export default function CartItem({ item, onRemove, onQuantityChange }: CartItemP
           <p className="text-white/70 text-sm">
             {config.studs?.positions?.length || 0} studs
           </p>
-          <p className="text-white/70 text-sm">
-            Lead time: {config.leadTime === 'rush' ? 'Rush' : 'Standard'}
-          </p>
         </div>
       );
     } else {
