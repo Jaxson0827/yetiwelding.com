@@ -3,13 +3,14 @@ export type FreightZone = 'Zone1_local' | 'Zone2_west' | 'Zone3_central' | 'Zone
 export type FreightDeliveryType = 'commercial' | 'residential';
 
 export type GateFreightTier = 'GateTierA' | 'GateTierB' | 'GateTierC' | 'GateTierD';
+export type PergolaFreightTier = 'PergolaTierA' | 'PergolaTierB' | 'PergolaTierC' | 'PergolaTierD';
 export type EmbedFreightTier =
   | 'EmbedFreightTier1'
   | 'EmbedFreightTier2'
   | 'EmbedFreightTier3'
   | 'EmbedFreightTier4';
 
-export type FreightKind = 'gate' | 'embeds';
+export type FreightKind = 'gate' | 'embeds' | 'pergola' | 'mixed';
 
 export type FreightInputs = {
   deliveryType?: FreightDeliveryType;
@@ -28,12 +29,14 @@ export const FREIGHT_RATE_TABLE_USD: Readonly<
     FreightZone,
     {
       gate: Record<GateFreightTier, number>;
+      pergola: Record<PergolaFreightTier, number>;
       embeds: Record<EmbedFreightTier, number>;
     }
   >
 > = {
   Zone1_local: {
     gate: { GateTierA: 220, GateTierB: 260, GateTierC: 320, GateTierD: 390 },
+    pergola: { PergolaTierA: 800, PergolaTierB: 950, PergolaTierC: 1100, PergolaTierD: 1300 },
     embeds: {
       EmbedFreightTier1: 180,
       EmbedFreightTier2: 240,
@@ -43,6 +46,7 @@ export const FREIGHT_RATE_TABLE_USD: Readonly<
   },
   Zone2_west: {
     gate: { GateTierA: 280, GateTierB: 330, GateTierC: 400, GateTierD: 490 },
+    pergola: { PergolaTierA: 1000, PergolaTierB: 1200, PergolaTierC: 1400, PergolaTierD: 1650 },
     embeds: {
       EmbedFreightTier1: 230,
       EmbedFreightTier2: 300,
@@ -52,6 +56,7 @@ export const FREIGHT_RATE_TABLE_USD: Readonly<
   },
   Zone3_central: {
     gate: { GateTierA: 320, GateTierB: 380, GateTierC: 460, GateTierD: 560 },
+    pergola: { PergolaTierA: 1150, PergolaTierB: 1380, PergolaTierC: 1600, PergolaTierD: 1900 },
     embeds: {
       EmbedFreightTier1: 260,
       EmbedFreightTier2: 340,
@@ -61,6 +66,7 @@ export const FREIGHT_RATE_TABLE_USD: Readonly<
   },
   Zone4_east: {
     gate: { GateTierA: 390, GateTierB: 460, GateTierC: 560, GateTierD: 690 },
+    pergola: { PergolaTierA: 1400, PergolaTierB: 1680, PergolaTierC: 1950, PergolaTierD: 2300 },
     embeds: {
       EmbedFreightTier1: 310,
       EmbedFreightTier2: 410,
@@ -117,6 +123,18 @@ export function getGateFreightTierFromWidthFt(widthFt: number): GateFreightTier 
   return 'GateTierD';
 }
 
+/**
+ * Pergola tiers by max dimension (span or depth in feet).
+ * 12×12, 12×16, 12×20 map to A/B/C; custom larger to D.
+ */
+export function getPergolaFreightTierFromMaxDimensionFt(maxFt: number): PergolaFreightTier {
+  const w = Number.isFinite(maxFt) ? maxFt : 0;
+  if (w <= 12) return 'PergolaTierA';
+  if (w <= 16) return 'PergolaTierB';
+  if (w <= 20) return 'PergolaTierC';
+  return 'PergolaTierD';
+}
+
 export function getEmbedFreightTierFromWeightLb(weightLb: number): EmbedFreightTier {
   const w = Number.isFinite(weightLb) ? weightLb : 0;
   if (w <= 300) return 'EmbedFreightTier1';
@@ -128,7 +146,7 @@ export function getEmbedFreightTierFromWeightLb(weightLb: number): EmbedFreightT
 export function calculateFreightUsd(params: {
   zone: FreightZone;
   kind: FreightKind;
-  tier: GateFreightTier | EmbedFreightTier;
+  tier: GateFreightTier | EmbedFreightTier | PergolaFreightTier;
   freight?: FreightInputs;
 }): {
   baseUsd: number;
@@ -137,10 +155,14 @@ export function calculateFreightUsd(params: {
   totalUsd: number;
 } {
   const zoneTable = FREIGHT_RATE_TABLE_USD[params.zone];
-  const baseUsd =
-    params.kind === 'gate'
-      ? zoneTable.gate[params.tier as GateFreightTier]
-      : zoneTable.embeds[params.tier as EmbedFreightTier];
+  let baseUsd: number;
+  if (params.kind === 'gate') {
+    baseUsd = zoneTable.gate[params.tier as GateFreightTier];
+  } else if (params.kind === 'pergola') {
+    baseUsd = zoneTable.pergola[params.tier as PergolaFreightTier];
+  } else {
+    baseUsd = zoneTable.embeds[params.tier as EmbedFreightTier];
+  }
 
   const deliveryType = params.freight?.deliveryType;
   const liftgateRequired = !!params.freight?.liftgateRequired;
