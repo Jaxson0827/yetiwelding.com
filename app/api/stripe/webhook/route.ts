@@ -7,11 +7,13 @@ import { sendEmail } from '@/lib/emails/sendEmail';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { pricePergola } from '@/lib/pergolas/pricing';
+import { priceGardenBox } from '@/lib/gardenBoxes/pricing';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import type { PergolaConfig } from '@/lib/pergolas/types';
 import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
 import { getCartKey as getPergolaCartKey } from '@/lib/pergolas/types';
+import { getCartKey as getGardenBoxCartKey, type GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
 import { COLORS } from '@/lib/pergolas/colors';
@@ -637,6 +639,24 @@ export async function POST(request: NextRequest) {
           configuration: cfg as any,
           name: 'Custom Pergola',
           description: `${cfg.span}×${cfg.depth}×${cfg.height} ft • ${colorName} • ${roofName}`,
+        };
+      }
+      if (productType === 'garden-box') {
+        const cfg = { ...(it.configuration as GardenBoxConfig) };
+        cfg.quantity = clampInt(cfg.quantity, 1, 99);
+        const bd = priceGardenBox(cfg, cfg.quantity ?? 1);
+        const qty = cfg.quantity ?? 1;
+        const unitCents = Math.max(0, Math.round(bd.unitPrice * 100));
+        const sizeLabel = { '4x2': "4'×2'", '6x3': "6'×3'", '8x4': "8'×4'" }[cfg.size] ?? cfg.size;
+        return {
+          productType,
+          sku: getGardenBoxCartKey(cfg),
+          quantity: qty,
+          unitPriceCents: unitCents,
+          totalPriceCents: unitCents * qty,
+          configuration: cfg as any,
+          name: 'Steel Garden Box',
+          description: `${sizeLabel} × ${cfg.height}" • ${cfg.finish}`,
         };
       }
       const cfg = { ...(it.configuration as DumpsterGateConfig) };

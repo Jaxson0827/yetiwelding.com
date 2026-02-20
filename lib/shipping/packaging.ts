@@ -1,6 +1,9 @@
 import type { CartItem } from '@/contexts/CartContext';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
+import { getDimensionsFt } from '@/lib/gardenBoxes/types';
+import { estimateGardenBoxWeightLb } from '@/lib/gardenBoxes/pricing';
 
 // Steel density: mild steel (A36) in lb/in³
 const STEEL_DENSITY_LB_PER_IN3 = 0.283;
@@ -57,6 +60,10 @@ export function estimateTotalWeightLb(items: CartItem[]): number {
       const pergolaWeight =
         WEIGHT_ESTIMATES.pergola.baseWeight + area * WEIGHT_ESTIMATES.pergola.weightPerSqFt;
       totalWeight += pergolaWeight * (config.quantity || 1);
+    } else if (item.productType === 'garden-box') {
+      const config = item.configuration as GardenBoxConfig;
+      const unitWeight = estimateGardenBoxWeightLb(config);
+      totalWeight += unitWeight * (config.quantity ?? 1);
     }
   }
 
@@ -104,6 +111,14 @@ export function estimateTotalDimensionsIn(items: CartItem[]): { length: number; 
       maxLength = Math.max(maxLength, 48); // standard pallet
       maxWidth = Math.max(maxWidth, 40);
       totalHeight += 60 * pallets * (config.quantity || 1); // 60" per pallet
+    } else if (item.productType === 'garden-box') {
+      const config = item.configuration as GardenBoxConfig;
+      const { lengthFt, widthFt } = getDimensionsFt(config.size);
+      // Bolt-together flat-pack: longest panel drives dimensions
+      const longestIn = Math.max(lengthFt * 12, widthFt * 12, config.height);
+      maxLength = Math.max(maxLength, longestIn);
+      maxWidth = Math.max(maxWidth, Math.min(lengthFt * 12, widthFt * 12));
+      totalHeight += 6 * (config.quantity ?? 1); // ~6" stacked flat
     }
   }
 

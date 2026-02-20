@@ -26,6 +26,12 @@ export default function OrderPage() {
       href: '/order/pergolas',
       cta: 'Design Pergola',
     },
+    {
+      title: 'Custom Garden Boxes',
+      description: 'Bolt-together steel raised garden beds. Design your size, finish, and add-ons. Ships parcel most of the time.',
+      href: '/order/garden-boxes',
+      cta: 'Design Garden Box',
+    },
   ];
 
   return (
@@ -48,7 +54,7 @@ export default function OrderPage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
             {products.map((product, index) => (
               <motion.div
                 key={product.href}

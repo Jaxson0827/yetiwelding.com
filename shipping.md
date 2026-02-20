@@ -41,11 +41,18 @@ These rules are implemented in:
 
 - **Any dumpster gate is in the cart** → Freight
 - **Any pergola is in the cart** → Freight
-- Else, embeds-only cart:
+- Else, embeds-only or garden-box-only or mixed embeds+garden-box cart:
   - Compute decision weight (product weight + small packaging buffer)
   - **If decision weight > 150 lb** → Freight
   - **If any dimension > 96 inches** → Freight
   - Otherwise → Parcel
+
+### Garden boxes (bolt-together)
+
+- **Weight-based only** – no auto-freight like gates/pergolas
+- Flat-pack: side panels ship flat; corners + hardware in small box
+- If total weight ≤ 150 lb → Parcel (Shippo)
+- If > 150 lb → Freight (uses embed-style weight tiers: EmbedFreightTier1–4)
 
 ### Why the “buffer” exists
 The freight/parcel cutoff uses a small buffer so we don’t route borderline-heavy embed orders into parcel, then get nonsense rates or surcharges.

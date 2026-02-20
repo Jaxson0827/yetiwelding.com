@@ -3,6 +3,8 @@ import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import type { PergolaConfig } from '@/lib/pergolas/types';
+import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
+import { GARDEN_BOX_FINISHES, GARDEN_BOX_ADD_ON_LABELS } from '@/lib/gardenBoxes/types';
 import { COLORS } from '@/lib/pergolas/colors';
 import { getDesign } from '@/lib/pergolas/panels';
 
@@ -39,6 +41,7 @@ export function generateInternalNotificationEmail(
   const steelEmbedsCount = items.filter(item => item.productType === 'steel-plate-embeds').length;
   const dumpsterGatesCount = items.filter(item => item.productType === 'dumpster-gate').length;
   const pergolasCount = items.filter(item => item.productType === 'pergola').length;
+  const gardenBoxesCount = items.filter(item => item.productType === 'garden-box').length;
 
   const renderItemDetails = (item: CartItem, index: number) => {
     if (item.productType === 'steel-plate-embeds') {
@@ -72,6 +75,32 @@ export function generateInternalNotificationEmail(
               ${config.span}×${config.depth}×${config.height} ft<br>
               Color: ${colorName} • Roof: ${roofName}<br>
               Qty: ${config.quantity ?? 1}${customTag}
+            </span>
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: right;">
+            $${item.price.toFixed(2)}
+          </td>
+        </tr>
+      `;
+    }
+    if (item.productType === 'garden-box') {
+      const config = item.configuration as GardenBoxConfig;
+      const sizeLabel = { '4x2': "4'×2'", '6x3': "6'×3'", '8x4': "8'×4'" }[config.size];
+      const finishLabel = GARDEN_BOX_FINISHES.find((f) => f.id === config.finish)?.label ?? config.finish;
+      const addOns = config.addOns
+        ? Object.entries(config.addOns)
+            .filter(([, v]) => v)
+            .map(([k]) => GARDEN_BOX_ADD_ON_LABELS[k as keyof typeof GARDEN_BOX_ADD_ON_LABELS])
+            .join(', ')
+        : '';
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">
+            <strong>Steel Garden Box #${index + 1}</strong><br>
+            <span style="color: #666; font-size: 14px;">
+              ${sizeLabel} × ${config.height}" • ${finishLabel}<br>
+              ${addOns ? `Add-ons: ${addOns}<br>` : ''}
+              Qty: ${config.quantity ?? 1}
             </span>
           </td>
           <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: right;">
@@ -269,6 +298,10 @@ export function generateInternalNotificationEmail(
                   <span>${pergolasCount}</span>
                 </div>
                 <div class="summary-row">
+                  <span>Garden Boxes:</span>
+                  <span>${gardenBoxesCount}</span>
+                </div>
+                <div class="summary-row">
                   <span>Customer:</span>
                   <span>${customerInfo.name}${customerInfo.company ? ` (${customerInfo.company})` : ''}</span>
                 </div>
@@ -391,6 +424,7 @@ Total Items: ${items.length}
 Steel Embeds: ${steelEmbedsCount}
 Dumpster Gates: ${dumpsterGatesCount}
 Pergolas: ${pergolasCount}
+Garden Boxes: ${gardenBoxesCount}
 
 CUSTOMER INFORMATION:
 Name: ${customerInfo.name}
@@ -416,6 +450,11 @@ ${items.map((item, index) => {
   if (item.productType === 'pergola') {
     const config = item.configuration as PergolaConfig;
     return `${index + 1}. Custom Pergola: ${config.span}×${config.depth}×${config.height} ft${item.isCustomFabrication ? ' (CUSTOM)' : ''} • $${item.price.toFixed(2)}`;
+  }
+  if (item.productType === 'garden-box') {
+    const config = item.configuration as GardenBoxConfig;
+    const sizeLabel = { '4x2': "4'×2'", '6x3': "6'×3'", '8x4': "8'×4'" }[config.size];
+    return `${index + 1}. Steel Garden Box: ${sizeLabel} × ${config.height}" • $${item.price.toFixed(2)}`;
   }
   const config = item.configuration as DumpsterGateConfig;
   const sizeDisplay = getDumpsterGateSizeDisplay(config);

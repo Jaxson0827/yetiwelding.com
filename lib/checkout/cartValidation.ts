@@ -1,16 +1,18 @@
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import type { PergolaConfig } from '@/lib/pergolas/types';
+import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { validateEmbedSpec, isEmbedSpecComplete } from '@/lib/steelEmbeds/validation';
 import { validateDumpsterGateConfig } from '@/lib/dumpsterGates/validation';
 import { validatePergolaConfig } from '@/lib/pergolas/validation';
+import { validateGardenBoxConfig } from '@/lib/gardenBoxes/validation';
 
-export type CartProductType = 'steel-plate-embeds' | 'dumpster-gate' | 'pergola';
+export type CartProductType = 'steel-plate-embeds' | 'dumpster-gate' | 'pergola' | 'garden-box';
 
 export type CartItem = {
   id: string;
   productType: CartProductType;
-  configuration: EmbedSpec | DumpsterGateConfig | PergolaConfig;
+  configuration: EmbedSpec | DumpsterGateConfig | PergolaConfig | GardenBoxConfig;
   price?: number; // client-controlled; ignored server-side
   isCustomFabrication?: boolean;
 };
@@ -50,6 +52,11 @@ export function normalizeAndValidateCartItems(items: unknown): {
       cfg.quantity = clampInt(cfg.quantity, 1, 999);
       return { ...raw, productType, configuration: cfg } as CartItem;
     }
+    if (productType === 'garden-box') {
+      const cfg = { ...(raw?.configuration as GardenBoxConfig) };
+      cfg.quantity = clampInt(cfg.quantity, 1, 99);
+      return { ...raw, productType, configuration: cfg } as CartItem;
+    }
     return raw as CartItem;
   });
 
@@ -75,6 +82,11 @@ export function normalizeAndValidateCartItems(items: unknown): {
     } else if (item.productType === 'pergola') {
       const pergolaErrors = validatePergolaConfig(item.configuration as Partial<PergolaConfig>);
       for (const e of pergolaErrors) {
+        errors.push({ itemId: item.id, field: e.field, message: e.message });
+      }
+    } else if (item.productType === 'garden-box') {
+      const gardenBoxErrors = validateGardenBoxConfig(item.configuration as Partial<GardenBoxConfig>);
+      for (const e of gardenBoxErrors) {
         errors.push({ itemId: item.id, field: e.field, message: e.message });
       }
     } else {

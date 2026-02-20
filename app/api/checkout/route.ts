@@ -7,11 +7,13 @@ import { sendEmail } from '@/lib/emails/sendEmail';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { pricePergola } from '@/lib/pergolas/pricing';
+import { priceGardenBox } from '@/lib/gardenBoxes/pricing';
 import { calculateShippingLive, getPickupOnlyCalculation } from '@/lib/shipping/calculator';
 import { prisma } from '@/lib/db/prisma';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
 import { getCartKey as getPergolaCartKey } from '@/lib/pergolas/types';
+import { getCartKey as getGardenBoxCartKey, type GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
 import { getClientIp, pgFixedWindowRateLimit } from '@/lib/rateLimit';
@@ -91,6 +93,10 @@ export async function POST(request: NextRequest) {
       .filter((it) => it.productType === 'pergola')
       .map((it) => it.configuration as { span: number; depth: number; height: number; colorId: string; roofDesignId: string; quantity?: number });
 
+    const gardenBoxConfigs = normalizedItems
+      .filter((it) => it.productType === 'garden-box')
+      .map((it) => it.configuration as GardenBoxConfig);
+
     const embedsSubtotal = embedSpecs.reduce((sum, spec) => {
       const bd = priceEmbed(spec);
       return sum + bd.unitPrice * (spec.quantity || 1);
@@ -106,7 +112,12 @@ export async function POST(request: NextRequest) {
       return sum + pr.totalPrice;
     }, 0);
 
-    const subtotalComputed = Math.round((embedsSubtotal + gatesSubtotal + pergolasSubtotal) * 100) / 100;
+    const gardenBoxesSubtotal = gardenBoxConfigs.reduce((sum, cfg) => {
+      const pr = priceGardenBox(cfg, cfg.quantity ?? 1);
+      return sum + pr.totalPrice;
+    }, 0);
+
+    const subtotalComputed = Math.round((embedsSubtotal + gatesSubtotal + pergolasSubtotal + gardenBoxesSubtotal) * 100) / 100;
 
     const shippingCalc =
       customerInfo?.shippingAddress?.zip && customerInfo?.shippingAddress?.state
@@ -187,6 +198,24 @@ export async function POST(request: NextRequest) {
                 description: `${cfg.span}×${cfg.depth}×${cfg.height} ft • ${cfg.colorId} • ${cfg.roofDesignId}`,
               };
             }
+            if (it.productType === 'garden-box') {
+              const cfg = it.configuration as GardenBoxConfig;
+              const breakdown = priceGardenBox(cfg, cfg.quantity ?? 1);
+              const qty = cfg.quantity ?? 1;
+              const unitCents = Math.round(breakdown.unitPrice * 100);
+              const totalItemCents = unitCents * qty;
+              const sizeLabel = { '4x2': "4'×2'", '6x3': "6'×3'", '8x4': "8'×4'" }[cfg.size] ?? cfg.size;
+              return {
+                productType: it.productType,
+                sku: getGardenBoxCartKey(cfg as any),
+                quantity: qty,
+                unitPriceCents: unitCents,
+                totalPriceCents: totalItemCents,
+                configuration: cfg as any,
+                name: 'Steel Garden Box',
+                description: `${sizeLabel} × ${cfg.height}" • ${cfg.finish}`,
+              };
+            }
             const cfg = it.configuration as DumpsterGateConfig;
             const breakdown = priceGate(cfg);
             const qty = cfg.quantity || 1;
@@ -221,6 +250,7 @@ export async function POST(request: NextRequest) {
       steelEmbeds: embedSpecs,
       dumpsterGates: gateConfigs,
       pergolas: pergolaConfigs,
+      gardenBoxes: gardenBoxConfigs,
       customerInfo: customerInfo as CustomerInfo,
       orderTotal: totalComputed,
       subtotal: subtotalComputed,

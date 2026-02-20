@@ -29,6 +29,7 @@ export default function Header() {
         { label: 'Dumpster Gates', href: '/order/dumpster-gates' },
         { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
         { label: 'Pergolas', href: '/order/pergolas' },
+        { label: 'Garden Boxes', href: '/order/garden-boxes' },
       ]
     },
     { label: 'SERVICES', href: '/services' },

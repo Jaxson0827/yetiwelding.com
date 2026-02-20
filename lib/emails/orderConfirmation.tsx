@@ -3,6 +3,8 @@ import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import type { PergolaConfig } from '@/lib/pergolas/types';
+import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
+import { GARDEN_BOX_FINISHES, GARDEN_BOX_ADD_ON_LABELS } from '@/lib/gardenBoxes/types';
 import { COLORS } from '@/lib/pergolas/colors';
 import { getDesign } from '@/lib/pergolas/panels';
 
@@ -57,6 +59,32 @@ export function generateOrderConfirmationEmail(
             <span style="color: #666; font-size: 14px;">
               ${config.span}×${config.depth}×${config.height} ft<br>
               Color: ${colorName} • Roof: ${roofName}<br>
+              Qty: ${config.quantity ?? 1}
+            </span>
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: right;">
+            $${item.price.toFixed(2)}
+          </td>
+        </tr>
+      `;
+    }
+    if (item.productType === 'garden-box') {
+      const config = item.configuration as GardenBoxConfig;
+      const sizeLabel = { '4x2': "4'×2'", '6x3': "6'×3'", '8x4': "8'×4'" }[config.size];
+      const finishLabel = GARDEN_BOX_FINISHES.find((f) => f.id === config.finish)?.label ?? config.finish;
+      const addOns = config.addOns
+        ? Object.entries(config.addOns)
+            .filter(([, v]) => v)
+            .map(([k]) => GARDEN_BOX_ADD_ON_LABELS[k as keyof typeof GARDEN_BOX_ADD_ON_LABELS])
+            .join(', ')
+        : '';
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">
+            <strong>Steel Garden Box #${index + 1}</strong><br>
+            <span style="color: #666; font-size: 14px;">
+              ${sizeLabel} × ${config.height}" • ${finishLabel}<br>
+              ${addOns ? `Add-ons: ${addOns}<br>` : ''}
               Qty: ${config.quantity ?? 1}
             </span>
           </td>

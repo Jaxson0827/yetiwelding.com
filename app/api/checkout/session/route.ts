@@ -3,6 +3,8 @@ import Stripe from 'stripe';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { pricePergola } from '@/lib/pergolas/pricing';
+import { priceGardenBox } from '@/lib/gardenBoxes/pricing';
+import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { calculateShippingLive, ShippingMethod } from '@/lib/shipping/calculator';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
@@ -127,6 +129,30 @@ export async function POST(request: NextRequest) {
               description: `${cfg.span}×${cfg.depth}×${cfg.height} ft • ${cfg.colorId} • ${cfg.roofDesignId}`,
               metadata: {
                 productType: 'pergola',
+                cartItemId: item.id,
+              },
+            },
+          },
+        };
+      }
+
+      if (item.productType === 'garden-box') {
+        const cfg = item.configuration as GardenBoxConfig;
+        const breakdown = priceGardenBox(cfg, cfg.quantity ?? 1);
+        const unitAmount = toCents(breakdown.unitPrice);
+        const qty = cfg.quantity ?? 1;
+        const sizeLabel = { '4x2': "4'×2'", '6x3': "6'×3'", '8x4': "8'×4'" }[cfg.size] ?? cfg.size;
+        return {
+          quantity: qty,
+          price_data: {
+            currency: 'usd',
+            tax_behavior: 'exclusive',
+            unit_amount: unitAmount,
+            product_data: {
+              name: 'Steel Garden Box',
+              description: `${sizeLabel} × ${cfg.height}" • ${cfg.finish}`,
+              metadata: {
+                productType: 'garden-box',
                 cartItemId: item.id,
               },
             },

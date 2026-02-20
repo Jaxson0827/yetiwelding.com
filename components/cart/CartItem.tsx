@@ -5,6 +5,8 @@ import { CartItem as CartItemType } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import type { PergolaConfig } from '@/lib/pergolas/types';
+import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
+import { GARDEN_BOX_FINISHES, GARDEN_BOX_ADD_ON_LABELS } from '@/lib/gardenBoxes/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { COLORS } from '@/lib/pergolas/colors';
 import { getDesign } from '@/lib/pergolas/panels';
@@ -22,6 +24,9 @@ export default function CartItem({ item, onRemove, onQuantityChange }: CartItemP
     }
     if (item.productType === 'pergola') {
       return (item.configuration as PergolaConfig).quantity ?? 1;
+    }
+    if (item.productType === 'garden-box') {
+      return (item.configuration as GardenBoxConfig).quantity ?? 1;
     }
     return (item.configuration as DumpsterGateConfig).quantity;
   };
@@ -82,6 +87,26 @@ export default function CartItem({ item, onRemove, onQuantityChange }: CartItemP
           <p className="text-white/70 text-sm">
             Color: {colorName} • Roof: {roofName}
           </p>
+        </div>
+      );
+    }
+    if (item.productType === 'garden-box') {
+      const config = item.configuration as GardenBoxConfig;
+      const sizeLabel = { '4x2': "4'×2'", '6x3': "6'×3'", '8x4': "8'×4'" }[config.size];
+      const finishLabel = GARDEN_BOX_FINISHES.find((f) => f.id === config.finish)?.label ?? config.finish;
+      const addOns = config.addOns
+        ? Object.entries(config.addOns)
+            .filter(([, v]) => v)
+            .map(([k]) => GARDEN_BOX_ADD_ON_LABELS[k as keyof typeof GARDEN_BOX_ADD_ON_LABELS])
+            .join(', ')
+        : '';
+      return (
+        <div className="space-y-1">
+          <h4 className="text-white font-semibold">Steel Garden Box</h4>
+          <p className="text-white/70 text-sm">
+            {sizeLabel} × {config.height}" • {finishLabel}
+          </p>
+          {addOns && <p className="text-white/70 text-sm">Add-ons: {addOns}</p>}
         </div>
       );
     }

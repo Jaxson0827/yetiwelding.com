@@ -4,14 +4,16 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import type { PergolaConfig } from '@/lib/pergolas/types';
+import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { pricePergola } from '@/lib/pergolas/pricing';
+import { priceGardenBox } from '@/lib/gardenBoxes/pricing';
 
 export interface CartItem {
   id: string;
-  productType: 'steel-plate-embeds' | 'dumpster-gate' | 'pergola';
-  configuration: EmbedSpec | DumpsterGateConfig | PergolaConfig;
+  productType: 'steel-plate-embeds' | 'dumpster-gate' | 'pergola' | 'garden-box';
+  configuration: EmbedSpec | DumpsterGateConfig | PergolaConfig | GardenBoxConfig;
   price: number;
   isCustomFabrication?: boolean; // Flag for custom fabrication items
 }
@@ -139,6 +141,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         config.quantity = newQuantity;
         
         const priceResult = pricePergola(config, newQuantity);
+        updatedItems[itemIndex] = {
+          ...item,
+          configuration: config,
+          price: priceResult.totalPrice,
+        };
+      } else if (item.productType === 'garden-box') {
+        const config = { ...item.configuration } as GardenBoxConfig;
+        config.quantity = newQuantity;
+        
+        const priceResult = priceGardenBox(config, newQuantity);
         updatedItems[itemIndex] = {
           ...item,
           configuration: config,
