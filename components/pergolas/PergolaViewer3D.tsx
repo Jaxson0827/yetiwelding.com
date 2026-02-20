@@ -15,7 +15,7 @@ import React, {
   useCallback,
 } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { ContactShadows, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { SVGLoader } from 'three-stdlib';
 import { colorHex } from '@/lib/pergolas/colors';
@@ -376,14 +376,64 @@ function Rig({ cfg, autoRotate }: { cfg: PergolaConfig; autoRotate?: boolean }) 
   );
 }
 
+function createConcreteTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#c4c4c0';
+  ctx.fillRect(0, 0, size, size);
+  const imgData = ctx.getImageData(0, 0, size, size);
+  const data = imgData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const n = (Math.random() - 0.5) * 18;
+    data[i] = Math.max(0, Math.min(255, data[i] + n));
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + n));
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + n));
+  }
+  ctx.putImageData(imgData, 0, 0);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(40, 40);
+  return tex;
+}
+
 function Ground() {
+  const mat = useMemo(() => {
+    const texture = createConcreteTexture();
+    return new THREE.MeshStandardMaterial({
+      map: texture ?? undefined,
+      color: texture ? undefined : '#c4c4c0',
+      metalness: 0,
+      roughness: 1,
+    });
+  }, []);
+  return (
+    <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat}>
+      <planeGeometry args={[200, 200]} />
+    </mesh>
+  );
+}
+
+function HouseBackdrop({ spanFt, depthFt, heightFt }: { spanFt: number; depthFt: number; heightFt: number }) {
   const mat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#d4d4d4', metalness: 0, roughness: 1 }),
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: '#e8e4dc',
+        transparent: true,
+        opacity: 0.07,
+        side: THREE.DoubleSide,
+      }),
     []
   );
+  const wallW = Math.max(spanFt * 2, 40);
+  const wallH = heightFt * 2.5;
+  const z = -depthFt / 2 - 12;
   return (
-    <mesh position={[0, -0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat}>
-      <planeGeometry args={[200, 200]} />
+    <mesh position={[0, heightFt / 2, z]} material={mat}>
+      <planeGeometry args={[wallW, wallH]} />
     </mesh>
   );
 }
@@ -460,6 +510,19 @@ const PergolaViewer3D = forwardRef<{ snapshot: () => string | null }, PergolaVie
 
         <Rig cfg={fullConfig} autoRotate={autoRotate} />
         <Ground />
+        <ContactShadows
+          position={[0, -0.015, 0]}
+          opacity={0.35}
+          scale={Math.max(fullConfig.span, fullConfig.depth) * 2.5}
+          blur={2}
+          far={1.5}
+          color="#1a1a1a"
+        />
+        <HouseBackdrop
+          spanFt={fullConfig.span}
+          depthFt={fullConfig.depth}
+          heightFt={fullConfig.height}
+        />
 
         <group>
           <Frame

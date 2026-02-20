@@ -2,6 +2,7 @@
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SteelEmbedHero from '@/components/steel-embeds/SteelEmbedHero';
 import SteelEmbedsConfigurator from '@/components/steel-embeds/SteelEmbedsConfigurator';
 
 export default function SteelEmbedsPage() {
@@ -27,9 +28,11 @@ export default function SteelEmbedsPage() {
         </div>
       </section>
 
-      {/* Configurator Section */}
-      <section id="configurator" className="w-full py-20 px-4">
-        <div className="container mx-auto">
+      <SteelEmbedHero />
+
+      <div className="h-px bg-gradient-to-r from-transparent via-[#4a7c59]/20 to-transparent" />
+      <section id="configurator" className="pt-12 pb-12 px-4">
+        <div className="container mx-auto max-w-6xl">
           <SteelEmbedsConfigurator />
         </div>
       </section>

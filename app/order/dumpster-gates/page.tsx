@@ -2,24 +2,19 @@
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import DumpsterGateHero from '@/components/dumpster-gates/DumpsterGateHero';
 import DumpsterGateConfigurator from '@/components/dumpster-gates/DumpsterGateConfigurator';
 
 export default function DumpsterGatesPage() {
   return (
     <main className="min-h-screen bg-black">
       <Header />
-      
-      {/* Configurator Section */}
-      <section id="configurator" className="w-full pt-32 pb-20 px-4">
-        <div className="container mx-auto">
-          <div className="max-w-4xl mx-auto text-center mb-10">
-            <h1 className="text-white text-4xl md:text-5xl font-bold uppercase tracking-tight leading-none">
-              Steel Dumpster Gate
-            </h1>
-            <p className="text-white/75 text-lg mt-4">
-              Built to spec. Fabricated in Utah. Ready to install.
-            </p>
-          </div>
+
+      <DumpsterGateHero />
+
+      <div className="h-px bg-gradient-to-r from-transparent via-[#4a7c59]/20 to-transparent" />
+      <section id="configurator" className="pt-12 pb-12 px-4">
+        <div className="container mx-auto max-w-6xl">
           <DumpsterGateConfigurator />
         </div>
       </section>
@@ -30,7 +25,7 @@ export default function DumpsterGatesPage() {
           <h2 className="text-white text-3xl font-bold mb-8 text-center">What's Included</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -38,7 +33,7 @@ export default function DumpsterGatesPage() {
               <p className="text-white/80">Fully welded steel frame</p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -46,7 +41,7 @@ export default function DumpsterGatesPage() {
               <p className="text-white/80">Hinges installed</p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -54,7 +49,7 @@ export default function DumpsterGatesPage() {
               <p className="text-white/80">Latch hardware included</p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -62,7 +57,7 @@ export default function DumpsterGatesPage() {
               <p className="text-white/80">Shop drawings available on request</p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -86,7 +81,7 @@ export default function DumpsterGatesPage() {
             </p>
             <a
               href="#"
-              className="inline-block mt-4 text-red-500 hover:text-red-400 text-sm transition-colors"
+              className="inline-block mt-4 text-[#DC143C] hover:text-[#DC143C]/90 text-sm transition-colors"
             >
               Download install guidelines (PDF)
             </a>

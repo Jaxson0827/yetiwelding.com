@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import PergolaHero from '@/components/pergolas/PergolaHero';
 import PergolaConfigurator from '@/components/pergolas/PergolaConfigurator';
 
 export default function PergolasPage() {
@@ -10,16 +11,11 @@ export default function PergolasPage() {
     <main className="min-h-screen bg-black">
       <Header />
 
-      <section id="configurator" className="w-full pt-32 pb-20 px-4">
-        <div className="container mx-auto">
-          <div className="max-w-4xl mx-auto text-center mb-10">
-            <h1 className="text-white text-4xl md:text-5xl font-bold uppercase tracking-tight leading-none">
-              Custom Pergolas
-            </h1>
-            <p className="text-white/75 text-lg mt-4">
-              Design your steel shade structure. Choose size, height, color, and roof design. Live 3D preview.
-            </p>
-          </div>
+      <PergolaHero />
+
+      <div className="h-px bg-gradient-to-r from-transparent via-[#4a7c59]/20 to-transparent" />
+      <section id="configurator" className="pt-12 pb-12 px-4">
+        <div className="container mx-auto max-w-6xl">
           <Suspense fallback={<div className="min-h-[400px] flex items-center justify-center text-white/60">Loading configurator...</div>}>
             <PergolaConfigurator />
           </Suspense>
