@@ -3,11 +3,14 @@
 /**
  * Garden Box 3D Viewer – Bolt-together steel raised bed with lifestyle feel.
  * Grass ground plane, soft shadows, material updates by finish.
+ * Postprocessing: SSAO, Bloom, Vignette for product-render quality.
  */
 
 import React, { useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows } from '@react-three/drei';
+import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
+import { Bloom, EffectComposer, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { getDimensionsFt } from '@/lib/gardenBoxes/types';
@@ -127,7 +130,7 @@ function GrassGround() {
     []
   );
   return (
-    <mesh position={[0, -0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat}>
+    <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat}>
       <planeGeometry args={[50, 50]} />
     </mesh>
   );
@@ -151,9 +154,9 @@ function SoilFill({
       }),
     []
   );
-  const soilY = heightFt - 0.15;
-  const soilL = Math.max(0.1, lengthFt - 0.1);
-  const soilW = Math.max(0.1, widthFt - 0.1);
+  const soilY = heightFt - 0.12;
+  const soilL = Math.max(0.1, lengthFt - 0.2);
+  const soilW = Math.max(0.1, widthFt - 0.2);
   return (
     <mesh position={[0, soilY, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat}>
       <planeGeometry args={[soilL, soilW]} />
@@ -163,10 +166,11 @@ function SoilFill({
 
 function Rig({ heightFt }: { heightFt: number }) {
   const { camera } = useThree();
+  const targetY = heightFt / 2;
   React.useEffect(() => {
-    camera.position.set(4, heightFt * 1.5 + 2.5, 5);
-    camera.lookAt(0, heightFt / 2, 0);
-  }, [camera, heightFt]);
+    camera.position.set(4, targetY + 3.5, 5);
+    camera.lookAt(0, targetY, 0);
+  }, [camera, targetY]);
 
   return (
     <OrbitControls
@@ -176,7 +180,7 @@ function Rig({ heightFt }: { heightFt: number }) {
       maxDistance={20}
       minPolarAngle={0.2}
       maxPolarAngle={Math.PI / 2.05}
-      target={[0, heightFt / 2, 0]}
+      target={[0, targetY, 0]}
       makeDefault
     />
   );
@@ -198,12 +202,16 @@ export default function GardenBoxViewer3D({ config }: GardenBoxViewer3DProps) {
   const heightFt = fullConfig.height * IN;
 
   return (
-    <div className="relative h-[500px] rounded-2xl border border-white/20 overflow-hidden bg-black/20">
+    <div className="relative h-[600px] rounded-2xl border border-white/20 overflow-hidden bg-black/20">
       <Canvas
-        gl={{ antialias: true }}
+        gl={{
+          antialias: true,
+          toneMapping: ACESFilmicToneMapping,
+          outputColorSpace: SRGBColorSpace,
+        }}
         shadows
         dpr={[1, 2]}
-        camera={{ fov: 45, near: 0.1, far: 1000, position: [4, heightFt * 1.5 + 2.5, 5] }}
+        camera={{ fov: 45, near: 0.1, far: 1000, position: [4, heightFt / 2 + 3.5, 5] }}
       >
         <color attach="background" args={['#ffffff']} />
         <ambientLight intensity={0.55} />
@@ -220,14 +228,15 @@ export default function GardenBoxViewer3D({ config }: GardenBoxViewer3DProps) {
           shadow-camera-right={25}
           shadow-camera-top={25}
           shadow-camera-bottom={-25}
+          shadow-bias={-0.0001}
         />
         <pointLight position={[-6, heightFt * 1.2, -6]} intensity={0.4} color="#fff0e0" />
 
         <Rig heightFt={heightFt} />
         <GrassGround />
         <ContactShadows
-          position={[0, -0.001, 0]}
-          opacity={0.5}
+          position={[0, -0.015, 0]}
+          opacity={0.4}
           scale={Math.max(lengthFt, widthFt) * 2.5}
           blur={2}
           far={1}
@@ -235,6 +244,24 @@ export default function GardenBoxViewer3D({ config }: GardenBoxViewer3DProps) {
         />
         <BoxPanels config={fullConfig} />
         <SoilFill lengthFt={lengthFt} widthFt={widthFt} heightFt={heightFt} />
+
+        <EffectComposer multisampling={0} enableNormalPass>
+          <SMAA />
+          <SSAO
+            samples={32}
+            radius={0.5}
+            intensity={2}
+            luminanceInfluence={0.22}
+            worldDistanceThreshold={2}
+            worldDistanceFalloff={0.5}
+          />
+          <Bloom
+            intensity={0.18}
+            luminanceThreshold={0.82}
+            luminanceSmoothing={0.22}
+          />
+          <Vignette eskil={false} offset={0.1} darkness={0.42} />
+        </EffectComposer>
       </Canvas>
     </div>
   );

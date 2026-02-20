@@ -258,7 +258,7 @@ export default function PreviewCanvas({ glbUrl, spec, viewState, onViewStateChan
           position={[0, 0, -0.001]}
         />
 
-        <EffectComposer multisampling={0}>
+        <EffectComposer multisampling={0} enableNormalPass>
           <SMAA />
           <SSAO
             samples={12}
