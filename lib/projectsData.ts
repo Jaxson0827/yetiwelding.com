@@ -35,13 +35,13 @@ export const projects: Project[] = [
   },
   {
     id: '12',
-    categories: ['Stairs', 'Railing'],
-    image: '/projects/photo1.JPG',
+    categories: ['Railing'],
+    image: '/about/dome_about_hero.jpg',
   },
   {
     id: '30',
     categories: ['Stairs', 'Railing'],
-    image: '/projects/photo19.JPG',
+    image: '/projects/photo15.JPG',
   },
   {
     id: '13',

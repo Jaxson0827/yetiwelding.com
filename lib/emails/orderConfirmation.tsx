@@ -1,6 +1,7 @@
 import { CartItem } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 
 interface CustomerInfo {
   name: string;
@@ -43,9 +44,7 @@ export function generateOrderConfirmationEmail(
       `;
     } else {
       const config = item.configuration as DumpsterGateConfig;
-      const sizeDisplay = config.isCustom 
-        ? `${config.widthFt}' × ${config.heightFt}'`
-        : config.size;
+      const sizeDisplay = getDumpsterGateSizeDisplay(config);
       return `
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">
@@ -322,7 +321,7 @@ ${items.map((item, index) => {
     return `${index + 1}. Steel Plate Embed: ${config.plate.length}" × ${config.plate.width}" × ${config.plate.thickness}" • $${item.price.toFixed(2)}`;
   } else {
     const config = item.configuration as DumpsterGateConfig;
-    const sizeDisplay = config.isCustom ? `${config.widthFt}' × ${config.heightFt}'` : config.size;
+    const sizeDisplay = getDumpsterGateSizeDisplay(config);
     return `${index + 1}. Dumpster Gate: ${sizeDisplay} • $${item.price.toFixed(2)}`;
   }
 }).join('\n')}

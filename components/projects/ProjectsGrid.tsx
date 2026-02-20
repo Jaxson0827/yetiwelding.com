@@ -72,7 +72,8 @@ export default function ProjectsGrid({
                     index={index}
                     colSpan={colSpan}
                     sizeVariant={sizeVariant}
-                    onSelect={() => onProjectSelect?.(project)}
+                    objectPosition={index === 0 ? 'center 35%' : undefined}
+                    onSelect={onProjectSelect ? () => onProjectSelect(project) : undefined}
                   />
                 );
               })}
@@ -87,7 +88,7 @@ export default function ProjectsGrid({
                   key={project.id} 
                   project={project} 
                   index={featuredProjects.length + index}
-                  onSelect={() => onProjectSelect?.(project)}
+                  onSelect={onProjectSelect ? () => onProjectSelect(project) : undefined}
                 />
               ))}
             </div>

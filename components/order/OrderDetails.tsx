@@ -4,6 +4,7 @@ import React from 'react';
 import { CartItem } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 
 interface OrderDetailsProps {
   items?: CartItem[];
@@ -43,9 +44,7 @@ export default function OrderDetails({
       );
     } else {
       const config = item.configuration as DumpsterGateConfig;
-      const sizeDisplay = config.isCustom 
-        ? `${config.widthFt}' × ${config.heightFt}'`
-        : config.size;
+      const sizeDisplay = getDumpsterGateSizeDisplay(config);
       const powderCoatColorLabel =
         config.finish === 'powder-coat-black' && config.powderCoatColor
           ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)

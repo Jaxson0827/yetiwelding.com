@@ -8,14 +8,12 @@ import {
   ProjectFilter,
   ProjectsGrid,
 } from '@/components/projects';
-import ProjectModal from '@/components/projects/ProjectModal';
-import { projects, Category, Project } from '@/lib/projectsData';
+import { projects, Category } from '@/lib/projectsData';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   const filteredProjects = useMemo(() => {
@@ -58,28 +56,6 @@ export default function ProjectsPage() {
 
     window.addEventListener('scroll', updateScrollProgress);
     return () => window.removeEventListener('scroll', updateScrollProgress);
-  }, []);
-
-  // Handle URL hash to open modal when navigating
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1); // Remove the # symbol
-      if (hash) {
-        const project = projects.find((p) => p.id === hash);
-        if (project) {
-          setSelectedProject(project);
-          // Scroll to top to show the modal
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }
-    };
-
-    // Check hash on mount
-    handleHashChange();
-
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const scrollToTop = () => {
@@ -152,12 +128,6 @@ export default function ProjectsPage() {
         />
         <Footer />
       </main>
-
-      {/* Project Modal */}
-      <ProjectModal
-        project={selectedProject}
-        onClose={() => setSelectedProject(null)}
-      />
 
       {/* Back to Top Button */}
       <AnimatePresence>

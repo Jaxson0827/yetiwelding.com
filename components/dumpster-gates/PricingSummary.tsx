@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PriceBreakdown, DumpsterGateConfig, GATE_DIMENSIONS } from '@/lib/dumpsterGates/types';
-import { formatDimension } from '@/lib/dumpsterGates/validation';
+import { PriceBreakdown, DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 
 interface PricingSummaryProps {
   config: DumpsterGateConfig;
@@ -50,9 +50,7 @@ export default function PricingSummary({
           <div className="flex justify-between text-sm">
             <span className="text-white/70">Size:</span>
             <span className="text-white font-medium">
-              {config.isCustom
-                ? `${formatDimension(config.widthFt)} × ${formatDimension(config.heightFt)}`
-                : `${GATE_DIMENSIONS[config.size as keyof typeof GATE_DIMENSIONS].widthFt}' × ${GATE_DIMENSIONS[config.size as keyof typeof GATE_DIMENSIONS].heightFt}'`}
+              {getDumpsterGateSizeDisplay(config)}
             </span>
           </div>
           <div className="flex justify-between text-sm">

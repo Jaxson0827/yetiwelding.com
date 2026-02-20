@@ -82,17 +82,6 @@ export default function ShippingInfo({
           <div>
             <p className="text-white/60 text-sm mb-1">Tracking Number</p>
             <p className="text-white font-mono text-sm">{trackingNumber}</p>
-            <a
-              href="#"
-              className="text-[#DC143C] hover:text-[#B01030] text-sm mt-1 inline-block"
-              onClick={(e) => {
-                e.preventDefault();
-                // In production, link to carrier tracking
-                alert('Tracking link would open carrier website');
-              }}
-            >
-              Track Package →
-            </a>
           </div>
         )}
 

@@ -9,11 +9,10 @@ export default function HistorySection() {
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
   const sortedAscItems = [...timelineItems].sort((a, b) => a.year - b.year);
-  const halfIdx = Math.ceil(sortedAscItems.length / 2);
 
-  // Desktop: sequential by columns (left = earlier years, right = later years)
-  const leftColumnItems = sortedAscItems.slice(0, halfIdx);
-  const rightColumnItems = sortedAscItems.slice(halfIdx);
+  // Desktop: 3/3 split (Left: 2008, 2012, 2016 | Right: 2017, 2019, 2025)
+  const leftColumnItems = sortedAscItems.slice(0, 3);
+  const rightColumnItems = sortedAscItems.slice(3);
 
   // Mobile: ascending order (earliest first)
   const mobileItemsAsc = sortedAscItems;
@@ -29,7 +28,31 @@ export default function HistorySection() {
     },
   };
 
-  const itemVariants = {
+  const itemVariantsLeft = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.6, -0.05, 0.01, 0.99] as [number, number, number, number],
+      },
+    },
+  };
+
+  const itemVariantsRight = {
+    hidden: { opacity: 0, x: 20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.6, -0.05, 0.01, 0.99] as [number, number, number, number],
+      },
+    },
+  };
+
+  const itemVariantsMobile = {
     hidden: { opacity: 0, x: -20 },
     visible: {
       opacity: 1,
@@ -49,7 +72,7 @@ export default function HistorySection() {
       aria-labelledby="history-heading"
     >
       {/* Spider Crane Outline Background - Left Side */}
-      <div className="absolute left-0 top-0 bottom-0 w-full opacity-[0.45] pointer-events-none overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-full opacity-[0.25] pointer-events-none overflow-hidden">
         <img
           src="/spider-crane.svg"
           alt=""
@@ -57,7 +80,7 @@ export default function HistorySection() {
           style={{ filter: 'invert(1) grayscale(1) brightness(1.6) contrast(1.4)' }}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-accent-red/20" aria-hidden="true" />
+        <div className="absolute inset-0 bg-accent-red/10" aria-hidden="true" />
       </div>
 
       {/* Content */}
@@ -75,7 +98,7 @@ export default function HistorySection() {
           >
             HISTORY
           </h2>
-          {/* Yellow underline */}
+          {/* Red underline */}
           <div className="flex justify-center mt-2">
             <div className="w-24 h-1 bg-accent-red" />
           </div>
@@ -90,17 +113,18 @@ export default function HistorySection() {
         >
           {/* Mobile: single column, ascending order */}
           <div className="relative md:hidden">
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
+            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/20" />
 
             <div className="space-y-8">
               {mobileItemsAsc.map((item) => (
                 <motion.div
                   key={item.year}
                   className="relative pl-16"
-                  variants={itemVariants}
+                  variants={itemVariantsMobile}
+                  whileHover={{ scale: 1.02 }}
                 >
-                  <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
-                  <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
+                  <div className="absolute left-0 top-0 w-12 h-12 rounded-full bg-accent-red" />
+                  <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/20" />
 
                   <div className="text-accent-red text-2xl font-bold mb-2">
                     {item.year}
@@ -108,7 +132,7 @@ export default function HistorySection() {
 
                   <div>
                     <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
-                    <p className="text-base text-white/70 leading-relaxed">
+                    <p className="text-base text-white/90 leading-relaxed">
                       {item.description}
                     </p>
                   </div>
@@ -117,21 +141,22 @@ export default function HistorySection() {
             </div>
           </div>
 
-          {/* Desktop: two columns, sequential by column */}
+          {/* Desktop: two columns, 3/3 split */}
           <>
             {/* Left Column Timeline */}
             <div className="relative hidden md:block">
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/20" />
 
               <div className="space-y-12">
                 {leftColumnItems.map((item) => (
                   <motion.div
                     key={item.year}
                     className="relative pl-16"
-                    variants={itemVariants}
+                    variants={itemVariantsLeft}
+                    whileHover={{ scale: 1.02 }}
                   >
-                    <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
-                    <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
+                    <div className="absolute left-0 top-0 w-12 h-12 rounded-full bg-accent-red" />
+                    <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/20" />
 
                     <div className="text-accent-red text-3xl font-bold mb-2">
                       {item.year}
@@ -141,7 +166,7 @@ export default function HistorySection() {
                       <h3 className="text-xl font-bold text-white mb-2">
                         {item.title}
                       </h3>
-                      <p className="text-lg text-white/70 leading-relaxed">
+                      <p className="text-lg text-white/90 leading-relaxed">
                         {item.description}
                       </p>
                     </div>
@@ -152,17 +177,18 @@ export default function HistorySection() {
 
             {/* Right Column Timeline */}
             <div className="relative hidden md:block">
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/15" />
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/20" />
 
               <div className="space-y-12">
                 {rightColumnItems.map((item) => (
                   <motion.div
                     key={item.year}
                     className="relative pl-16"
-                    variants={itemVariants}
+                    variants={itemVariantsRight}
+                    whileHover={{ scale: 1.02 }}
                   >
-                    <div className="absolute left-0 top-0 w-12 h-12 bg-accent-red" />
-                    <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/15" />
+                    <div className="absolute left-0 top-0 w-12 h-12 rounded-full bg-accent-red" />
+                    <div className="absolute left-6 top-6 w-6 h-0.5 bg-white/20" />
 
                     <div className="text-accent-red text-3xl font-bold mb-2">
                       {item.year}
@@ -172,7 +198,7 @@ export default function HistorySection() {
                       <h3 className="text-xl font-bold text-white mb-2">
                         {item.title}
                       </h3>
-                      <p className="text-lg text-white/70 leading-relaxed">
+                      <p className="text-lg text-white/90 leading-relaxed">
                         {item.description}
                       </p>
                     </div>
@@ -186,11 +212,3 @@ export default function HistorySection() {
     </section>
   );
 }
-
-
-
-
-
-
-
-

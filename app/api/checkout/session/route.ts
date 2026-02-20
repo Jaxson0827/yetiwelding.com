@@ -4,7 +4,9 @@ import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { calculateShippingLive, ShippingMethod } from '@/lib/shipping/calculator';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
+import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { prisma } from '@/lib/db/prisma';
+import { getClientIp, pgFixedWindowRateLimit } from '@/lib/rateLimit';
 import crypto from 'crypto';
 
 type CustomerInfo = {
@@ -42,12 +44,6 @@ function toCents(amountUsd: number): number {
   return Math.max(0, Math.round(amountUsd * 100));
 }
 
-function getClientIp(request: NextRequest): string {
-  const xff = request.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return request.headers.get('x-real-ip') || 'unknown';
-}
-
 export async function POST(request: NextRequest) {
   try {
     const stripeInstance = getStripe();
@@ -55,8 +51,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
     }
 
-    // NOTE: Rate limiting previously used KV. With Postgres-only mode, rate limiting is not implemented here yet.
-    // If needed, add a Postgres-backed rate limit table or an external rate limiting service.
+    // Rate limit: 10 session creation attempts per 10 minutes per IP
+    const ip = getClientIp(request);
+    const rateLimitOk = await pgFixedWindowRateLimit({
+      keyPrefix: 'rl:checkout-session',
+      identity: ip,
+      limit: 10,
+      windowSeconds: 10 * 60,
+    });
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
 
     const body = await request.json();
     const { checkoutId, items, customerInfo, selectedShippingMethod } = body as {
@@ -108,7 +113,7 @@ export async function POST(request: NextRequest) {
       const cfg = item.configuration as any;
       const breakdown = priceGate(cfg);
       const unitAmount = toCents(breakdown.unitPrice);
-      const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
+      const sizeDisplay = getDumpsterGateSizeDisplay(cfg);
       return {
         quantity: cfg.quantity,
         price_data: {

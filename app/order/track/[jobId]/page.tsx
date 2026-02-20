@@ -348,8 +348,8 @@ export default function OrderTrackingPage() {
                   </div>
                 </div>
 
-                {/* Document Downloads */}
-                {(order.steelEmbeds && order.steelEmbeds.length > 0) && (
+                {/* Document Downloads - Shop Packet available for orders with steel embeds */}
+                {order.items?.some((i: { productType?: string }) => i.productType === 'steel-plate-embeds') && (
                   <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
                     <h3 className="text-white text-xl font-bold mb-4">Order Documents</h3>
                     <div className="space-y-3">
@@ -370,24 +370,6 @@ export default function OrderTrackingPage() {
                         className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold transition-colors text-sm"
                       >
                         Download Shop Packet
-                      </button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            if (!token) {
-                              alert('Missing access token for documents');
-                              return;
-                            }
-                            const url = `/api/orders/${encodeURIComponent(jobId)}/documents?type=quote&token=${encodeURIComponent(token)}`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          } catch (error) {
-                            console.error('Document download error:', error);
-                            alert('Failed to download document');
-                          }
-                        }}
-                        className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold transition-colors text-sm"
-                      >
-                        Download Quote
                       </button>
                     </div>
                   </div>

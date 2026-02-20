@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
@@ -19,8 +19,18 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
+  const hasCustomFabrication = items.some((item) => item.isCustomFabrication);
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'quote'>('online');
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+
+  // Default to Request Quote when cart has custom fabrication (once per mount)
+  const hasSetQuoteDefault = useRef(false);
+  useEffect(() => {
+    if (hasCustomFabrication && !hasSetQuoteDefault.current) {
+      hasSetQuoteDefault.current = true;
+      setPaymentMethod('quote');
+    }
+  }, [hasCustomFabrication]);
   const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingMethod>('standard');
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
@@ -136,11 +146,8 @@ export default function CheckoutPage() {
 
   const handleCustomerInfoSubmit = async (info: CustomerInfo) => {
     setCustomerInfo(info);
-    
-    // Check if order has custom fabrication items
-    const hasCustomFabrication = items.some(item => item.isCustomFabrication);
-    
-    // For custom fabrication, default to quote, otherwise show payment
+
+    // For custom fabrication with quote selected, submit quote flow; otherwise Stripe
     if (hasCustomFabrication && paymentMethod === 'quote') {
       // Skip payment, go directly to order submission
       await handleOrderSubmission(info, null);

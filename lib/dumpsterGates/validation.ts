@@ -1,4 +1,5 @@
-import { GateStyle, MIN_WIDTH_FT, MAX_WIDTH_FT, MIN_HEIGHT_FT, MAX_HEIGHT_FT, MAX_BLOCK_HEIGHT_FT, MAX_SINGLE_SWING_WIDTH_FT } from './types';
+import type { DumpsterGateConfig } from './types';
+import { GateStyle, GATE_DIMENSIONS, MIN_WIDTH_FT, MAX_WIDTH_FT, MIN_HEIGHT_FT, MAX_HEIGHT_FT, MAX_BLOCK_HEIGHT_FT, MAX_SINGLE_SWING_WIDTH_FT } from './types';
 
 /**
  * Parse a dimension string into decimal feet
@@ -70,6 +71,17 @@ export function formatDimension(feet: number): string {
   }
   
   return `${wholeFeet}' ${inches}"`;
+}
+
+/**
+ * Returns human-readable size string for display (e.g., "14' × 5' 8"" or "14' × 6'")
+ */
+export function getDumpsterGateSizeDisplay(config: DumpsterGateConfig): string {
+  if (config.isCustom) {
+    return `${formatDimension(config.widthFt)} × ${formatDimension(config.heightFt)}`;
+  }
+  const preset = GATE_DIMENSIONS[config.size as keyof typeof GATE_DIMENSIONS];
+  return preset ? `${preset.widthFt}' × ${preset.heightFt}'` : config.size;
 }
 
 /**

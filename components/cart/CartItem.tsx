@@ -4,24 +4,15 @@ import React from 'react';
 import { CartItem as CartItemType } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
-import { useSavedItems } from '@/contexts/SavedItemsContext';
+import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 
 interface CartItemProps {
   item: CartItemType;
   onRemove: (id: string) => void;
   onQuantityChange: (id: string, newQuantity: number) => void;
-  onSaveForLater?: (item: CartItemType) => void;
 }
 
-export default function CartItem({ item, onRemove, onQuantityChange, onSaveForLater }: CartItemProps) {
-  const { saveItem } = useSavedItems();
-
-  const handleSaveForLater = () => {
-    saveItem(item);
-    if (onSaveForLater) {
-      onSaveForLater(item);
-    }
-  };
+export default function CartItem({ item, onRemove, onQuantityChange }: CartItemProps) {
   const getCurrentQuantity = () => {
     if (item.productType === 'steel-plate-embeds') {
       return (item.configuration as EmbedSpec).quantity;
@@ -77,9 +68,7 @@ export default function CartItem({ item, onRemove, onQuantityChange, onSaveForLa
       );
     } else {
       const config = item.configuration as DumpsterGateConfig;
-      const sizeDisplay = config.isCustom 
-        ? `${config.widthFt}' × ${config.heightFt}'`
-        : config.size;
+      const sizeDisplay = getDumpsterGateSizeDisplay(config);
       const powderCoatColorLabel =
         config.finish === 'powder-coat-black' && config.powderCoatColor
           ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)
@@ -167,12 +156,6 @@ export default function CartItem({ item, onRemove, onQuantityChange, onSaveForLa
 
           {/* Action Buttons */}
           <div className="flex gap-2">
-            <button
-              onClick={handleSaveForLater}
-              className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm rounded transition-colors"
-            >
-              Save for Later
-            </button>
             <button
               onClick={() => onRemove(item.id)}
               className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm rounded transition-colors"

@@ -4,30 +4,16 @@ import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
-import { useSavedItems } from '@/contexts/SavedItemsContext';
 import CartItem from '@/components/cart/CartItem';
 import CartSummary from '@/components/cart/CartSummary';
-import SavedItemCard from '@/components/cart/SavedItemCard';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function CartPage() {
-  const { items, removeItem, updateItemQuantity, getTotalPrice, addItem } = useCart();
-  const { savedItems, removeSavedItem } = useSavedItems();
+  const { items, removeItem, updateItemQuantity, getTotalPrice } = useCart();
   const router = useRouter();
   const subtotal = getTotalPrice();
-
-  const handleSaveForLater = (item: any) => {
-    // Remove from cart when saving for later
-    removeItem(item.id);
-  };
-
-  const handleMoveToCart = (item: any) => {
-    // Add to cart and remove from saved items
-    addItem(item);
-    removeSavedItem(item.id);
-  };
 
   const handleCheckout = () => {
     if (items.length > 0) {
@@ -86,7 +72,6 @@ export default function CartPage() {
                       item={item}
                       onRemove={removeItem}
                       onQuantityChange={updateItemQuantity}
-                      onSaveForLater={handleSaveForLater}
                     />
                   ))}
                 </div>
@@ -97,25 +82,6 @@ export default function CartPage() {
                     subtotal={subtotal}
                     onCheckout={handleCheckout}
                   />
-                </div>
-              </div>
-            )}
-
-            {/* Saved Items Section */}
-            {savedItems.length > 0 && (
-              <div className="mt-12">
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 uppercase tracking-tight">
-                  Saved for Later ({savedItems.length})
-                </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {savedItems.map((item) => (
-                    <SavedItemCard
-                      key={item.id}
-                      item={item}
-                      onMoveToCart={() => handleMoveToCart(item)}
-                      onRemove={() => removeSavedItem(item.id)}
-                    />
-                  ))}
                 </div>
               </div>
             )}

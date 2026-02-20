@@ -477,7 +477,7 @@ export default function Footer() {
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.4, duration: 0.6 }}
         >
-          <p>©2025 Yeti Welding.</p>
+          <p>©2026 Yeti Welding.</p>
           <div className="flex flex-wrap gap-4 mt-4 md:mt-0">
             <motion.a
               href="/privacy-policy"

@@ -10,7 +10,9 @@ import { calculateShippingLive } from '@/lib/shipping/calculator';
 import { prisma } from '@/lib/db/prisma';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
+import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
+import { getClientIp, pgFixedWindowRateLimit } from '@/lib/rateLimit';
 import crypto from 'crypto';
 
 interface CustomerInfo {
@@ -45,7 +47,17 @@ interface CustomerInfo {
  */
 export async function POST(request: NextRequest) {
   try {
-    // NOTE: Rate limiting previously used KV. With Postgres-only mode, rate limiting is not implemented here yet.
+    // Rate limit: 10 quote/checkout requests per 10 minutes per IP
+    const ip = getClientIp(request);
+    const rateLimitOk = await pgFixedWindowRateLimit({
+      keyPrefix: 'rl:checkout',
+      identity: ip,
+      limit: 10,
+      windowSeconds: 10 * 60,
+    });
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
 
     const body = await request.json();
     const { items, customerInfo, shippingMethod } = body;
@@ -152,7 +164,7 @@ export async function POST(request: NextRequest) {
             const qty = cfg.quantity || 1;
             const unitCents = Math.round(breakdown.unitPrice * 100);
             const totalItemCents = unitCents * qty;
-            const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
+            const sizeDisplay = getDumpsterGateSizeDisplay(cfg);
             return {
               productType: it.productType,
               sku: getGateCartKey(cfg),
@@ -274,12 +286,6 @@ export async function POST(request: NextRequest) {
       console.error('Error sending internal notification email:', error);
       emailResults.internalNotification.error = error instanceof Error ? error.message : 'Unknown error';
     }
-
-    // TODO: In production, implement:
-    // 1. Save orderData to database
-    // 2. Flag for review if custom fabrication
-    // 3. Store PDF in persistent storage
-    // 4. Create separate job IDs if needed for different product types
 
     return NextResponse.json({
       success: true,

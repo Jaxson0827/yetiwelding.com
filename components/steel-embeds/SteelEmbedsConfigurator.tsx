@@ -22,11 +22,15 @@ export default function SteelEmbedsConfigurator() {
     const unitPrice = priceBreakdown.unitPrice;
     const totalPrice = unitPrice * embedSpec.quantity;
 
+    // Configs requiring manual review (high stud count, non-standard shape, etc.) get quote option at checkout
+    const isCustomFabrication = priceBreakdown.confidence === 'review';
+
     const cartItem = {
       id: `steel-embed-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       productType: 'steel-plate-embeds' as const,
       configuration: embedSpec,
       price: totalPrice,
+      isCustomFabrication,
     };
 
     addItem(cartItem);

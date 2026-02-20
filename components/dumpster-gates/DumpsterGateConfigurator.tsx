@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DumpsterGateConfig, getCartKey } from '@/lib/dumpsterGates/types';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { useCart } from '@/contexts/CartContext';
@@ -23,6 +24,7 @@ function getGateHeightFt(
 
 export default function DumpsterGateConfigurator() {
   const { addItem } = useCart();
+  const [showSuccess, setShowSuccess] = useState(false);
   const [config, setConfig] = useState<DumpsterGateConfig>({
     size: 'custom',
     style: 'double-swing',
@@ -81,7 +83,7 @@ export default function DumpsterGateConfigurator() {
       cGap: '2"',
       rGap: '2"',
       gateHeight: formatDimension(gateHeightFt),
-      // TODO: Replace with correct gate math once provided.
+      // Placeholder: gate width formula needs fabrication team input. Currently uses enclosureLengthFt/2.
       gateWidth: formatDimension(config.enclosureLengthFt / 2),
       blockWidth: `${Math.round(config.blockWidthIn * 100) / 100}"`,
       blockHeight: formatDimension(maxBlockHeightFt),
@@ -131,9 +133,8 @@ export default function DumpsterGateConfigurator() {
       isCustomFabrication: config.isCustom,
     };
     addItem(cartItem);
-    
-    // Show success feedback (you could add a toast here)
-    alert(`Added ${config.quantity} gate${config.quantity > 1 ? 's' : ''} to cart`);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   }, [config, priceBreakdown, addItem, requiresQuote]);
 
   return (
@@ -172,6 +173,38 @@ export default function DumpsterGateConfigurator() {
           />
         </div>
       </div>
+
+      {/* Success Notification */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            className="fixed bottom-8 right-8 bg-[#DC143C] text-white px-6 py-4 rounded-lg shadow-lg z-50"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center gap-3">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="font-semibold">
+                Added {config.quantity} gate{config.quantity > 1 ? 's' : ''} to cart!
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

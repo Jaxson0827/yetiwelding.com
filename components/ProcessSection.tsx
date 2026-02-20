@@ -13,6 +13,7 @@ interface ProcessStep {
   href?: string;
 }
 
+// Process step images should use /homepage/* assets when possible to avoid duplicating project gallery images.
 const processSteps: ProcessStep[] = [
   {
     id: 1,

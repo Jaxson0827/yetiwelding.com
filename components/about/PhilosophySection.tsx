@@ -92,12 +92,18 @@ export default function PhilosophySection() {
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
-              {item.imageSide === 'left' && (
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
-              )}
-              {item.imageSide === 'right' && (
-                <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-transparent to-transparent" />
+              {item.imageSide === 'left' ? (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(to right, rgba(0,0,0,0.35) 0%, transparent 30%)',
+                  }}
+                />
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-transparent to-transparent" />
+                </>
               )}
             </div>
 

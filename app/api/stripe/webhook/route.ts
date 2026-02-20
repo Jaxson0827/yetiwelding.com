@@ -9,6 +9,7 @@ import { priceGate } from '@/lib/dumpsterGates/pricing';
 import type { EmbedSpec } from '@/lib/steelEmbeds/types';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
+import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
 import crypto from 'crypto';
 
@@ -619,7 +620,7 @@ export async function POST(request: NextRequest) {
       const bd = priceGate(cfg);
       const qty = cfg.quantity || 1;
       const unitCents = Math.max(0, Math.round(bd.unitPrice * 100));
-      const sizeDisplay = cfg.isCustom ? `${cfg.widthFt}' × ${cfg.heightFt}'` : cfg.size;
+      const sizeDisplay = getDumpsterGateSizeDisplay(cfg);
       return {
         productType,
         sku: getGateCartKey(cfg),

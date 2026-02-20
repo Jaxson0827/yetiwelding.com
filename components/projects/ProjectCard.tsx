@@ -12,9 +12,10 @@ interface ProjectCardProps {
   isLarge?: boolean; // Deprecated, use sizeVariant instead
   colSpan?: string; // Custom column span classes
   sizeVariant?: 'large' | 'extraLarge'; // Size variant for featured boxes
+  objectPosition?: string; // Override image position (e.g. "center top" to show top of photo)
 }
 
-export default function ProjectCard({ project, index, onSelect, isLarge = false, colSpan, sizeVariant }: ProjectCardProps) {
+export default function ProjectCard({ project, index, onSelect, isLarge = false, colSpan, sizeVariant, objectPosition }: ProjectCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -86,6 +87,7 @@ export default function ProjectCard({ project, index, onSelect, isLarge = false,
               ? 'opacity-0 scale-110' 
               : 'opacity-100 group-hover:scale-110'
           }`}
+          style={objectPosition ? { objectPosition } : undefined}
           sizes={
             sizeVariant === 'extraLarge'
               ? "(max-width: 768px) 100vw, 100vw"
