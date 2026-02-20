@@ -3,13 +3,15 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import type { PergolaConfig } from '@/lib/pergolas/types';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
+import { pricePergola } from '@/lib/pergolas/pricing';
 
 export interface CartItem {
   id: string;
-  productType: 'steel-plate-embeds' | 'dumpster-gate';
-  configuration: EmbedSpec | DumpsterGateConfig;
+  productType: 'steel-plate-embeds' | 'dumpster-gate' | 'pergola';
+  configuration: EmbedSpec | DumpsterGateConfig | PergolaConfig;
   price: number;
   isCustomFabrication?: boolean; // Flag for custom fabrication items
 }
@@ -131,6 +133,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ...item,
           configuration: config,
           price: totalPrice,
+        };
+      } else if (item.productType === 'pergola') {
+        const config = { ...item.configuration } as PergolaConfig;
+        config.quantity = newQuantity;
+        
+        const priceResult = pricePergola(config, newQuantity);
+        updatedItems[itemIndex] = {
+          ...item,
+          configuration: config,
+          price: priceResult.totalPrice,
         };
       }
 
