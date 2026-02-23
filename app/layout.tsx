@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import CartProviderWrapper from "@/components/CartProviderWrapper";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
 
@@ -61,6 +62,7 @@ export default function RootLayout({
       <body>
         <ScrollProgressBar />
         <CartProviderWrapper>{children}</CartProviderWrapper>
+        <Analytics />
       </body>
     </html>
   );

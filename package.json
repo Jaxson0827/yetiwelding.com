@@ -21,6 +21,7 @@
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.0",
     "@types/pdfkit": "^0.17.4",
+    "@vercel/analytics": "^1.6.1",
     "@vercel/blob": "^1.1.1",
     "framer-motion": "^10.16.16",
     "next": "^16.0.10",
