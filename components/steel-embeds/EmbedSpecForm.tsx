@@ -7,6 +7,7 @@ import PriceDisplay from './PriceDisplay';
 import { EmbedSpec, VALIDATION_CONSTRAINTS } from '@/lib/steelEmbeds/types';
 import { validateEmbedSpec, isEmbedSpecComplete } from '@/lib/steelEmbeds/validation';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 import {
   EDGE_WARN_RED_IN,
   EDGE_WARN_YELLOW_IN,
@@ -23,6 +24,7 @@ import {
 interface EmbedSpecFormProps {
   onSpecChange: (spec: Partial<EmbedSpec>) => void;
   onAddToCart: (spec: EmbedSpec) => void;
+  onGetQuote?: (spec: EmbedSpec) => void;
 }
 
 type FormStep = 1 | 2 | 3;
@@ -75,6 +77,7 @@ const DEFAULT_SPEC: Partial<EmbedSpec> = {
 export default function EmbedSpecForm({
   onSpecChange,
   onAddToCart,
+  onGetQuote,
 }: EmbedSpecFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -1174,14 +1177,30 @@ export default function EmbedSpecForm({
           </button>
         ) : currentStep === 3 ? (
           <div className="flex flex-col items-stretch gap-2 min-w-[220px]">
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
-              className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#B01030] transition-colors"
-            >
-              Add to cart
-            </button>
+            {QUOTE_ONLY_MODE && onGetQuote ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const specForValidation = spec as Partial<EmbedSpec>;
+                  if (isEmbedSpecComplete(specForValidation) && validateEmbedSpec(specForValidation).length === 0) {
+                    onGetQuote(specForValidation as EmbedSpec);
+                  }
+                }}
+                disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
+                className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#B01030] transition-colors"
+              >
+                Get a Quote
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={!isEmbedSpecComplete(spec as Partial<EmbedSpec>) || validateEmbedSpec(spec as Partial<EmbedSpec>).length > 0}
+                className="px-6 py-3 bg-[#DC143C] text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#B01030] transition-colors"
+              >
+                Add to cart
+              </button>
+            )}
           </div>
         ) : null}
       </div>

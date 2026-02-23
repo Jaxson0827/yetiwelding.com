@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import Link from 'next/link';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -286,40 +287,42 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* Cart Button - Amazon Style */}
-        <Link
-          href="/cart"
-          className="relative flex items-center gap-2 px-3 py-2 hover:bg-white/5 rounded transition-colors group"
-        >
-          <div className="relative flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-white group-hover:text-white/90 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            {itemCount > 0 && (
-              <motion.span
-                className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 border-2 border-white"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        {/* Cart Button - hidden in quote-only mode */}
+        {!QUOTE_ONLY_MODE && (
+          <Link
+            href="/cart"
+            className="relative flex items-center gap-2 px-3 py-2 hover:bg-white/5 rounded transition-colors group"
+          >
+            <div className="relative flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-white group-hover:text-white/90 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {itemCount > 99 ? '99+' : itemCount}
-              </motion.span>
-            )}
-          </div>
-          <span className="text-white text-xs font-medium group-hover:text-white/90 transition-colors">
-            Cart
-          </span>
-        </Link>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+              {itemCount > 0 && (
+                <motion.span
+                  className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 border-2 border-white"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                >
+                  {itemCount > 99 ? '99+' : itemCount}
+                </motion.span>
+              )}
+            </div>
+            <span className="text-white text-xs font-medium group-hover:text-white/90 transition-colors">
+              Cart
+            </span>
+          </Link>
+        )}
 
         {/* Mobile Menu Button */}
         <button
@@ -466,26 +469,28 @@ export default function Header() {
                     )}
                   </div>
                 ))}
-                {/* Mobile Cart Link */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: navItems.length * 0.1 }}
-                  className="pt-4 border-t border-white/10 mt-4"
-                >
-                  <Link
-                    href="/cart"
-                    className="flex items-center justify-between text-white uppercase text-base font-semibold hover:text-red-200 transition-all py-2"
-                    onClick={() => setIsMenuOpen(false)}
+                {/* Mobile Cart Link - hidden in quote-only mode */}
+                {!QUOTE_ONLY_MODE && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: navItems.length * 0.1 }}
+                    className="pt-4 border-t border-white/10 mt-4"
                   >
-                    <span>Cart</span>
-                    {itemCount > 0 && (
-                      <span className="bg-white text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                        {itemCount > 99 ? '99+' : itemCount}
-                      </span>
-                    )}
-                  </Link>
-                </motion.div>
+                    <Link
+                      href="/cart"
+                      className="flex items-center justify-between text-white uppercase text-base font-semibold hover:text-red-200 transition-all py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span>Cart</span>
+                      {itemCount > 0 && (
+                        <span className="bg-white text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                          {itemCount > 99 ? '99+' : itemCount}
+                        </span>
+                      )}
+                    </Link>
+                  </motion.div>
+                )}
               </div>
             </motion.nav>
           </>

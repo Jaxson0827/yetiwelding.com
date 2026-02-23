@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
     const message = formData.get('message') as string;
     const preferredContact = formData.get('preferredContact') as string;
     const file = formData.get('file') as File | null;
+    const quoteDraftRaw = formData.get('quoteDraft') as string | null;
 
     // Honeypot triggered: pretend success to avoid tipping off bots
     if (honeypot && honeypot.trim().length > 0) {
@@ -150,13 +151,18 @@ export async function POST(request: NextRequest) {
       ];
     }
 
+    const quoteDraftSection =
+      quoteDraftRaw && quoteDraftRaw.length > 0 && quoteDraftRaw.length < 50000
+        ? `\n\n--- Quote Request (raw JSON) ---\n${quoteDraftRaw}`
+        : '';
+
     const safe = {
       name: escapeHtml(name.trim()),
       email: escapeHtml(email.trim()),
       phone: phone ? escapeHtml(phone.trim()) : '',
       preferredContact: escapeHtml(preferredContact || ''),
       messageHtml: escapeHtml(message).replace(/\n/g, '<br>'),
-      messageText: message.trim(),
+      messageText: message.trim() + quoteDraftSection,
       fileName: file ? escapeHtml(file.name) : '',
     };
 
@@ -180,11 +186,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isQuoteRequest = Boolean(quoteDraftRaw && quoteDraftRaw.length > 0);
+    const subject = isQuoteRequest ? `Quote Request: ${name}` : `New Contact Form: ${name}`;
+
     const { data, error } = await resendInstance.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'Yeti Welding Contact <onboarding@resend.dev>',
       to: [businessEmail],
       replyTo: email,
-      subject: `New Contact Form: ${name}`,
+      subject,
       html: `
         <!DOCTYPE html>
         <html>

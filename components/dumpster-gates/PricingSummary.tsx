@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PriceBreakdown, DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
+import { saveQuoteDraft } from '@/lib/quoteDraft';
 
 interface PricingSummaryProps {
   config: DumpsterGateConfig;
@@ -19,8 +22,24 @@ export default function PricingSummary({
   requiresQuote = false,
   quoteReason,
 }: PricingSummaryProps) {
+  const router = useRouter();
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [customSizeAcknowledged, setCustomSizeAcknowledged] = useState(false);
+
+  const showGetQuote = QUOTE_ONLY_MODE || requiresQuote;
+
+  const handleGetQuote = () => {
+    if (QUOTE_ONLY_MODE) {
+      saveQuoteDraft('dumpster-gate', config, {
+        totalPrice: priceBreakdown.totalPrice,
+        unitPrice: priceBreakdown.unitPrice,
+        leadTime: priceBreakdown.leadTime,
+      });
+      router.push('/contact?from=quote');
+    } else {
+      router.push('/contact');
+    }
+  };
 
   const powderCoatColorLabel = config.powderCoatColor
     ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)
@@ -171,22 +190,39 @@ export default function PricingSummary({
         )}
 
         {/* CTA */}
-        {requiresQuote ? (
+        {showGetQuote ? (
           <div className="mb-3 space-y-3">
-            <div className="px-3 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-              <p className="text-yellow-200 text-sm font-medium">
-                ⚠ Requires Quote
-              </p>
-              <p className="text-yellow-100/90 text-xs mt-1">
-                {quoteReason || 'This configuration requires a custom quote.'}
-              </p>
-            </div>
-            <a
-              href="/contact"
-              className="block w-full text-center font-semibold py-3 px-6 rounded-lg transition-colors bg-red-500 hover:bg-red-600 text-white"
-            >
-              Get a Quote
-            </a>
+            {requiresQuote && !QUOTE_ONLY_MODE && (
+              <div className="px-3 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                <p className="text-yellow-200 text-sm font-medium">
+                  ⚠ Requires Quote
+                </p>
+                <p className="text-yellow-100/90 text-xs mt-1">
+                  {quoteReason || 'This configuration requires a custom quote.'}
+                </p>
+              </div>
+            )}
+            {QUOTE_ONLY_MODE ? (
+              <button
+                type="button"
+                onClick={handleGetQuote}
+                disabled={config.isCustom && !customSizeAcknowledged}
+                className={`w-full font-semibold py-3 px-6 rounded-lg transition-colors bg-red-500 hover:bg-red-600 text-white mb-3 ${
+                  config.isCustom && !customSizeAcknowledged
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                }`}
+              >
+                Get a Quote
+              </button>
+            ) : (
+              <a
+                href="/contact"
+                className="block w-full text-center font-semibold py-3 px-6 rounded-lg transition-colors bg-red-500 hover:bg-red-600 text-white"
+              >
+                Get a Quote
+              </a>
+            )}
           </div>
         ) : (
           <button
@@ -204,7 +240,7 @@ export default function PricingSummary({
         )}
 
         {/* Secondary Link */}
-        {!config.isCustom && (
+        {!config.isCustom && !QUOTE_ONLY_MODE && (
           <a
             href="/contact"
             className="block text-center text-white/60 hover:text-white text-sm transition-colors"

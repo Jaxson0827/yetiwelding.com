@@ -1,14 +1,18 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import EmbedPreviewSwitcher from './EmbedPreviewSwitcher';
 import EmbedSpecForm from './EmbedSpecForm';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { useCart } from '@/contexts/CartContext';
 import { priceEmbed } from '@/lib/steelEmbeds/pricing';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
+import { saveQuoteDraft } from '@/lib/quoteDraft';
 
 export default function SteelEmbedsConfigurator() {
+  const router = useRouter();
   const [spec, setSpec] = useState<Partial<EmbedSpec>>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const { addItem } = useCart();
@@ -16,6 +20,17 @@ export default function SteelEmbedsConfigurator() {
   const handleSpecChange = useCallback((newSpec: Partial<EmbedSpec>) => {
     setSpec(newSpec);
   }, []);
+
+  const handleGetQuote = useCallback((embedSpec: EmbedSpec) => {
+    const priceBreakdown = priceEmbed(embedSpec);
+    const totalPrice = priceBreakdown.unitPrice * embedSpec.quantity;
+    saveQuoteDraft('steel-plate-embeds', embedSpec, {
+      totalPrice,
+      unitPrice: priceBreakdown.unitPrice,
+      leadTime: 'Standard',
+    });
+    router.push('/contact?from=quote');
+  }, [router]);
 
   const handleAddToCart = useCallback((embedSpec: EmbedSpec) => {
     const priceBreakdown = priceEmbed(embedSpec);
@@ -72,6 +87,7 @@ export default function SteelEmbedsConfigurator() {
             <EmbedSpecForm
               onSpecChange={handleSpecChange}
               onAddToCart={handleAddToCart}
+              onGetQuote={QUOTE_ONLY_MODE ? handleGetQuote : undefined}
             />
           </div>
         </div>

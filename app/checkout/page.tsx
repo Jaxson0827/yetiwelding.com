@@ -12,10 +12,17 @@ import { estimateTotalWeightLb } from '@/lib/shipping/packaging';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCart();
   const router = useRouter();
+
+  useEffect(() => {
+    if (QUOTE_ONLY_MODE) {
+      router.replace('/contact');
+    }
+  }, [router]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -244,6 +251,10 @@ export default function CheckoutPage() {
   const handleAddressChange = (address: CustomerInfo['shippingAddress']) => {
     setAddressForShipping(address);
   };
+
+  if (QUOTE_ONLY_MODE) {
+    return null; // Will redirect to /contact
+  }
 
   if (items.length === 0) {
     return null; // Will redirect

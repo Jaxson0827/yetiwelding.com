@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS, colorHex } from '@/lib/pergolas/colors';
 import { ROOF_DESIGNS } from '@/lib/pergolas/panels';
@@ -11,6 +11,8 @@ import { buyEligibleForConfig, configFromSlug, leadWeeksForSlug } from '@/lib/pe
 import type { PergolaConfig } from '@/lib/pergolas/types';
 import { getCartKey } from '@/lib/pergolas/types';
 import { useCart } from '@/contexts/CartContext';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
+import { saveQuoteDraft } from '@/lib/quoteDraft';
 
 const PergolaViewer3D = dynamic(() => import('./PergolaViewer3D'), { ssr: false });
 
@@ -21,6 +23,7 @@ const PRESET_SIZES = [
 ];
 
 export default function PergolaConfigurator() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const kitSlug = searchParams?.get('kit');
   const { addItem } = useCart();
@@ -63,6 +66,18 @@ export default function PergolaConfigurator() {
       }`,
     []
   );
+
+  const handleGetQuote = useCallback(() => {
+    const fullConfig: PergolaConfig = {
+      ...cfg,
+      quantity: cfg.quantity ?? 1,
+    };
+    saveQuoteDraft('pergola', fullConfig, {
+      totalPrice: priceResult.totalPrice,
+      leadTime: `${lead[0]}–${lead[1]} weeks`,
+    });
+    router.push('/contact?from=quote');
+  }, [cfg, priceResult, lead, router]);
 
   const handleAddToCart = useCallback(() => {
     const fullConfig: PergolaConfig = {
@@ -264,13 +279,23 @@ export default function PergolaConfigurator() {
                 <span className="text-white text-2xl font-bold">${priceResult.totalPrice.toLocaleString()}</span>
               </div>
               <div className="flex flex-col gap-1.5 ml-auto">
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  className="bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 whitespace-nowrap shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#DC143C]/50 focus:ring-offset-2 focus:ring-offset-black"
-                >
-                  Add to Cart
-                </button>
+                {QUOTE_ONLY_MODE ? (
+                  <button
+                    type="button"
+                    onClick={handleGetQuote}
+                    className="bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 whitespace-nowrap shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#DC143C]/50 focus:ring-offset-2 focus:ring-offset-black"
+                  >
+                    Get a Quote
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 whitespace-nowrap shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#DC143C]/50 focus:ring-offset-2 focus:ring-offset-black"
+                  >
+                    Add to Cart
+                  </button>
+                )}
                 <span className="text-xs text-white/50 text-right">
                   Lead time {lead[0]}–{lead[1]} weeks
                 </span>

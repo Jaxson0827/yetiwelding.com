@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
@@ -9,17 +9,28 @@ import CartSummary from '@/components/cart/CartSummary';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 
 export default function CartPage() {
-  const { items, removeItem, updateItemQuantity, getTotalPrice } = useCart();
   const router = useRouter();
+  const { items, removeItem, updateItemQuantity, getTotalPrice } = useCart();
   const subtotal = getTotalPrice();
+
+  useEffect(() => {
+    if (QUOTE_ONLY_MODE) {
+      router.replace('/contact');
+    }
+  }, [router]);
 
   const handleCheckout = () => {
     if (items.length > 0) {
       router.push('/checkout');
     }
   };
+
+  if (QUOTE_ONLY_MODE) {
+    return null;
+  }
 
   return (
     <main className="min-h-screen bg-black">

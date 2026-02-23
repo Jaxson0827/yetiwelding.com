@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
@@ -16,6 +17,8 @@ import { priceGardenBox } from '@/lib/gardenBoxes/pricing';
 import { useCart } from '@/contexts/CartContext';
 import ConfigDropdown from '@/components/ConfigDropdown';
 import GardenBoxPanelDiagrams from './GardenBoxPanelDiagrams';
+import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
+import { saveQuoteDraft } from '@/lib/quoteDraft';
 
 const GardenBoxViewer3D = dynamic(() => import('./GardenBoxViewer3D'), { ssr: false });
 
@@ -66,12 +69,25 @@ const FINISH_SWATCH_STYLES: Record<string, React.CSSProperties> = {
 };
 
 export default function GardenBoxConfigurator() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [config, setConfig] = useState<GardenBoxConfig>(DEFAULT_CONFIG);
   const [showSuccess, setShowSuccess] = useState(false);
   const { addItem } = useCart();
 
   const priceResult = useMemo(() => priceGardenBox(config, config.quantity ?? 1), [config]);
+
+  const handleGetQuote = useCallback(() => {
+    const fullConfig: GardenBoxConfig = {
+      ...config,
+      quantity: config.quantity ?? 1,
+    };
+    saveQuoteDraft('garden-box', fullConfig, {
+      totalPrice: priceResult.totalPrice,
+      leadTime: '2–3 weeks',
+    });
+    router.push('/contact?from=quote');
+  }, [config, priceResult, router]);
 
   const handleAddToCart = useCallback(() => {
     const fullConfig: GardenBoxConfig = {
@@ -384,13 +400,23 @@ export default function GardenBoxConfigurator() {
               <div className="text-sm text-white/70">
                 Shipping calculated at checkout · Ships flat-pack · Typically arrives in 2–3 weeks
               </div>
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="w-full bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
-              >
-                Add to Cart
-              </button>
+              {QUOTE_ONLY_MODE ? (
+                <button
+                  type="button"
+                  onClick={handleGetQuote}
+                  className="w-full bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+                >
+                  Get a Quote
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="w-full bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+                >
+                  Add to Cart
+                </button>
+              )}
               <p className="text-xs text-white/50">*Large sizes may ship freight. All hardware included · Made in Utah</p>
             </div>
           </div>

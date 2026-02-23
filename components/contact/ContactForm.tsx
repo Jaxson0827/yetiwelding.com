@@ -15,6 +15,7 @@ import {
   sanitizeInput,
   type FormField as FormFieldType,
 } from '@/lib/contactFormValidation';
+import { loadQuoteDraft, clearQuoteDraft, formatQuoteDraftForMessage } from '@/lib/quoteDraft';
 
 interface ContactFormProps {
   onSuccess?: () => void;
@@ -45,16 +46,27 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Load draft from localStorage on mount
+  // Load draft from localStorage and quote draft on mount
   useEffect(() => {
+    let parsed: Partial<FormFieldType> = {};
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        setFormData(parsed);
+        parsed = JSON.parse(saved);
       } catch (e) {
         // Ignore parse errors
       }
+    }
+
+    // Pre-fill message from quote draft (from product configurators)
+    const quoteDraft = loadQuoteDraft();
+    if (quoteDraft) {
+      const formattedMessage = formatQuoteDraftForMessage(quoteDraft);
+      parsed.message = parsed.message ? `${parsed.message}\n\n${formattedMessage}` : formattedMessage;
+    }
+
+    if (Object.keys(parsed).length > 0) {
+      setFormData((prev) => ({ ...prev, ...parsed }));
     }
   }, []);
 
@@ -73,6 +85,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
   useEffect(() => {
     if (submitStatus === 'success') {
       localStorage.removeItem(STORAGE_KEY);
+      clearQuoteDraft();
     }
   }, [submitStatus]);
 
@@ -184,7 +197,13 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       submitData.append('phone', sanitizeInput(formData.phone || ''));
       submitData.append('message', sanitizeInput(formData.message || ''));
       submitData.append('preferredContact', formData.preferredContact || '');
-      
+
+      // Include quote draft JSON if present (from product configurator)
+      const quoteDraft = loadQuoteDraft();
+      if (quoteDraft) {
+        submitData.append('quoteDraft', JSON.stringify(quoteDraft));
+      }
+
       if (uploadedFile) {
         submitData.append('file', uploadedFile);
       }
