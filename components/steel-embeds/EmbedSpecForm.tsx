@@ -102,21 +102,21 @@ export default function EmbedSpecForm({
     errors.forEach(err => {
       errorMap[err.field] = err.message;
     });
-    // Step 2 dimension validation
+    // Step 2 dimension validation — studs must stay fully inside plate (account for stud diameter)
     const plateLength = spec.plate?.length;
     const plateWidth = spec.plate?.width;
+    const minInset = defaultStud.diameter / 2; // stud radius — center must be at least this far from edge
     if (plateLength && plateWidth) {
-      if (dimensionA < 0) errorMap['dimensionA'] = 'Dimension A must be 0 or greater.';
-      else if (studLayout === '4-stud' && 2 * dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must leave space for studs.';
-      else if (studLayout === '2-stud' && 2 * dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must leave space for studs.';
+      if (dimensionA < minInset) errorMap['dimensionA'] = `Dimension A must be at least ${minInset.toFixed(2)}" (stud radius) from edge.`;
+      else if (2 * dimensionA >= plateLength - defaultStud.diameter) errorMap['dimensionA'] = 'Dimension A must leave room for studs inside plate.';
 
       if (studLayout === '4-stud') {
-        if (dimensionB < 0) errorMap['dimensionB'] = 'Dimension B must be 0 or greater.';
-        else if (2 * dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must leave space for studs.';
+        if (dimensionB < minInset) errorMap['dimensionB'] = `Dimension B must be at least ${minInset.toFixed(2)}" (stud radius) from edge.`;
+        else if (2 * dimensionB >= plateWidth - defaultStud.diameter) errorMap['dimensionB'] = 'Dimension B must leave room for studs inside plate.';
       }
     }
     setValidationErrors(errorMap);
-  }, [spec, dimensionA, dimensionB, studLayout]);
+  }, [spec, dimensionA, dimensionB, studLayout, defaultStud.diameter]);
 
   const updateSpec = (updates: Partial<EmbedSpecDraft>) => {
     setSpec(prev => ({ ...prev, ...updates } as Partial<EmbedSpec>));
@@ -217,9 +217,10 @@ export default function EmbedSpecForm({
 
     const a = dimensionA;
     const b = dimensionB;
+    const minInset = defaultStud.diameter / 2;
     const invalid =
-      (studLayout === '4-stud' && (a < 0 || b < 0 || 2 * a >= plateLength || 2 * b >= plateWidth)) ||
-      (studLayout === '2-stud' && (a < 0 || 2 * a >= plateLength));
+      (studLayout === '4-stud' && (a < minInset || b < minInset || 2 * a >= plateLength - defaultStud.diameter || 2 * b >= plateWidth - defaultStud.diameter)) ||
+      (studLayout === '2-stud' && (a < minInset || 2 * a >= plateLength - defaultStud.diameter));
 
     if (invalid) {
       updateSpec({ studs: undefined });
