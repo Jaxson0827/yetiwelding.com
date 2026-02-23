@@ -15,6 +15,7 @@ import {
   minEdgeDistance,
   twoStudInlineFromMargins,
 } from '@/lib/steelEmbeds/studPlacement';
+import Embed2DDiagram from './Embed2DDiagram';
 
 interface EmbedSpecFormProps {
   onSpecChange: (spec: Partial<EmbedSpec>) => void;
@@ -27,12 +28,11 @@ type EmbedSpecDraft = Omit<Partial<EmbedSpec>, 'plate'> & {
   plate?: Partial<EmbedSpec['plate']>;
 };
 
-type StudLayout = '4-stud' | '2-stud-horizontal' | '2-stud-vertical';
+type StudLayout = '4-stud' | '2-stud';
 
 const STUD_LAYOUT_OPTIONS: DropdownOption[] = [
   { value: '4-stud', label: '4-stud' },
-  { value: '2-stud-horizontal', label: '2-stud horizontal' },
-  { value: '2-stud-vertical', label: '2-stud vertical' },
+  { value: '2-stud', label: '2-stud' },
 ];
 
 const MATERIAL_OPTIONS: DropdownOption[] = [
@@ -74,6 +74,7 @@ export default function EmbedSpecForm({
   const [dimensionA, setDimensionA] = useState<number>(2);
   const [dimensionB, setDimensionB] = useState<number>(2);
   const [studLayout, setStudLayout] = useState<StudLayout>('4-stud');
+  const [showAdvancedStuds, setShowAdvancedStuds] = useState(false);
 
   const [spec, setSpec] = useState<Partial<EmbedSpec>>(DEFAULT_SPEC);
 
@@ -107,13 +108,12 @@ export default function EmbedSpecForm({
     if (plateLength && plateWidth) {
       if (dimensionA < 0) errorMap['dimensionA'] = 'Dimension A must be 0 or greater.';
       else if (studLayout === '4-stud' && 2 * dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must leave space for studs.';
-      else if (studLayout === '2-stud-horizontal' && 2 * dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must leave space for studs.';
-      else if (studLayout === '2-stud-vertical' && dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must be less than plate length.';
+      else if (studLayout === '2-stud' && 2 * dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must leave space for studs.';
 
-      if (dimensionB < 0) errorMap['dimensionB'] = 'Dimension B must be 0 or greater.';
-      else if (studLayout === '4-stud' && 2 * dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must leave space for studs.';
-      else if (studLayout === '2-stud-horizontal' && dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must be less than plate width.';
-      else if (studLayout === '2-stud-vertical' && 2 * dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must leave space for studs.';
+      if (studLayout === '4-stud') {
+        if (dimensionB < 0) errorMap['dimensionB'] = 'Dimension B must be 0 or greater.';
+        else if (2 * dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must leave space for studs.';
+      }
     }
     setValidationErrors(errorMap);
   }, [spec, dimensionA, dimensionB, studLayout]);
@@ -155,6 +155,7 @@ export default function EmbedSpecForm({
         for (const stud of spec.studs.positions) {
           if (!stud.diameter || !stud.length || !stud.grade) return false;
         }
+        if (studLayout === '2-stud') return !validationErrors['dimensionA'];
         return !validationErrors['dimensionA'] && !validationErrors['dimensionB'];
       case 3:
         return !!(
@@ -191,6 +192,7 @@ export default function EmbedSpecForm({
       setDimensionA(2);
       setDimensionB(2);
       setStudLayout('4-stud');
+      setShowAdvancedStuds(false);
 
       // Reset the spec last so effects propagate the clean state to the preview.
       setSpec(DEFAULT_SPEC);
@@ -216,10 +218,8 @@ export default function EmbedSpecForm({
     const a = dimensionA;
     const b = dimensionB;
     const invalid =
-      a < 0 || b < 0 ||
-      (studLayout === '4-stud' && (2 * a >= plateLength || 2 * b >= plateWidth)) ||
-      (studLayout === '2-stud-horizontal' && (2 * a >= plateLength || b >= plateWidth)) ||
-      (studLayout === '2-stud-vertical' && (a >= plateLength || 2 * b >= plateWidth));
+      (studLayout === '4-stud' && (a < 0 || b < 0 || 2 * a >= plateLength || 2 * b >= plateWidth)) ||
+      (studLayout === '2-stud' && (a < 0 || 2 * a >= plateLength));
 
     if (invalid) {
       updateSpec({ studs: undefined });
@@ -229,18 +229,11 @@ export default function EmbedSpecForm({
     let positions;
     if (studLayout === '4-stud') {
       positions = fourStudFromMargins(plateLength, plateWidth, { left: a, right: a, bottom: b, top: b }, defaultStud);
-    } else if (studLayout === '2-stud-horizontal') {
-      positions = twoStudInlineFromMargins(
-        plateLength,
-        plateWidth,
-        { orientation: 'horizontal', left: a, right: a, rowY: { mode: 'offset', side: 'bottom', offset: b } },
-        defaultStud
-      );
     } else {
       positions = twoStudInlineFromMargins(
         plateLength,
         plateWidth,
-        { orientation: 'vertical', bottom: b, top: b, colX: { mode: 'offset', side: 'left', offset: a } },
+        { orientation: 'horizontal', left: a, right: a, rowY: { mode: 'centered' } },
         defaultStud
       );
     }
@@ -391,10 +384,27 @@ export default function EmbedSpecForm({
               </div>
             ) : (
               <div className="space-y-4">
+                {/* 2D Diagram */}
+                {spec.plate?.length && spec.plate?.width && (
+                  <div className="p-4 bg-white/5 rounded-lg border border-white/20">
+                    <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-3">Layout preview</h4>
+                    <div className="flex justify-center">
+                      <Embed2DDiagram
+                        plateLength={spec.plate.length}
+                        plateWidth={spec.plate.width}
+                        studs={spec.studs?.positions}
+                        dimensionA={dimensionA}
+                        dimensionB={studLayout === '4-stud' ? dimensionB : undefined}
+                        showDimensionB={studLayout === '4-stud'}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Dimension A/B */}
                 <div className="p-4 bg-white/5 rounded-lg border border-white/20 space-y-3">
                   <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Placement (insets from edges)</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className={`grid gap-4 ${studLayout === '4-stud' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
                     <div>
                       <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Dimension A (horizontal inset, in)</label>
                       <input
@@ -409,23 +419,25 @@ export default function EmbedSpecForm({
                         <p className="mt-1 text-red-400 text-xs">{validationErrors['dimensionA']}</p>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Dimension B (vertical inset, in)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min={0}
-                        value={dimensionB}
-                        onChange={(e) => setDimensionB(parseNumber(e.target.value) ?? 0)}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
-                      />
-                      {validationErrors['dimensionB'] && (
-                        <p className="mt-1 text-red-400 text-xs">{validationErrors['dimensionB']}</p>
-                      )}
-                    </div>
+                    {studLayout === '4-stud' && (
+                      <div>
+                        <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Dimension B (vertical inset, in)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          value={dimensionB}
+                          onChange={(e) => setDimensionB(parseNumber(e.target.value) ?? 0)}
+                          className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
+                        />
+                        {validationErrors['dimensionB'] && (
+                          <p className="mt-1 text-red-400 text-xs">{validationErrors['dimensionB']}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <p className="text-white/60 text-xs">
-                    A and B are mirrored for symmetric placement. Studs are placed automatically.
+                    {studLayout === '4-stud' ? 'A and B are mirrored for symmetric placement. Studs are placed automatically.' : 'A is mirrored left/right. Studs are centered vertically.'}
                   </p>
                 </div>
 
@@ -476,41 +488,60 @@ export default function EmbedSpecForm({
                   </div>
                 </div>
 
-                {/* Current studs summary */}
-                <div className="p-4 bg-white/5 rounded-lg border border-white/20">
-                  <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-2">Current studs</h4>
-                  {spec.studs?.positions?.length ? (
-                    <div className="space-y-2">
-                      {spec.studs.positions.map((stud, index) => {
-                        const fromLeft = (spec.plate!.length / 2 + stud.x).toFixed(1);
-                        const fromBottom = (spec.plate!.width / 2 + stud.y).toFixed(1);
-                        const edgeDist = minEdgeDistance(spec.plate!.length, spec.plate!.width, stud.x, stud.y);
-                        const warn =
-                          edgeDist < EDGE_WARN_RED_IN
-                            ? { label: `Too close to edge (${edgeDist.toFixed(2)}")`, cls: 'text-red-300' }
-                            : edgeDist < EDGE_WARN_YELLOW_IN
-                            ? { label: `Near edge (${edgeDist.toFixed(2)}")`, cls: 'text-yellow-200' }
-                            : null;
-                        return (
-                          <div
-                            key={index}
-                            className="flex items-start justify-between gap-3 p-3 rounded border border-white/10 bg-black/20"
-                          >
-                            <div className="min-w-0">
-                              <div className="text-white text-sm font-medium">
-                                Stud {index + 1} — {stud.diameter}" × {stud.length}" {stud.grade}
+                {/* Advanced: Current studs summary (collapsible) */}
+                <div className="rounded-lg border border-white/20 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedStuds(!showAdvancedStuds)}
+                    className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-left flex items-center justify-between gap-2 transition-colors"
+                  >
+                    <span className="text-white/80 text-sm font-semibold uppercase tracking-wider">Advanced</span>
+                    <svg
+                      className={`w-4 h-4 text-white/60 transition-transform ${showAdvancedStuds ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showAdvancedStuds && (
+                    <div className="p-4 bg-white/5 border-t border-white/20">
+                      <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-2">Current studs</h4>
+                      {spec.studs?.positions?.length ? (
+                        <div className="space-y-2">
+                          {spec.studs.positions.map((stud, index) => {
+                            const fromLeft = (spec.plate!.length / 2 + stud.x).toFixed(1);
+                            const fromBottom = (spec.plate!.width / 2 + stud.y).toFixed(1);
+                            const edgeDist = minEdgeDistance(spec.plate!.length, spec.plate!.width, stud.x, stud.y);
+                            const warn =
+                              edgeDist < EDGE_WARN_RED_IN
+                                ? { label: `Too close to edge (${edgeDist.toFixed(2)}")`, cls: 'text-red-300' }
+                                : edgeDist < EDGE_WARN_YELLOW_IN
+                                ? { label: `Near edge (${edgeDist.toFixed(2)}")`, cls: 'text-yellow-200' }
+                                : null;
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-start justify-between gap-3 p-3 rounded border border-white/10 bg-black/20"
+                              >
+                                <div className="min-w-0">
+                                  <div className="text-white text-sm font-medium">
+                                    Stud {index + 1} — {stud.diameter}" × {stud.length}" {stud.grade}
+                                  </div>
+                                  <div className="text-white/60 text-xs">
+                                    {fromLeft}" from left • {fromBottom}" from bottom
+                                  </div>
+                                  {warn && <div className={`text-xs mt-1 ${warn.cls}`}>{warn.label}</div>}
+                                </div>
                               </div>
-                              <div className="text-white/60 text-xs">
-                                {fromLeft}" from left • {fromBottom}" from bottom
-                              </div>
-                              {warn && <div className={`text-xs mt-1 ${warn.cls}`}>{warn.label}</div>}
-                            </div>
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-white/40 text-sm">Enter valid Dimension A{studLayout === '4-stud' ? ' and B' : ''} to place studs.</p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-white/40 text-sm">Enter valid Dimension A and B to place studs.</p>
                   )}
                 </div>
               </div>
