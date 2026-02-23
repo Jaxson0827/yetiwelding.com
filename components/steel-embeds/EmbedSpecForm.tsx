@@ -11,14 +11,9 @@ import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 import {
   EDGE_WARN_RED_IN,
   EDGE_WARN_YELLOW_IN,
-  closestEdgeRowFromStud,
   fourStudFromMargins,
   minEdgeDistance,
-  studsFromEdgeRows,
   twoStudInlineFromMargins,
-  type EdgeOffsetRow,
-  type EdgeSideX,
-  type EdgeSideY,
 } from '@/lib/steelEmbeds/studPlacement';
 
 interface EmbedSpecFormProps {
@@ -32,18 +27,12 @@ type EmbedSpecDraft = Omit<Partial<EmbedSpec>, 'plate'> & {
   plate?: Partial<EmbedSpec['plate']>;
 };
 
-type StudPreset = 'fourSquare' | 'twoInline' | 'custom';
-type StudInputStyle = 'plan' | 'offsets';
+type StudLayout = '4-stud' | '2-stud-horizontal' | '2-stud-vertical';
 
-const STUD_PRESET_OPTIONS: DropdownOption[] = [
-  { value: 'fourSquare', label: '4-stud square/rectangle' },
-  { value: 'twoInline', label: '2-stud inline' },
-  { value: 'custom', label: 'Custom' },
-];
-
-const STUD_INPUT_STYLE_OPTIONS: DropdownOption[] = [
-  { value: 'plan', label: 'Plan style (margins + gauge)' },
-  { value: 'offsets', label: 'Offsets table (from edges)' },
+const STUD_LAYOUT_OPTIONS: DropdownOption[] = [
+  { value: '4-stud', label: '4-stud' },
+  { value: '2-stud-horizontal', label: '2-stud horizontal' },
+  { value: '2-stud-vertical', label: '2-stud vertical' },
 ];
 
 const MATERIAL_OPTIONS: DropdownOption[] = [
@@ -82,29 +71,9 @@ export default function EmbedSpecForm({
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [defaultStud, setDefaultStud] = useState(DEFAULT_STUD);
-  const [expandedStudIndex, setExpandedStudIndex] = useState<number | null>(null);
-  const [selectedStudIndexInternal, setSelectedStudIndexInternal] = useState<number | null>(null);
-  const [studPreset, setStudPreset] = useState<StudPreset>('fourSquare');
-  const [studInputStyle, setStudInputStyle] = useState<StudInputStyle>('plan');
-  const [offsetRows, setOffsetRows] = useState<EdgeOffsetRow[]>([]);
-
-  // 4-stud plan-style margins (inches)
-  const [fourEqX, setFourEqX] = useState(true);
-  const [fourLeft, setFourLeft] = useState<number>(2);
-  const [fourRight, setFourRight] = useState<number>(2);
-  const [fourEqY, setFourEqY] = useState(true);
-  const [fourBottom, setFourBottom] = useState<number>(2);
-  const [fourTop, setFourTop] = useState<number>(2);
-
-  // 2-stud inline plan-style margins + row/col offset
-  const [twoOrientation, setTwoOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
-  const [twoEqAxis, setTwoEqAxis] = useState(true);
-  const [twoStart, setTwoStart] = useState<number>(2);
-  const [twoEnd, setTwoEnd] = useState<number>(2);
-  const [twoCrossMode, setTwoCrossMode] = useState<'centered' | 'offset'>('centered');
-  const [twoCrossSide, setTwoCrossSide] = useState<EdgeSideY | EdgeSideX>('bottom');
-  const [twoCrossOffset, setTwoCrossOffset] = useState<number>(2);
-  const [studLayoutError, setStudLayoutError] = useState<string | null>(null);
+  const [dimensionA, setDimensionA] = useState<number>(2);
+  const [dimensionB, setDimensionB] = useState<number>(2);
+  const [studLayout, setStudLayout] = useState<StudLayout>('4-stud');
 
   const [spec, setSpec] = useState<Partial<EmbedSpec>>(DEFAULT_SPEC);
 
@@ -125,15 +94,29 @@ export default function EmbedSpecForm({
     return null;
   }, [spec]);
 
-  // Validation errors
+  // Validation errors (spec + Step 2 dimension A/B)
   useEffect(() => {
     const errors = validateEmbedSpec(spec as Partial<EmbedSpec>);
     const errorMap: Record<string, string> = {};
     errors.forEach(err => {
       errorMap[err.field] = err.message;
     });
+    // Step 2 dimension validation
+    const plateLength = spec.plate?.length;
+    const plateWidth = spec.plate?.width;
+    if (plateLength && plateWidth) {
+      if (dimensionA < 0) errorMap['dimensionA'] = 'Dimension A must be 0 or greater.';
+      else if (studLayout === '4-stud' && 2 * dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must leave space for studs.';
+      else if (studLayout === '2-stud-horizontal' && 2 * dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must leave space for studs.';
+      else if (studLayout === '2-stud-vertical' && dimensionA >= plateLength) errorMap['dimensionA'] = 'Dimension A must be less than plate length.';
+
+      if (dimensionB < 0) errorMap['dimensionB'] = 'Dimension B must be 0 or greater.';
+      else if (studLayout === '4-stud' && 2 * dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must leave space for studs.';
+      else if (studLayout === '2-stud-horizontal' && dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must be less than plate width.';
+      else if (studLayout === '2-stud-vertical' && 2 * dimensionB >= plateWidth) errorMap['dimensionB'] = 'Dimension B must leave space for studs.';
+    }
     setValidationErrors(errorMap);
-  }, [spec]);
+  }, [spec, dimensionA, dimensionB, studLayout]);
 
   const updateSpec = (updates: Partial<EmbedSpecDraft>) => {
     setSpec(prev => ({ ...prev, ...updates } as Partial<EmbedSpec>));
@@ -154,18 +137,6 @@ export default function EmbedSpecForm({
     return true;
   };
 
-  const clampToPlate = (x: number, y: number) => {
-    const length = spec.plate?.length;
-    const width = spec.plate?.width;
-    if (!length || !width) return { x, y };
-    const halfL = length / 2;
-    const halfW = width / 2;
-    return {
-      x: roundToTwoDecimals(Math.max(-halfL, Math.min(halfL, x))) ?? x,
-      y: roundToTwoDecimals(Math.max(-halfW, Math.min(halfW, y))) ?? y,
-    };
-  };
-
   const canProceedToNextStep = (step: FormStep): boolean => {
     switch (step) {
       case 1:
@@ -179,16 +150,12 @@ export default function EmbedSpecForm({
           !validationErrors['plate.thickness']
         );
       case 2:
-        // Step 2 (Features) is optional, but if studs are specified, they must be valid
-        if (spec.studs?.positions && spec.studs.positions.length > 0) {
-          // Validate that all studs have required properties
-          for (const stud of spec.studs.positions) {
-            if (!stud.diameter || !stud.length || !stud.grade) {
-              return false;
-            }
-          }
+        // Step 2 requires studs (auto-applied from A/B when valid)
+        if (!spec.studs?.positions || spec.studs.positions.length === 0) return false;
+        for (const stud of spec.studs.positions) {
+          if (!stud.diameter || !stud.length || !stud.grade) return false;
         }
-        return true;
+        return !validationErrors['dimensionA'] && !validationErrors['dimensionB'];
       case 3:
         return !!(
           spec.quantity &&
@@ -221,28 +188,9 @@ export default function EmbedSpecForm({
       setCurrentStep(1);
       setValidationErrors({});
       setDefaultStud(DEFAULT_STUD);
-      setExpandedStudIndex(null);
-      setSelectedStudIndexInternal(null);
-      setStudPreset('fourSquare');
-      setStudInputStyle('plan');
-      setOffsetRows([]);
-      setStudLayoutError(null);
-
-      // Reset plan-style layout defaults
-      setFourEqX(true);
-      setFourLeft(2);
-      setFourRight(2);
-      setFourEqY(true);
-      setFourBottom(2);
-      setFourTop(2);
-
-      setTwoOrientation('horizontal');
-      setTwoEqAxis(true);
-      setTwoStart(2);
-      setTwoEnd(2);
-      setTwoCrossMode('centered');
-      setTwoCrossSide('bottom');
-      setTwoCrossOffset(2);
+      setDimensionA(2);
+      setDimensionB(2);
+      setStudLayout('4-stud');
 
       // Reset the spec last so effects propagate the clean state to the preview.
       setSpec(DEFAULT_SPEC);
@@ -259,226 +207,45 @@ export default function EmbedSpecForm({
     return Math.round(value * 100) / 100;
   };
 
-  const selectedStudIndex = selectedStudIndexInternal;
-  const setSelectedStudIndex = setSelectedStudIndexInternal;
-
-  const normalizeStudIndexAfterRemoval = (removedIndex: number) => {
-    // Expanded index adjustments (existing behavior)
-    if (expandedStudIndex === removedIndex) setExpandedStudIndex(null);
-    else if (expandedStudIndex !== null && expandedStudIndex > removedIndex) setExpandedStudIndex(expandedStudIndex - 1);
-
-    // Selected index adjustments (new)
-    let nextSelected = selectedStudIndex;
-    if (selectedStudIndex === removedIndex) nextSelected = null;
-    else if (selectedStudIndex !== null && selectedStudIndex > removedIndex) nextSelected = selectedStudIndex - 1;
-    setSelectedStudIndex(nextSelected);
-    return nextSelected;
-  };
-
-  const validateStudLayout = (): { ok: boolean; message?: string } => {
-    const plateLength = spec.plate?.length;
-    const plateWidth = spec.plate?.width;
-    if (!plateLength || !plateWidth) return { ok: false, message: 'Enter plate length and width first.' };
-
-    if (studInputStyle === 'offsets' || studPreset === 'custom') {
-      if (offsetRows.length === 0) return { ok: true };
-      for (let i = 0; i < offsetRows.length; i++) {
-        const r = offsetRows[i]!;
-        if (r.xOffset < 0 || r.xOffset > plateLength) return { ok: false, message: `Row ${i + 1}: X offset must be between 0 and ${plateLength}".` };
-        if (r.yOffset < 0 || r.yOffset > plateWidth) return { ok: false, message: `Row ${i + 1}: Y offset must be between 0 and ${plateWidth}".` };
-      }
-      return { ok: true };
-    }
-
-    if (studPreset === 'fourSquare') {
-      const left = fourLeft;
-      const right = fourEqX ? fourLeft : fourRight;
-      const bottom = fourBottom;
-      const top = fourEqY ? fourBottom : fourTop;
-      if ([left, right, bottom, top].some((v) => v < 0)) return { ok: false, message: 'Margins must be 0 or greater.' };
-      const gx = plateLength - left - right;
-      const gy = plateWidth - bottom - top;
-      if (gx <= 0) return { ok: false, message: 'X margins are too large for this plate.' };
-      if (gy <= 0) return { ok: false, message: 'Y margins are too large for this plate.' };
-      return { ok: true };
-    }
-
-    // twoInline
-    if (twoOrientation === 'horizontal') {
-      const left = twoStart;
-      const right = twoEqAxis ? twoStart : twoEnd;
-      if ([left, right].some((v) => v < 0)) return { ok: false, message: 'Margins must be 0 or greater.' };
-      if (plateLength - left - right <= 0) return { ok: false, message: 'End margins are too large for this plate length.' };
-      if (twoCrossMode === 'offset') {
-        const cross = twoCrossOffset;
-        if (cross < 0 || cross > plateWidth) return { ok: false, message: `Row offset must be between 0 and ${plateWidth}".` };
-      }
-      return { ok: true };
-    }
-
-    const bottom = twoStart;
-    const top = twoEqAxis ? twoStart : twoEnd;
-    if ([bottom, top].some((v) => v < 0)) return { ok: false, message: 'Margins must be 0 or greater.' };
-    if (plateWidth - bottom - top <= 0) return { ok: false, message: 'End margins are too large for this plate width.' };
-    if (twoCrossMode === 'offset') {
-      const cross = twoCrossOffset;
-      if (cross < 0 || cross > plateLength) return { ok: false, message: `Column offset must be between 0 and ${plateLength}".` };
-    }
-    return { ok: true };
-  };
-
-  const applyStudPreset = () => {
-    const validation = validateStudLayout();
-    if (!validation.ok) {
-      setStudLayoutError(validation.message ?? 'Invalid stud layout.');
-      return;
-    }
-    setStudLayoutError(null);
-
+  // Auto-apply stud positions when A, B, plate, layout, or defaultStud change
+  useEffect(() => {
     const plateLength = spec.plate?.length;
     const plateWidth = spec.plate?.width;
     if (!plateLength || !plateWidth) return;
 
-    if (studInputStyle === 'offsets' || studPreset === 'custom') {
-      const positions = studsFromEdgeRows(plateLength, plateWidth, offsetRows, defaultStud);
-      updateSpec({ studs: positions.length > 0 ? { positions } : undefined });
-      if (positions.length > 0) {
-        setSelectedStudIndex(0);
-      } else {
-        setSelectedStudIndex(null);
-      }
+    const a = dimensionA;
+    const b = dimensionB;
+    const invalid =
+      a < 0 || b < 0 ||
+      (studLayout === '4-stud' && (2 * a >= plateLength || 2 * b >= plateWidth)) ||
+      (studLayout === '2-stud-horizontal' && (2 * a >= plateLength || b >= plateWidth)) ||
+      (studLayout === '2-stud-vertical' && (a >= plateLength || 2 * b >= plateWidth));
+
+    if (invalid) {
+      updateSpec({ studs: undefined });
       return;
     }
 
-    if (studPreset === 'fourSquare') {
-      const left = fourLeft;
-      const right = fourEqX ? fourLeft : fourRight;
-      const bottom = fourBottom;
-      const top = fourEqY ? fourBottom : fourTop;
-      const positions = fourStudFromMargins(
+    let positions;
+    if (studLayout === '4-stud') {
+      positions = fourStudFromMargins(plateLength, plateWidth, { left: a, right: a, bottom: b, top: b }, defaultStud);
+    } else if (studLayout === '2-stud-horizontal') {
+      positions = twoStudInlineFromMargins(
         plateLength,
         plateWidth,
-        { left, right, bottom, top },
+        { orientation: 'horizontal', left: a, right: a, rowY: { mode: 'offset', side: 'bottom', offset: b } },
         defaultStud
       );
-      updateSpec({ studs: { positions } });
-      setSelectedStudIndex(0);
-      return;
-    }
-
-    // twoInline
-    if (twoOrientation === 'horizontal') {
-      const left = twoStart;
-      const right = twoEqAxis ? twoStart : twoEnd;
-      const rowY =
-        twoCrossMode === 'centered'
-          ? { mode: 'centered' as const }
-          : { mode: 'offset' as const, side: (twoCrossSide as EdgeSideY) ?? 'bottom', offset: twoCrossOffset };
-      const positions = twoStudInlineFromMargins(
+    } else {
+      positions = twoStudInlineFromMargins(
         plateLength,
         plateWidth,
-        { orientation: 'horizontal', left, right, rowY },
+        { orientation: 'vertical', bottom: b, top: b, colX: { mode: 'offset', side: 'left', offset: a } },
         defaultStud
       );
-      updateSpec({ studs: { positions } });
-      setSelectedStudIndex(0);
-      return;
     }
-
-    const bottom = twoStart;
-    const top = twoEqAxis ? twoStart : twoEnd;
-    const colX =
-      twoCrossMode === 'centered'
-        ? { mode: 'centered' as const }
-        : { mode: 'offset' as const, side: (twoCrossSide as EdgeSideX) ?? 'left', offset: twoCrossOffset };
-    const positions = twoStudInlineFromMargins(
-      plateLength,
-      plateWidth,
-      { orientation: 'vertical', bottom, top, colX },
-      defaultStud
-    );
     updateSpec({ studs: { positions } });
-    setSelectedStudIndex(0);
-  };
-
-  // Keep offset rows in sync when switching to offsets style
-  useEffect(() => {
-    const plateLength = spec.plate?.length;
-    const plateWidth = spec.plate?.width;
-    if (!plateLength || !plateWidth) return;
-
-    if (studInputStyle !== 'offsets' && studPreset !== 'custom') return;
-
-    const existing = spec.studs?.positions ?? [];
-    if (existing.length === 0) {
-      // Initialize rows by preset
-      if (studPreset === 'fourSquare') {
-        setOffsetRows([
-          { xSide: 'left', xOffset: fourLeft, ySide: 'bottom', yOffset: fourBottom },
-          { xSide: 'right', xOffset: fourEqX ? fourLeft : fourRight, ySide: 'bottom', yOffset: fourBottom },
-          { xSide: 'left', xOffset: fourLeft, ySide: 'top', yOffset: fourEqY ? fourBottom : fourTop },
-          { xSide: 'right', xOffset: fourEqX ? fourLeft : fourRight, ySide: 'top', yOffset: fourEqY ? fourBottom : fourTop },
-        ]);
-      } else if (studPreset === 'twoInline') {
-        if (twoOrientation === 'horizontal') {
-          setOffsetRows([
-            { xSide: 'left', xOffset: twoStart, ySide: 'bottom', yOffset: twoCrossMode === 'centered' ? plateWidth / 2 : twoCrossOffset },
-            { xSide: 'right', xOffset: twoEqAxis ? twoStart : twoEnd, ySide: 'bottom', yOffset: twoCrossMode === 'centered' ? plateWidth / 2 : twoCrossOffset },
-          ]);
-        } else {
-          setOffsetRows([
-            { xSide: 'left', xOffset: twoCrossMode === 'centered' ? plateLength / 2 : twoCrossOffset, ySide: 'bottom', yOffset: twoStart },
-            { xSide: 'left', xOffset: twoCrossMode === 'centered' ? plateLength / 2 : twoCrossOffset, ySide: 'top', yOffset: twoEqAxis ? twoStart : twoEnd },
-          ]);
-        }
-      }
-      return;
-    }
-
-    setOffsetRows(existing.map((s) => closestEdgeRowFromStud(plateLength, plateWidth, s)));
-  }, [
-    studInputStyle,
-    studPreset,
-    spec.plate?.length,
-    spec.plate?.width,
-    spec.studs?.positions,
-    fourLeft,
-    fourRight,
-    fourBottom,
-    fourTop,
-    fourEqX,
-    fourEqY,
-    twoOrientation,
-    twoStart,
-    twoEnd,
-    twoEqAxis,
-    twoCrossMode,
-    twoCrossOffset,
-  ]);
-
-  // Clear layout error on input changes
-  useEffect(() => {
-    setStudLayoutError(null);
-  }, [
-    studPreset,
-    studInputStyle,
-    fourEqX,
-    fourLeft,
-    fourRight,
-    fourEqY,
-    fourBottom,
-    fourTop,
-    twoOrientation,
-    twoEqAxis,
-    twoStart,
-    twoEnd,
-    twoCrossMode,
-    twoCrossSide,
-    twoCrossOffset,
-    offsetRows,
-    spec.plate?.length,
-    spec.plate?.width,
-  ]);
+  }, [spec.plate?.length, spec.plate?.width, dimensionA, dimensionB, studLayout, defaultStud]);
 
   return (
     <div className="space-y-6">
@@ -607,7 +374,7 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 2: Studs — simplified, plan-style inputs + optional offsets table */}
+        {/* Step 2: Studs — simplified A/B + layout + stud settings */}
         {currentStep === 2 && (
           <motion.div
             key="step2"
@@ -624,52 +391,57 @@ export default function EmbedSpecForm({
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Preset + input style */}
+                {/* Dimension A/B */}
                 <div className="p-4 bg-white/5 rounded-lg border border-white/20 space-y-3">
-                  <div className="flex flex-wrap items-end gap-3 justify-between">
-                    <div className="min-w-[220px]">
-                      <ConfigDropdown
-                        label="Layout"
-                        options={STUD_PRESET_OPTIONS}
-                        value={studPreset}
-                        onChange={(value) => {
-                          const next = value as StudPreset;
-                          setStudPreset(next);
-                          if (next === 'custom') setStudInputStyle('offsets');
-                        }}
+                  <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Placement (insets from edges)</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Dimension A (horizontal inset, in)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        value={dimensionA}
+                        onChange={(e) => setDimensionA(parseNumber(e.target.value) ?? 0)}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
                       />
+                      {validationErrors['dimensionA'] && (
+                        <p className="mt-1 text-red-400 text-xs">{validationErrors['dimensionA']}</p>
+                      )}
                     </div>
-
-                    <div className="min-w-[220px]">
-                      <ConfigDropdown
-                        label="Input style"
-                        options={STUD_INPUT_STYLE_OPTIONS}
-                        value={studInputStyle}
-                        onChange={(value) => setStudInputStyle(value as StudInputStyle)}
-                        disabled={studPreset === 'custom'}
+                    <div>
+                      <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Dimension B (vertical inset, in)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        value={dimensionB}
+                        onChange={(e) => setDimensionB(parseNumber(e.target.value) ?? 0)}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] transition-colors"
                       />
+                      {validationErrors['dimensionB'] && (
+                        <p className="mt-1 text-red-400 text-xs">{validationErrors['dimensionB']}</p>
+                      )}
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={applyStudPreset}
-                      disabled={!validateStudLayout().ok}
-                      className="px-4 py-2 bg-[#DC143C] text-white rounded-lg font-semibold hover:bg-[#B01030] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Apply layout
-                    </button>
                   </div>
-
-                  {studLayoutError && <p className="text-red-300 text-xs">{studLayoutError}</p>}
-
                   <p className="text-white/60 text-xs">
-                    Match typical drawings: enter inches from plate edges and let the preview confirm placement.
+                    A and B are mirrored for symmetric placement. Studs are placed automatically.
                   </p>
                 </div>
 
-                {/* Default stud settings */}
+                {/* Layout */}
                 <div className="p-4 bg-white/5 rounded-lg border border-white/20">
-                  <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Default Stud Settings</h4>
+                  <ConfigDropdown
+                    label="Layout"
+                    options={STUD_LAYOUT_OPTIONS}
+                    value={studLayout}
+                    onChange={(value) => setStudLayout(value as StudLayout)}
+                  />
+                </div>
+
+                {/* Stud settings */}
+                <div className="p-4 bg-white/5 rounded-lg border border-white/20">
+                  <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Stud Settings</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Diameter (in)</label>
@@ -704,316 +476,9 @@ export default function EmbedSpecForm({
                   </div>
                 </div>
 
-                {/* Layout inputs */}
-                {studInputStyle === 'plan' && studPreset !== 'custom' ? (
-                  <div className="p-4 bg-white/5 rounded-lg border border-white/20 space-y-4">
-                    {studPreset === 'fourSquare' ? (
-                      <>
-                        <h4 className="text-white font-semibold text-sm uppercase tracking-wider">4-stud square/rectangle</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider">X margins (left/right)</label>
-                              <label className="flex items-center gap-2 text-white/70 text-xs cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={fourEqX}
-                                  onChange={(e) => setFourEqX(e.target.checked)}
-                                  className="rounded border-white/20"
-                                />
-                                EQ
-                              </label>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">Left</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={fourLeft}
-                                  onChange={(e) => setFourLeft(parseNumber(e.target.value) ?? 0)}
-                                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">Right</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={fourEqX ? fourLeft : fourRight}
-                                  onChange={(e) => setFourRight(parseNumber(e.target.value) ?? 0)}
-                                  disabled={fourEqX}
-                                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] disabled:opacity-50"
-                                />
-                              </div>
-                            </div>
-                            <p className="text-white/50 text-xs">
-                              Gauge X: {(spec.plate!.length - fourLeft - (fourEqX ? fourLeft : fourRight)).toFixed(2)}"
-                            </p>
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider">Y margins (bottom/top)</label>
-                              <label className="flex items-center gap-2 text-white/70 text-xs cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={fourEqY}
-                                  onChange={(e) => setFourEqY(e.target.checked)}
-                                  className="rounded border-white/20"
-                                />
-                                EQ
-                              </label>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">Bottom</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={fourBottom}
-                                  onChange={(e) => setFourBottom(parseNumber(e.target.value) ?? 0)}
-                                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">Top</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={fourEqY ? fourBottom : fourTop}
-                                  onChange={(e) => setFourTop(parseNumber(e.target.value) ?? 0)}
-                                  disabled={fourEqY}
-                                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] disabled:opacity-50"
-                                />
-                              </div>
-                            </div>
-                            <p className="text-white/50 text-xs">
-                              Gauge Y: {(spec.plate!.width - fourBottom - (fourEqY ? fourBottom : fourTop)).toFixed(2)}"
-                            </p>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <h4 className="text-white font-semibold text-sm uppercase tracking-wider">2-stud inline</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider">Orientation</label>
-                            <select
-                              value={twoOrientation}
-                              onChange={(e) => {
-                                const next = e.target.value as 'horizontal' | 'vertical';
-                                setTwoOrientation(next);
-                                setTwoCrossSide(next === 'horizontal' ? 'bottom' : 'left');
-                              }}
-                              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                            >
-                              <option value="horizontal">Horizontal</option>
-                              <option value="vertical">Vertical</option>
-                            </select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider">End margins</label>
-                              <label className="flex items-center gap-2 text-white/70 text-xs cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={twoEqAxis}
-                                  onChange={(e) => setTwoEqAxis(e.target.checked)}
-                                  className="rounded border-white/20"
-                                />
-                                EQ
-                              </label>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">Start</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={twoStart}
-                                  onChange={(e) => setTwoStart(parseNumber(e.target.value) ?? 0)}
-                                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">End</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={twoEqAxis ? twoStart : twoEnd}
-                                  onChange={(e) => setTwoEnd(parseNumber(e.target.value) ?? 0)}
-                                  disabled={twoEqAxis}
-                                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C] disabled:opacity-50"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2 md:col-span-2">
-                            <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider">Row/column position</label>
-                            <div className="flex flex-wrap items-center gap-3">
-                              <label className="flex items-center gap-2 text-white/70 text-xs cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name="twoCrossMode"
-                                  checked={twoCrossMode === 'centered'}
-                                  onChange={() => setTwoCrossMode('centered')}
-                                />
-                                Centered (EQ)
-                              </label>
-                              <label className="flex items-center gap-2 text-white/70 text-xs cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name="twoCrossMode"
-                                  checked={twoCrossMode === 'offset'}
-                                  onChange={() => setTwoCrossMode('offset')}
-                                />
-                                Offset from edge
-                              </label>
-                              {twoCrossMode === 'offset' && (
-                                <>
-                                  <select
-                                    value={twoCrossSide}
-                                    onChange={(e) => setTwoCrossSide(e.target.value as any)}
-                                    className="px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                                  >
-                                    {twoOrientation === 'horizontal' ? (
-                                      <>
-                                        <option value="bottom">Bottom</option>
-                                        <option value="top">Top</option>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <option value="left">Left</option>
-                                        <option value="right">Right</option>
-                                      </>
-                                    )}
-                                  </select>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={twoCrossOffset}
-                                    onChange={(e) => setTwoCrossOffset(parseNumber(e.target.value) ?? 0)}
-                                    className="w-32 px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                                  />
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-4 bg-white/5 rounded-lg border border-white/20 space-y-3">
-                    <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Offsets table</h4>
-                    <p className="text-white/60 text-xs">
-                      Enter each stud as an offset from edges (closest-edge style). Use “Apply layout” to update the preview.
-                    </p>
-                    <div className="space-y-2">
-                      {offsetRows.map((row, idx) => (
-                        <div
-                          key={idx}
-                          className="grid grid-cols-1 md:grid-cols-[90px_1fr_90px_1fr_auto] gap-2 items-end"
-                        >
-                          <div>
-                            <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">X side</label>
-                            <select
-                              value={row.xSide}
-                              onChange={(e) => {
-                                const xSide = e.target.value as EdgeSideX;
-                                setOffsetRows((prev) => prev.map((r, i) => (i === idx ? { ...r, xSide } : r)));
-                              }}
-                              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                            >
-                              <option value="left">Left</option>
-                              <option value="right">Right</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">X offset (in)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={row.xOffset}
-                              onChange={(e) => {
-                                const xOffset = parseNumber(e.target.value) ?? 0;
-                                setOffsetRows((prev) => prev.map((r, i) => (i === idx ? { ...r, xOffset } : r)));
-                              }}
-                              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">Y side</label>
-                            <select
-                              value={row.ySide}
-                              onChange={(e) => {
-                                const ySide = e.target.value as EdgeSideY;
-                                setOffsetRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ySide } : r)));
-                              }}
-                              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                            >
-                              <option value="bottom">Bottom</option>
-                              <option value="top">Top</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-white/60 text-[11px] uppercase tracking-wider mb-1">Y offset (in)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={row.yOffset}
-                              onChange={(e) => {
-                                const yOffset = parseNumber(e.target.value) ?? 0;
-                                setOffsetRows((prev) => prev.map((r, i) => (i === idx ? { ...r, yOffset } : r)));
-                              }}
-                              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:border-[#DC143C]"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setOffsetRows((prev) => prev.filter((_, i) => i !== idx))}
-                            className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm rounded"
-                            aria-label={`Remove stud row ${idx + 1}`}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                      <div className="pt-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (offsetRows.length >= VALIDATION_CONSTRAINTS.studs.maxCount) return;
-                            setOffsetRows((prev) => [...prev, { xSide: 'left', xOffset: 2, ySide: 'bottom', yOffset: 2 }]);
-                          }}
-                          className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded transition-colors"
-                        >
-                          Add stud
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Current studs summary + safety warnings */}
+                {/* Current studs summary */}
                 <div className="p-4 bg-white/5 rounded-lg border border-white/20">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Current studs</h4>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        updateSpec({ studs: undefined });
-                        setSelectedStudIndex(null);
-                      }}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </div>
+                  <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-2">Current studs</h4>
                   {spec.studs?.positions?.length ? (
                     <div className="space-y-2">
                       {spec.studs.positions.map((stud, index) => {
@@ -1045,7 +510,7 @@ export default function EmbedSpecForm({
                       })}
                     </div>
                   ) : (
-                    <p className="text-white/40 text-sm">No studs yet. Choose a layout and click “Apply layout”.</p>
+                    <p className="text-white/40 text-sm">Enter valid Dimension A and B to place studs.</p>
                   )}
                 </div>
               </div>
@@ -1053,7 +518,6 @@ export default function EmbedSpecForm({
           </motion.div>
         )}
 
-        {/* Step 3: Quantity */}
         {currentStep === 3 && (
           <motion.div
             key="step3"
