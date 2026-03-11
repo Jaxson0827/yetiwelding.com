@@ -5,6 +5,7 @@ import CartProviderWrapper from "@/components/CartProviderWrapper";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://yetiwelding.com"),
   title: "Yeti Welding | Professional Welding Services | Custom Fabrication | Utah",
   description: "Yeti Welding delivers exceptional welding and fabrication services. Founded in 2016 and based in Springville, Utah. Specializing in custom fabrication, structural welding, and ornamental work. Trusted craftsmanship that speaks for itself.",
   keywords: ["welding", "custom fabrication", "structural welding", "ornamental welding", "welding services", "metal fabrication", "Yeti Welding", "Utah welding", "Springville welding", "steel fabrication"],

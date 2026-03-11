@@ -8,6 +8,7 @@ import FAQSection from '@/components/contact/FAQSection';
 import TeamSection from '@/components/contact/TeamSection';
 import MapSection from '@/components/contact/MapSection';
 import ContactCTA from '@/components/contact/ContactCTA';
+import { faqData } from '@/lib/faqData';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -38,6 +39,39 @@ export default function ContactPage() {
 
   return (
     <>
+      {/* Breadcrumb Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://yetiwelding.com' },
+              { '@type': 'ListItem', position: 2, name: 'Contact', item: 'https://yetiwelding.com/contact' },
+            ],
+          }),
+        }}
+      />
+      {/* FAQ Schema for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqData.map((f) => ({
+              '@type': 'Question',
+              name: f.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: f.answer,
+              },
+            })),
+          }),
+        }}
+      />
+
       {/* Skip to Content Link */}
       <a href="#main-content" className="skip-to-content">
         Skip to main content
@@ -56,7 +90,10 @@ export default function ContactPage() {
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 uppercase tracking-tight text-glow">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 uppercase tracking-tight text-glow">
+                Contact Us
+              </h1>
+              <h2 className="text-3xl md:text-4xl font-semibold mb-4 uppercase tracking-tight text-glow/90">
                 Send Us a Message
               </h2>
               <p className="text-white/70 text-lg max-w-2xl mx-auto">

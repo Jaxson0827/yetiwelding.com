@@ -31,6 +31,20 @@ export default function AboutPage() {
 
   return (
     <>
+      {/* Breadcrumb Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://yetiwelding.com' },
+              { '@type': 'ListItem', position: 2, name: 'About', item: 'https://yetiwelding.com/about' },
+            ],
+          }),
+        }}
+      />
       {/* Structured Data (JSON-LD) for SEO */}
       <script
         type="application/ld+json"
@@ -68,23 +82,6 @@ export default function AboutPage() {
                 'https://www.instagram.com/yeti_welding/',
                 'https://www.youtube.com/@yetiwelding6975',
                 'https://www.tiktok.com/@yetiwelding',
-              ],
-            },
-            breadcrumb: {
-              '@type': 'BreadcrumbList',
-              itemListElement: [
-                {
-                  '@type': 'ListItem',
-                  position: 1,
-                  name: 'Home',
-                  item: 'https://yetiwelding.com',
-                },
-                {
-                  '@type': 'ListItem',
-                  position: 2,
-                  name: 'About',
-                  item: 'https://yetiwelding.com/about',
-                },
               ],
             },
           }),
