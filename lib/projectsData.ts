@@ -31,8 +31,8 @@ export type ProjectCategory = Exclude<Category, 'All'>;
 
 // Projects data - all 44 images from public/projects folder, sorted by photo number
 export const projects: Project[] = [
-  { id: '1', categories: ['Shade Structures', 'Monument Structures'], image: '/projects/photo1.jpg' },
-  { id: '18', categories: ['Monument Structures'], image: '/projects/photo18.jpg' },
+  { id: '1', categories: ['Shade Structures', 'Monument Structures'], image: '/projects/photo1.JPG' },
+  { id: '18', categories: ['Monument Structures'], image: '/projects/photo18.JPG' },
   { id: '15', categories: ['Monument Structures'], image: '/projects/photo15.JPG', imageZoomOut: 0.1 },
   { id: '8', categories: ['Shade Structures', 'Monument Structures'], image: '/projects/photo8.jpg' },
   { id: '14', categories: ['Shade Structures'], image: '/projects/photo14.JPG' },
@@ -52,7 +52,7 @@ export const projects: Project[] = [
   { id: '7', categories: ['Shade Structures'], image: '/projects/photo7.jpg' },
   { id: '11', categories: ['Structural Steel'], image: '/projects/photo11.jpg' },
   { id: '6', categories: ['Gates'], image: '/projects/photo6.jpg' },
-  { id: '20', categories: ['Railing'], image: '/projects/photo20.jpg' },
+  { id: '20', categories: ['Railing'], image: '/projects/photo20.JPG' },
   { id: '24', categories: ['Railing'], image: '/projects/photo24.jpg' },
   { id: '25', categories: ['Railing'], image: '/projects/photo25.jpg' },
   { id: '26', categories: ['Railing'], image: '/projects/photo26.jpg' },
