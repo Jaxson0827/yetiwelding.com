@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
 
 interface CounterProps {
@@ -94,12 +94,15 @@ function TimeCounter({ timeString }: { timeString: string }) {
 }
 
 export default function FeaturedProject() {
+  const [isNightMode, setIsNightMode] = useState(false);
+  const dayImage = '/homepage/featuredproject.JPG';
+  const nightImage = '/homepage/featuredproject_night.jpg';
+
   // Featured project data - Firefly Entrance Arch
   const featuredProject = {
     title: 'Firefly Entrance Arch',
     category: 'Art/Sculpture',
     description: 'A monumental work of metal art that transforms a standard development entry into a sculptural landmark. Towering geometric forms rise from each side, joined by a custom-branded archway merging sculpture, structure, and architecture. Precision-fabricated from 3/16" Corten plate with 46,500 CNC-laser-cut holes creating the signature "firefly glow" effect.',
-    image: '/homepage/featuredproject.JPG', // Note: File extension is .JPG
   };
 
   const sectionRef = useRef<HTMLElement>(null);
@@ -117,15 +120,49 @@ export default function FeaturedProject() {
         animate={isInView ? { opacity: 1, x: 0 } : {}}
         transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] as [number, number, number, number] }}
       >
-        <Image
-          src={featuredProject.image}
-          alt={`${featuredProject.title} - ${featuredProject.description.substring(0, 100)}...`}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          loading="lazy"
-        />
+        <div className="relative w-full h-full overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={isNightMode ? 'night' : 'day'}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 transition-transform duration-700 group-hover:scale-110"
+            >
+              <Image
+                src={isNightMode ? nightImage : dayImage}
+                alt={`${featuredProject.title} - ${featuredProject.description.substring(0, 100)}...`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                loading="lazy"
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/20 to-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Day/Night toggle button */}
+        <motion.button
+          type="button"
+          onClick={() => setIsNightMode(!isNightMode)}
+          className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors z-10"
+          aria-label={isNightMode ? 'Switch to day view' : 'Switch to night view'}
+          title={isNightMode ? 'Day view' : 'Night view'}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {isNightMode ? (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.061l1.59-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM17.834 18.894a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 1 0-1.061 1.06l1.59 1.591ZM12 18a.75.75 0 0 1 .75.75V21a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 12 18ZM7.758 17.303a.75.75 0 0 0-1.061-1.06l-1.591 1.59a.75.75 0 0 0 1.06 1.061l1.59-1.59ZM6 12a.75.75 0 0 1-.75.75H3a.75.75 0 0 1 0-1.5h2.25A.75.75 0 0 1 6 12ZM6.697 7.757a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 0 0-1.061 1.06l1.59 1.591Z" />
+            </svg>
+          )}
+        </motion.button>
       </motion.div>
 
       {/* Right Column - Content */}
