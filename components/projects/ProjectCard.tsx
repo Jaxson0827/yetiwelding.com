@@ -1,6 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+
+// Set to true to show box/image numbers for reorganization ("move image X to box Y")
+const SHOW_PROJECT_NUMBERS = false;
 import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { Project } from '@/lib/projectsData';
@@ -43,6 +46,13 @@ export default function ProjectCard({ project, index, onSelect, isLarge = false,
   
   const isClickable = Boolean(onSelect);
 
+  // Extract number from image filename (e.g., photo22.jpg -> 22) for temporary reorganization labels
+  const imageNumber = project.image.match(/photo(\d+)/i)?.[1] ?? project.id;
+  // Container position (1-based) for reorganization: "move image 17 to box 2"
+  const containerNumber = index + 1;
+  // For imageZoomOut: use taller inner container so more of image is visible vertically while still filling
+  const zoomOutScale = project.imageZoomOut ? 1 / (1 - project.imageZoomOut) : 1;
+
   return (
     <motion.div
       className={`group relative overflow-hidden bg-black border border-white/10 ${
@@ -62,6 +72,22 @@ export default function ProjectCard({ project, index, onSelect, isLarge = false,
     >
       {/* Image/Video Container */}
       <div className={`relative w-full overflow-hidden ${heightClass}`}>
+        {/* Inner wrapper for imageZoomOut - taller container to show more of image vertically */}
+        <div
+          className="relative w-full overflow-hidden"
+          style={
+            zoomOutScale > 1
+              ? {
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: '50%',
+                  height: `${zoomOutScale * 100}%`,
+                  transform: 'translateY(-50%)',
+                }
+              : { height: '100%' }
+          }
+        >
         {/* Video (shown on hover if available) */}
         {project.video && (
           <video
@@ -87,7 +113,7 @@ export default function ProjectCard({ project, index, onSelect, isLarge = false,
               ? 'opacity-0 scale-110' 
               : 'opacity-100 group-hover:scale-110'
           }`}
-          style={objectPosition ? { objectPosition } : undefined}
+          style={(project.objectPosition ?? objectPosition) ? { objectPosition: project.objectPosition ?? objectPosition } : undefined}
           sizes={
             sizeVariant === 'extraLarge'
               ? "(max-width: 768px) 100vw, 100vw"
@@ -96,11 +122,24 @@ export default function ProjectCard({ project, index, onSelect, isLarge = false,
               : "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
           }
         />
+        </div>
         
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />
         {/* Red Accent Overlay on Hover */}
         <div className="absolute inset-0 bg-[#DC143C]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />
+
+        {/* Box number (top-right) and image number (bottom-right) - toggle SHOW_PROJECT_NUMBERS to show */}
+        {SHOW_PROJECT_NUMBERS && (
+          <>
+            <span className="absolute top-2 right-2 text-white/90 text-sm font-mono font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] z-30">
+              {containerNumber}
+            </span>
+            <span className="absolute bottom-2 right-2 text-white/90 text-sm font-mono font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] z-30">
+              {imageNumber}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Content Overlay */}

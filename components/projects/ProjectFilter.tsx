@@ -89,7 +89,7 @@ export default function ProjectFilter({
 
         {/* Category Filters */}
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-          {categories.map((category, index) => {
+          {categories.filter((c) => c !== 'Uncategorized').map((category, index) => {
             const isActive = activeCategory === category;
             return (
               <motion.button
