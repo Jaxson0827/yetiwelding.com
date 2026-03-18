@@ -4,10 +4,15 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import GardenBoxHero from '@/components/garden-boxes/GardenBoxHero';
 import GardenBoxConfigurator from '@/components/garden-boxes/GardenBoxConfigurator';
+import ProductPageSchema from '@/components/seo/ProductPageSchema';
+import { getOrderProductBySlug } from '@/lib/orderProductData';
 
 export default function GardenBoxesPage() {
+  const product = getOrderProductBySlug('garden-boxes')!;
   return (
-    <main className="min-h-screen bg-black">
+    <>
+      <ProductPageSchema product={product} />
+      <main className="min-h-screen bg-black">
       <Header />
 
       {/* Trust Bar */}
@@ -94,5 +99,6 @@ export default function GardenBoxesPage() {
 
       <Footer />
     </main>
+    </>
   );
 }

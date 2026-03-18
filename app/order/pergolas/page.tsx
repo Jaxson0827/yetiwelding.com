@@ -5,10 +5,15 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PergolaHero from '@/components/pergolas/PergolaHero';
 import PergolaConfigurator from '@/components/pergolas/PergolaConfigurator';
+import ProductPageSchema from '@/components/seo/ProductPageSchema';
+import { getOrderProductBySlug } from '@/lib/orderProductData';
 
 export default function PergolasPage() {
+  const product = getOrderProductBySlug('pergolas')!;
   return (
-    <main className="min-h-screen bg-black">
+    <>
+      <ProductPageSchema product={product} />
+      <main className="min-h-screen bg-black">
       <Header />
 
       <PergolaHero />
@@ -72,5 +77,6 @@ export default function PergolasPage() {
 
       <Footer />
     </main>
+    </>
   );
 }

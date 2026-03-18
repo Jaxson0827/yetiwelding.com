@@ -4,10 +4,15 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SteelEmbedHero from '@/components/steel-embeds/SteelEmbedHero';
 import SteelEmbedsConfigurator from '@/components/steel-embeds/SteelEmbedsConfigurator';
+import ProductPageSchema from '@/components/seo/ProductPageSchema';
+import { getOrderProductBySlug } from '@/lib/orderProductData';
 
 export default function SteelEmbedsPage() {
+  const product = getOrderProductBySlug('steel-embeds')!;
   return (
-    <main className="min-h-screen bg-black">
+    <>
+      <ProductPageSchema product={product} />
+      <main className="min-h-screen bg-black">
       <Header />
 
       {/* Contractor Trust Signals */}
@@ -118,6 +123,7 @@ export default function SteelEmbedsPage() {
 
       <Footer />
     </main>
+    </>
   );
 }
 

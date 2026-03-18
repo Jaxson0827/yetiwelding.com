@@ -4,10 +4,15 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import DumpsterGateHero from '@/components/dumpster-gates/DumpsterGateHero';
 import DumpsterGateConfigurator from '@/components/dumpster-gates/DumpsterGateConfigurator';
+import ProductPageSchema from '@/components/seo/ProductPageSchema';
+import { getOrderProductBySlug } from '@/lib/orderProductData';
 
 export default function DumpsterGatesPage() {
+  const product = getOrderProductBySlug('dumpster-gates')!;
   return (
-    <main className="min-h-screen bg-black">
+    <>
+      <ProductPageSchema product={product} />
+      <main className="min-h-screen bg-black">
       <Header />
 
       <DumpsterGateHero />
@@ -130,6 +135,7 @@ export default function DumpsterGatesPage() {
 
       <Footer />
     </main>
+    </>
   );
 }
 
