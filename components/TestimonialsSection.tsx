@@ -255,18 +255,25 @@ export default function TestimonialsSection() {
           </AnimatePresence>
 
           {/* Carousel Indicators */}
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center gap-1 mt-8 flex-wrap">
             {testimonials.map((_, index) => (
               <button
+                type="button"
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentIndex
-                    ? 'bg-accent-red w-8'
-                    : 'bg-white/30 hover:bg-white/50'
-                }`}
+                className="h-11 w-11 flex items-center justify-center rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 aria-label={`Go to testimonial ${index + 1}`}
-              />
+                aria-current={index === currentIndex ? 'true' : undefined}
+              >
+                <span
+                  className={`rounded-full transition-all ${
+                    index === currentIndex
+                      ? 'bg-accent-red h-2 w-8'
+                      : 'bg-white/45 hover:bg-white/70 h-2 w-2'
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
             ))}
           </div>
         </div>

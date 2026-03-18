@@ -13,6 +13,7 @@ import { getCartKey } from '@/lib/pergolas/types';
 import { useCart } from '@/contexts/CartContext';
 import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 import { saveQuoteDraft } from '@/lib/quoteDraft';
+import { playfairDisplay } from '@/lib/fonts';
 
 const PergolaViewer3D = dynamic(() => import('./PergolaViewer3D'), { ssr: false });
 
@@ -221,7 +222,7 @@ export default function PergolaConfigurator() {
             }}
           >
             {/* Header */}
-            <h3 className="font-playfair text-white text-xl font-bold tracking-tight mb-1">
+            <h3 className={`${playfairDisplay.className} text-white text-xl font-bold tracking-tight mb-1`}>
               Custom Steel Pergola
             </h3>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 mb-5">

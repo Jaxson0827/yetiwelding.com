@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import CartProviderWrapper from "@/components/CartProviderWrapper";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
+import { inter } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://yetiwelding.com"),
@@ -42,11 +44,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://yetiwelding.com",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -57,22 +60,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-RDV6512BRX"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-RDV6512BRX');
-            `,
-          }}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-RDV6512BRX"
+          strategy="afterInteractive"
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-RDV6512BRX');
+          `}
+        </Script>
       </head>
-      <body>
+      <body className={inter.className}>
         <ScrollProgressBar />
         <CartProviderWrapper>{children}</CartProviderWrapper>
         <Analytics />

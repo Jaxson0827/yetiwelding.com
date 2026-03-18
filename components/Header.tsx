@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import Link from 'next/link';
+import Image from 'next/image';
 import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 
 export default function Header() {
@@ -17,9 +18,7 @@ export default function Header() {
   const itemCount = getItemCount();
   const desktopOrderDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Increment this version number when you update the logo to force cache refresh
-  const LOGO_VERSION = '4';
-  const logoPath = `/Website Logo.png?v=${LOGO_VERSION}`;
+  const logoPath = '/Website Logo.png';
 
   const navItems = [
     { label: 'HOME', href: '/' },
@@ -127,14 +126,14 @@ export default function Header() {
             transition={{ duration: 0.3 }}
             style={{ marginBottom: isScrolled ? '-32px' : '-32px', background: 'transparent' }}
           >
-            {/* Using regular img tag instead of Next.js Image to support query string cache-busting */}
-            <img
+            <Image
               src={logoPath}
               alt="Yeti Welding Logo"
-              className="object-contain w-full h-full"
-              style={{ top: '-12px', left: '1px', position: 'relative' }}
-              loading="eager"
-              suppressHydrationWarning
+              fill
+              className="object-contain"
+              style={{ top: '-12px', left: '1px' }}
+              sizes="(max-width: 1024px) 192px, 288px"
+              quality={75}
             />
           </motion.div>
         </motion.a>
