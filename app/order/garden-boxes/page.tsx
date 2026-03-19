@@ -13,7 +13,7 @@ export default function GardenBoxesPage() {
     <>
       <ProductPageSchema product={product} />
       <main className="min-h-screen bg-black">
-      <Header />
+      <Header showCart />
 
       {/* Trust Bar */}
       <section className="w-full py-6 px-4 border-b border-white/10">

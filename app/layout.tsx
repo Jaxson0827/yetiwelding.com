@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
-import CartProviderWrapper from "@/components/CartProviderWrapper";
-import ScrollProgressBar from "@/components/ScrollProgressBar";
 import { inter } from "@/lib/fonts";
 
 export const metadata: Metadata = {
@@ -62,9 +60,9 @@ export default function RootLayout({
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-RDV6512BRX"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -74,8 +72,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={inter.className}>
-        <ScrollProgressBar />
-        <CartProviderWrapper>{children}</CartProviderWrapper>
+        {children}
         <Analytics />
       </body>
     </html>

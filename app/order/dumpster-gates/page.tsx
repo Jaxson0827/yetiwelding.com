@@ -13,7 +13,7 @@ export default function DumpsterGatesPage() {
     <>
       <ProductPageSchema product={product} />
       <main className="min-h-screen bg-black">
-      <Header />
+      <Header showCart />
 
       <DumpsterGateHero />
 

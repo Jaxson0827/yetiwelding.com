@@ -262,7 +262,7 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-black">
-      <Header />
+      <Header showCart />
       
       <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto max-w-6xl">

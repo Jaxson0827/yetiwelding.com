@@ -14,7 +14,7 @@ export default function PergolasPage() {
     <>
       <ProductPageSchema product={product} />
       <main className="min-h-screen bg-black">
-      <Header />
+      <Header showCart />
 
       <PergolaHero />
 

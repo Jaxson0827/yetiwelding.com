@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import CartProviderWrapper from '@/components/CartProviderWrapper';
 
 export const metadata: Metadata = {
   title: 'Shopping Cart | Yeti Welding',
@@ -19,8 +20,8 @@ export const metadata: Metadata = {
 
 export default function CartLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
-  return children;
+}>) {
+  return <CartProviderWrapper>{children}</CartProviderWrapper>;
 }

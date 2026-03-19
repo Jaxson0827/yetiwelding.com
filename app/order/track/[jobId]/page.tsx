@@ -121,7 +121,7 @@ export default function OrderTrackingPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black">
-        <Header />
+        <Header showCart />
         <div className="flex items-center justify-center min-h-[60vh] pt-32">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-white/20 border-t-[#DC143C] rounded-full animate-spin mx-auto mb-4"></div>
@@ -136,7 +136,7 @@ export default function OrderTrackingPage() {
   if (error || !order) {
     return (
       <main className="min-h-screen bg-black">
-        <Header />
+        <Header showCart />
         <div className="flex items-center justify-center min-h-[60vh] pt-32">
           <div className="text-center">
             <p className="text-red-400 text-xl mb-4">{error || 'Order not found'}</p>
@@ -171,7 +171,7 @@ export default function OrderTrackingPage() {
 
   return (
     <main className="min-h-screen bg-black">
-      <Header />
+      <Header showCart />
       
       <section className="w-full py-20 px-4 pt-32">
         <div className="container mx-auto max-w-6xl">

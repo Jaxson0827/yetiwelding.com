@@ -100,7 +100,7 @@ function ConfirmationContent() {
 
   return (
     <main className="min-h-screen bg-black">
-      <Header />
+      <Header showCart />
       
       <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto max-w-4xl">
@@ -238,7 +238,7 @@ export default function ConfirmationPage() {
   return (
     <Suspense fallback={
       <main className="min-h-screen bg-black">
-        <Header />
+        <Header showCart />
         <section className="pt-32 pb-20 px-4">
           <div className="container mx-auto max-w-4xl text-center">
             <p className="text-white/60">Loading...</p>
