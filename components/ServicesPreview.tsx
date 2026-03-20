@@ -44,7 +44,7 @@ export default function ServicesPreview({ onSelect }: ServicesPreviewProps) {
       className="w-full bg-black py-24 md:py-32 px-4 relative overflow-hidden"
     >
       {/* Enhanced Background decorative elements */}
-      <div className="absolute inset-0 opacity-[0.02]">
+      <div className="absolute inset-0 opacity-[0.04]">
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent-red rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-accent-red rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-accent-red rounded-full blur-3xl" />
@@ -58,36 +58,34 @@ export default function ServicesPreview({ onSelect }: ServicesPreviewProps) {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
         >
-          <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 bg-black/60 px-6 py-8 backdrop-blur-sm">
-            <motion.div
-              className="flex items-center justify-center mb-8"
-              initial={{ opacity: 0, scaleX: 0 }}
-              animate={isInView ? { opacity: 1, scaleX: 1 } : {}}
-              transition={{ delay: 0.2, duration: 0.8 }}
-            >
-              <div className="w-20 h-px bg-gradient-to-r from-transparent via-white/50 to-white/50 mr-4" />
-              <span className="text-white/85 uppercase text-xs tracking-[0.3em] font-light">
-                WHAT WE OFFER
-              </span>
-              <div className="w-20 h-px bg-gradient-to-l from-transparent via-white/50 to-white/50 ml-4" />
-            </motion.div>
-            <motion.h2
-              className="text-5xl md:text-6xl lg:text-7xl font-bold text-white uppercase mb-8 tracking-tight"
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.3, duration: 0.8 }}
-            >
-              OUR SERVICES
-            </motion.h2>
-            <motion.p
-              className="text-white/95 text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed"
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.4, duration: 0.8 }}
-            >
-              Professional welding and fabrication services delivered with precision and craftsmanship
-            </motion.p>
-          </div>
+          <motion.div
+            className="flex items-center justify-center mb-8"
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={isInView ? { opacity: 1, scaleX: 1 } : {}}
+            transition={{ delay: 0.2, duration: 0.8 }}
+          >
+            <div className="w-20 h-px bg-gradient-to-r from-transparent via-white/40 to-white/40 mr-4" />
+            <span className="text-white/70 uppercase text-xs tracking-[0.3em] font-light">
+              WHAT WE OFFER
+            </span>
+            <div className="w-20 h-px bg-gradient-to-l from-transparent via-white/40 to-white/40 ml-4" />
+          </motion.div>
+          <motion.h2
+            className="text-5xl md:text-6xl lg:text-7xl font-bold text-white uppercase mb-8 tracking-tight"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.3, duration: 0.8 }}
+          >
+            OUR SERVICES
+          </motion.h2>
+          <motion.p
+            className="text-white/80 text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.4, duration: 0.8 }}
+          >
+            Professional welding and fabrication services delivered with precision and craftsmanship
+          </motion.p>
         </motion.div>
 
         {/* Enhanced Services Grid */}

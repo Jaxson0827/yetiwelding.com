@@ -1,17 +1,38 @@
+'use client';
+
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
+import ServicesPreview from '@/components/ServicesPreview';
 import FeaturedProject from '@/components/FeaturedProject';
 import CertificationsSection from '@/components/CertificationsSection';
 import ProcessSection from '@/components/ProcessSection';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import AboutSection from '@/components/AboutSection';
-import PartnerLogos from '@/components/PartnerLogos';
 import Footer from '@/components/Footer';
-import HomeServicesPreview from '@/components/HomeServicesPreview';
-import BackToTopButton from '@/components/BackToTopButton';
+import ServiceModal from '@/components/ServiceModal';
 import SectionDivider from '@/components/ui/SectionDivider';
+import { services } from '@/lib/servicesData';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateScrollProgress = () => {
+      const scrollPx = document.documentElement.scrollTop;
+      setShowBackToTop(scrollPx > 300);
+    };
+
+    window.addEventListener('scroll', updateScrollProgress);
+    return () => window.removeEventListener('scroll', updateScrollProgress);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <>
       {/* Structured Data (JSON-LD) for SEO */}
@@ -64,7 +85,7 @@ export default function Home() {
         <Header />
         <Hero />
         <SectionDivider />
-        <HomeServicesPreview />
+        <ServicesPreview onSelect={(serviceId) => setSelectedService(serviceId)} />
         <SectionDivider />
         <FeaturedProject />
         <SectionDivider />
@@ -75,12 +96,44 @@ export default function Home() {
         <TestimonialsSection />
         <SectionDivider />
         <AboutSection />
-        <SectionDivider />
-        <PartnerLogos />
         <Footer />
       </main>
 
-      <BackToTopButton />
+      <ServiceModal
+        service={services.find((service) => service.id === selectedService) || null}
+        onClose={() => setSelectedService(null)}
+      />
+
+      {/* Back to Top Button */}
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.button
+            onClick={scrollToTop}
+            className="fixed bottom-8 right-8 w-12 h-12 bg-accent-red text-white rounded-full flex items-center justify-center shadow-lg z-50 hover:bg-[#B01030] transition-colors"
+            aria-label="Scroll to top"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 10l7-7m0 0l7 7m-7-7v18"
+              />
+            </svg>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -2,7 +2,6 @@
 
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import Image from 'next/image';
 
 interface FooterLink {
   label: string;
@@ -10,7 +9,9 @@ interface FooterLink {
 }
 
 export default function Footer() {
-  const logoPath = '/Website Logo.png';
+  // Increment this version number when you update the logo to force cache refresh
+  const LOGO_VERSION = '4';
+  const logoPath = `/Website Logo.png?v=${LOGO_VERSION}`;
   const footerRef = useRef<HTMLElement>(null);
   const isInView = useInView(footerRef, { once: true, margin: '-50px' });
 
@@ -51,7 +52,6 @@ export default function Footer() {
     { label: 'Dumpster Gates', href: '/order/dumpster-gates' },
     { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
     { label: 'Pergolas', href: '/order/pergolas' },
-    { label: 'Garden Boxes', href: '/order/garden-boxes' },
   ];
 
   // Services
@@ -102,13 +102,13 @@ export default function Footer() {
               transition={{ duration: 0.3 }}
               style={{ background: 'transparent' }}
             >
-              <Image
+              {/* Using regular img tag instead of Next.js Image to support query string cache-busting */}
+              <img
                 src={logoPath}
                 alt="Yeti Welding Logo"
-                fill
-                className="object-contain"
-                sizes="128px"
-                quality={70}
+                className="object-contain w-full h-full"
+                loading="lazy"
+                suppressHydrationWarning
               />
             </motion.div>
             <p className="text-white/70 text-sm mb-4 max-w-xs">

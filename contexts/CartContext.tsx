@@ -202,6 +202,10 @@ export function useCart() {
   return context;
 }
 
+export function useOptionalCart() {
+  return useContext(CartContext);
+}
+
 
 
 
