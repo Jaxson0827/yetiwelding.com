@@ -2,6 +2,7 @@
 
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
+import BusinessHoursStatus from '@/components/contact/BusinessHoursStatus';
 
 export default function MapSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -54,13 +55,14 @@ export default function MapSection() {
               />
             </motion.div>
 
-            {/* Address Information */}
+            {/* Status + address card (aligned with map column) */}
             <motion.div
-              className="flex flex-col justify-center"
+              className="flex flex-col justify-start gap-4 min-h-[400px] md:min-h-[500px]"
               initial={{ opacity: 0, x: 30 }}
               animate={isInView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
+              <BusinessHoursStatus />
               <div
                 className="p-8 rounded-lg"
                 style={{
