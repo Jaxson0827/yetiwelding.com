@@ -68,10 +68,9 @@ export default function Footer() {
     { label: 'Certifications', href: '/#certifications' },
   ];
 
-  // Estimator contact info - placeholder values, can be updated
   const estimatorName = 'Request an Estimate';
-  const estimatorPhone = '801-995-8906'; // Using main phone as placeholder
-  const estimatorEmail = 'office@yetiwelding.com'; // Using main email as placeholder
+  const estimatorPhone = '801-995-8906';
+  const estimatorEmail = 'office@yetiwelding.com';
 
   return (
     <footer ref={footerRef} className="w-full bg-black text-white py-12 px-4 relative overflow-hidden">
@@ -96,11 +95,13 @@ export default function Footer() {
             className="sm:col-span-2 lg:col-span-1 xl:col-span-1"
             variants={itemVariants}
           >
-            <motion.div
-              className="relative w-32 h-16 mb-4"
+            <motion.a
+              href="/"
+              className="relative w-32 h-16 mb-4 block"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
               style={{ background: 'transparent' }}
+              aria-label="Yeti Welding — Home"
             >
               {/* Using regular img tag instead of Next.js Image to support query string cache-busting */}
               <img
@@ -110,7 +111,7 @@ export default function Footer() {
                 loading="lazy"
                 suppressHydrationWarning
               />
-            </motion.div>
+            </motion.a>
             <p className="text-white/70 text-sm mb-4 max-w-xs">
               Professional welding and fabrication services. Founded in 2016. Trusted craftsmanship that speaks for itself.
             </p>
@@ -157,7 +158,7 @@ export default function Footer() {
                   </svg>
                 </motion.a>
                 <motion.a
-                  href="https://www.tiktok.com/@yetiwelding?_r=1&_t=ZT-92FZiplFCPt"
+                  href="https://www.tiktok.com/@yetiwelding"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 bg-[#DC143C] rounded flex items-center justify-center text-white hover:bg-[#B01030] transition-colors"

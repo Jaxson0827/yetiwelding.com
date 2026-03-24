@@ -75,9 +75,10 @@ export default function ProcessSection() {
   };
 
   return (
-    <section 
+    <section
+      id="process"
       ref={sectionRef}
-      className="w-full bg-black py-20 md:py-28 px-4 relative overflow-hidden"
+      className="scroll-mt-28 md:scroll-mt-32 w-full bg-black py-20 md:py-28 px-4 relative overflow-hidden"
     >
       {/* Background decorative elements */}
       <div className="absolute inset-0 opacity-5">

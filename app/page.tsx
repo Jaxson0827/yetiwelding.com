@@ -29,6 +29,25 @@ export default function Home() {
     return () => window.removeEventListener('scroll', updateScrollProgress);
   }, []);
 
+  // Scroll to in-page sections when arriving with /#process or /#certifications (incl. client-side nav)
+  useEffect(() => {
+    const scrollToHash = () => {
+      const id = window.location.hash.slice(1);
+      if (!id) return;
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    const t = setTimeout(scrollToHash, 80);
+    window.addEventListener('hashchange', scrollToHash);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('hashchange', scrollToHash);
+    };
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
