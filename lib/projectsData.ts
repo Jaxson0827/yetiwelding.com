@@ -29,7 +29,7 @@ export const categories = [
 export type Category = typeof categories[number];
 export type ProjectCategory = Exclude<Category, 'All'>;
 
-// Projects data - all 44 images from public/projects folder, sorted by photo number
+// Projects data - all 47 images from public/projects folder, sorted by photo number
 export const projects: Project[] = [
   { id: '1', categories: ['Shade Structures', 'Monument Structures'], image: '/projects/photo1.JPG' },
   { id: '18', categories: ['Monument Structures'], image: '/projects/photo18.JPG' },
@@ -73,6 +73,9 @@ export const projects: Project[] = [
   { id: '42', categories: ['Shade Structures'], image: '/projects/photo42.jpg' },
   { id: '43', categories: ['Railing'], image: '/projects/photo43.jpg' },
   { id: '3', categories: ['Gates'], image: '/projects/photo3.JPG' },
+  { id: '45', categories: ['Uncategorized'], image: '/projects/photo45.jpg' },
+  { id: '46', categories: ['Uncategorized'], image: '/projects/photo46.jpg' },
+  { id: '47', categories: ['Uncategorized'], image: '/projects/photo47.jpg' },
 ];
 
 // Helper function to get all unique materials from projects
