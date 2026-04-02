@@ -74,8 +74,8 @@ export const projects: Project[] = [
   { id: '43', categories: ['Railing'], image: '/projects/photo43.jpg' },
   { id: '3', categories: ['Gates'], image: '/projects/photo3.JPG' },
   { id: '45', categories: ['Uncategorized'], image: '/projects/photo45.jpg' },
-  { id: '46', categories: ['Uncategorized'], image: '/projects/photo46.jpg' },
-  { id: '47', categories: ['Uncategorized'], image: '/projects/photo47.jpg' },
+  { id: '46', categories: ['Shade Structures'], image: '/projects/photo46.jpg' },
+  { id: '47', categories: ['Shade Structures'], image: '/projects/photo47.jpg' },
 ];
 
 // Helper function to get all unique materials from projects
