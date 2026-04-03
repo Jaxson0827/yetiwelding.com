@@ -94,19 +94,28 @@ export function validateName(name: string): ValidationResult {
 }
 
 /**
- * Validates a message field
+ * Validates a message field.
+ * When `hasSubstantialQuoteDraft` is true (quote JSON length > 50), the message may be empty;
+ * otherwise the usual minimum length applies.
  */
-export function validateMessage(message: string, minLength: number = 10, maxLength: number = 2000): ValidationResult {
-  if (!message || message.trim().length === 0) {
-    return { isValid: false, error: 'Message is required' };
-  }
-
-  if (message.trim().length < minLength) {
-    return { isValid: false, error: `Message must be at least ${minLength} characters` };
-  }
-
+export function validateMessage(
+  message: string,
+  minLength: number = 10,
+  maxLength: number = 2000,
+  hasSubstantialQuoteDraft: boolean = false
+): ValidationResult {
   if (message.length > maxLength) {
     return { isValid: false, error: `Message must be less than ${maxLength} characters` };
+  }
+
+  if (!hasSubstantialQuoteDraft) {
+    if (!message || message.trim().length === 0) {
+      return { isValid: false, error: 'Message is required' };
+    }
+
+    if (message.trim().length < minLength) {
+      return { isValid: false, error: `Message must be at least ${minLength} characters` };
+    }
   }
 
   return { isValid: true };
@@ -151,7 +160,10 @@ export function validateFile(file: File | null, maxSizeMB: number = 10): Validat
 /**
  * Validates the entire form
  */
-export function validateForm(formData: Partial<FormField>): {
+export function validateForm(
+  formData: Partial<FormField>,
+  options?: { hasSubstantialQuoteDraft?: boolean }
+): {
   isValid: boolean;
   errors: Record<string, string>;
 } {
@@ -176,7 +188,12 @@ export function validateForm(formData: Partial<FormField>): {
   }
 
   // Validate message
-  const messageResult = validateMessage(formData.message || '');
+  const messageResult = validateMessage(
+    formData.message || '',
+    10,
+    2000,
+    Boolean(options?.hasSubstantialQuoteDraft)
+  );
   if (!messageResult.isValid) {
     errors.message = messageResult.error || 'Invalid message';
   }

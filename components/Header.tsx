@@ -40,6 +40,7 @@ export default function Header({ showCart = true }: HeaderProps) {
     },
     { label: 'SERVICES', href: '/services' },
     { label: 'PROJECTS', href: '/projects' },
+    { label: 'BLOG', href: '/blog' },
     { label: 'ABOUT', href: '/about' },
     { label: 'CONTACT', href: '/contact' },
   ];

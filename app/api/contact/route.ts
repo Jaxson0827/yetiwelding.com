@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { prisma } from '@/lib/db/prisma';
+import { getClientIp, pgFixedWindowRateLimit } from '@/lib/rateLimit';
+import { verifyTurnstileToken, isTurnstileVerificationConfigured } from '@/lib/turnstile';
+
 let resend: Resend | null = null;
 
 function getResend(): Resend | null {
@@ -22,74 +24,22 @@ function escapeHtml(input: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function getClientIp(request: NextRequest): string {
-  const xff = request.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return request.headers.get('x-real-ip') || 'unknown';
-}
-
-async function pgFixedWindowRateLimit(opts: {
-  keyPrefix: string;
-  identity: string;
-  limit: number;
-  windowSeconds: number;
-}): Promise<boolean> {
-  const now = Date.now();
-  const windowMs = opts.windowSeconds * 1000;
-  const windowStartMs = Math.floor(now / windowMs) * windowMs;
-  const bucketKey = `${opts.keyPrefix}:${opts.identity}:${Math.floor(windowStartMs / 1000)}`;
-  const expiresAt = new Date(windowStartMs + windowMs);
-
-  // Opportunistic cleanup; safe to ignore failures.
-  try {
-    await prisma.rateLimitBucket.deleteMany({
-      where: { expiresAt: { lt: new Date() } },
-    });
-  } catch {
-    // ignore
-  }
-
-  const bucket = await prisma.rateLimitBucket.upsert({
-    where: { key: bucketKey },
-    create: {
-      key: bucketKey,
-      count: 1,
-      expiresAt,
-    },
-    update: {
-      count: { increment: 1 },
-      expiresAt,
-    },
-  });
-
-  return bucket.count <= opts.limit;
-}
+const QUOTE_DRAFT_SUBSTANTIAL_MIN = 51;
+const MESSAGE_MIN_STANDARD = 10;
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit (Postgres-backed fixed window): 5 requests / 10 minutes.
-    const ip = getClientIp(request);
-    const ok = await pgFixedWindowRateLimit({
-      keyPrefix: 'rl:contact',
-      identity: ip,
-      limit: 5,
-      windowSeconds: 10 * 60,
-    });
-    if (!ok) {
-      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
-    }
-
     const formData = await request.formData();
 
-    // Extract form fields
     const honeypot = (formData.get('companyWebsite') as string) || '';
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
-    const message = formData.get('message') as string;
-    const preferredContact = formData.get('preferredContact') as string;
+    const name = (formData.get('name') as string) || '';
+    const email = (formData.get('email') as string) || '';
+    const phone = (formData.get('phone') as string) || '';
+    const messageRaw = (formData.get('message') as string) || '';
+    const preferredContact = (formData.get('preferredContact') as string) || '';
     const file = formData.get('file') as File | null;
     const quoteDraftRaw = formData.get('quoteDraft') as string | null;
+    const turnstileResponse = formData.get('cf-turnstile-response') as string | null;
 
     // Honeypot triggered: pretend success to avoid tipping off bots
     if (honeypot && honeypot.trim().length > 0) {
@@ -99,15 +49,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Basic validation
-    if (!name || !email || !message) {
+    if (!isTurnstileVerificationConfigured()) {
+      console.error('Turnstile is not configured (set TURNSTILE_SECRET_KEY in production)');
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Verification is not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    const ip = getClientIp(request);
+    const turnstileOk = await verifyTurnstileToken(turnstileResponse, ip);
+    if (!turnstileOk) {
+      return NextResponse.json(
+        { error: 'Verification failed. Please refresh the page and try again.' },
         { status: 400 }
       );
     }
 
-    if (name.length > 100 || email.length > 254 || message.length > 2000) {
+    // Rate limit (Postgres-backed fixed window): 5 requests / 10 minutes.
+    const rateOk = await pgFixedWindowRateLimit({
+      keyPrefix: 'rl:contact',
+      identity: ip,
+      limit: 5,
+      windowSeconds: 10 * 60,
+    });
+    if (!rateOk) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
+    const messageTrimmed = messageRaw.trim();
+    const quoteLen = (quoteDraftRaw || '').trim().length;
+    const hasSubstantialQuote = quoteLen >= QUOTE_DRAFT_SUBSTANTIAL_MIN;
+
+    // Basic validation
+    if (!name.trim() || !email.trim()) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (!hasSubstantialQuote && messageTrimmed.length < MESSAGE_MIN_STANDARD) {
+      return NextResponse.json(
+        { error: `Message must be at least ${MESSAGE_MIN_STANDARD} characters` },
+        { status: 400 }
+      );
+    }
+
+    if (messageTrimmed.length > 2000) {
+      return NextResponse.json({ error: 'Invalid form input' }, { status: 400 });
+    }
+
+    if (name.length > 100 || email.length > 254) {
       return NextResponse.json({ error: 'Invalid form input' }, { status: 400 });
     }
 
@@ -161,14 +151,14 @@ export async function POST(request: NextRequest) {
       email: escapeHtml(email.trim()),
       phone: phone ? escapeHtml(phone.trim()) : '',
       preferredContact: escapeHtml(preferredContact || ''),
-      messageHtml: escapeHtml(message).replace(/\n/g, '<br>'),
-      messageText: message.trim() + quoteDraftSection,
+      messageHtml: escapeHtml(messageRaw).replace(/\n/g, '<br>'),
+      messageText: messageTrimmed + quoteDraftSection,
       fileName: file ? escapeHtml(file.name) : '',
     };
 
     // Send email to business email
     const businessEmail = process.env.BUSINESS_EMAIL || process.env.RESEND_FROM_EMAIL;
-    
+
     if (!businessEmail) {
       console.error('BUSINESS_EMAIL is not set in environment variables');
       return NextResponse.json(
@@ -189,7 +179,7 @@ export async function POST(request: NextRequest) {
     const isQuoteRequest = Boolean(quoteDraftRaw && quoteDraftRaw.length > 0);
     const subject = isQuoteRequest ? `Quote Request: ${name}` : `New Contact Form: ${name}`;
 
-    const { data, error } = await resendInstance.emails.send({
+    const { error } = await resendInstance.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'Yeti Welding Contact <onboarding@resend.dev>',
       to: [businessEmail],
       replyTo: email,
@@ -281,7 +271,7 @@ ${safe.messageText}
     return NextResponse.json(
       {
         success: true,
-        message: 'Your message has been received. We\'ll get back to you within 24 hours.',
+        message: "Your message has been received. We'll get back to you within 24 hours.",
       },
       { status: 200 }
     );
@@ -297,10 +287,3 @@ ${safe.messageText}
 }
 
 export const runtime = 'nodejs';
-
-
-
-
-
-
-

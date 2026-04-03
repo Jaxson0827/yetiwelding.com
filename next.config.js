@@ -11,10 +11,10 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Next.js uses inline scripts for hydration and JSON-LD in this app; keep 'unsafe-inline' for safety/simplicity.
   // In development, Next may require eval; restrict in production.
-  `script-src 'self' 'unsafe-inline' ${isProd ? '' : "'unsafe-eval'"} https://js.stripe.com https://www.googletagmanager.com`,
-  "connect-src 'self' https://api.stripe.com https://*.stripe.com https://raw.githack.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com",
-  // Allow embedded Google Maps on the Contact page.
-  "frame-src https://js.stripe.com https://checkout.stripe.com https://www.google.com https://maps.google.com",
+  `script-src 'self' 'unsafe-inline' ${isProd ? '' : "'unsafe-eval'"} https://js.stripe.com https://www.googletagmanager.com https://challenges.cloudflare.com`,
+  "connect-src 'self' https://api.stripe.com https://*.stripe.com https://raw.githack.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://challenges.cloudflare.com",
+  // Allow embedded Google Maps on the Contact page. Cloudflare Turnstile (contact + blog newsletter).
+  "frame-src https://js.stripe.com https://checkout.stripe.com https://www.google.com https://maps.google.com https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
   "form-action 'self' https://checkout.stripe.com",
   'upgrade-insecure-requests',
 ].join('; ')

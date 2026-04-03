@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import FormField from './FormField';
 import {
   validateForm,
@@ -16,9 +17,12 @@ import {
   type FormField as FormFieldType,
 } from '@/lib/contactFormValidation';
 import { loadQuoteDraft, clearQuoteDraft, formatQuoteDraftForMessage } from '@/lib/quoteDraft';
+import { getTurnstileSiteKey } from '@/lib/turnstileClient';
 
 interface ContactFormProps {
   onSuccess?: () => void;
+  /** When set (e.g. from a server page shell), avoids relying on client `NEXT_PUBLIC_*` inlining alone. */
+  turnstileSiteKey?: string;
 }
 
 const PREFERRED_CONTACT_METHODS = [
@@ -29,7 +33,8 @@ const PREFERRED_CONTACT_METHODS = [
 
 const STORAGE_KEY = 'yeti-welding-contact-form-draft';
 
-export default function ContactForm({ onSuccess }: ContactFormProps) {
+export default function ContactForm({ onSuccess, turnstileSiteKey: turnstileSiteKeyProp }: ContactFormProps) {
+  const turnstileSiteKey = turnstileSiteKeyProp ?? getTurnstileSiteKey();
   const [formData, setFormData] = useState<Partial<FormFieldType>>({
     name: '',
     email: '',
@@ -45,6 +50,27 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const honeypotRef = useRef<HTMLInputElement>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  const onTurnstileSuccess = useCallback((token: string) => {
+    setTurnstileToken(token);
+    setErrors((prev) => {
+      if (!prev.turnstile) return prev;
+      const next = { ...prev };
+      delete next.turnstile;
+      return next;
+    });
+  }, []);
+
+  const onTurnstileExpire = useCallback(() => {
+    setTurnstileToken(null);
+  }, []);
+
+  const onTurnstileError = useCallback(() => {
+    setTurnstileToken(null);
+  }, []);
 
   // Load draft from localStorage and quote draft on mount
   useEffect(() => {
@@ -125,9 +151,12 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       case 'phone':
         validationResult = validatePhone(formData.phone);
         break;
-      case 'message':
-        validationResult = validateMessage(formData.message || '');
+      case 'message': {
+        const qd = loadQuoteDraft();
+        const substantial = qd ? JSON.stringify(qd).length > 50 : false;
+        validationResult = validateMessage(formData.message || '', 10, 2000, substantial);
         break;
+      }
       case 'preferredContact':
         validationResult = validatePreferredContact(formData.preferredContact || '');
         break;
@@ -169,8 +198,26 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
     });
     setTouched(newTouched);
 
+    const quoteDraftForValidation = loadQuoteDraft();
+    const quoteJsonForValidation = quoteDraftForValidation
+      ? JSON.stringify(quoteDraftForValidation)
+      : '';
+    const hasSubstantialQuoteDraft = quoteJsonForValidation.length > 50;
+
+    if (!turnstileSiteKey) {
+      setErrors({ turnstile: 'Contact form verification is not configured.' });
+      document.getElementById('field-turnstile')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    if (!turnstileToken) {
+      setErrors({ turnstile: 'Please complete the verification challenge before sending.' });
+      document.getElementById('field-turnstile')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     // Validate entire form
-    const validation = validateForm(formData);
+    const validation = validateForm(formData, { hasSubstantialQuoteDraft });
     if (!validation.isValid) {
       setErrors(validation.errors);
       
@@ -186,12 +233,18 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
 
     setIsSubmitting(true);
     setSubmitStatus('idle');
+    setErrors((prev) => {
+      if (!prev.submit) return prev;
+      const next = { ...prev };
+      delete next.submit;
+      return next;
+    });
 
     try {
       // Prepare form data
       const submitData = new FormData();
-      // Honeypot field (should stay empty). Helps block simple bots.
-      submitData.append('companyWebsite', '');
+      submitData.append('companyWebsite', honeypotRef.current?.value ?? '');
+      submitData.append('cf-turnstile-response', turnstileToken);
       submitData.append('name', sanitizeInput(formData.name || ''));
       submitData.append('email', sanitizeInput(formData.email || ''));
       submitData.append('phone', sanitizeInput(formData.phone || ''));
@@ -214,8 +267,18 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
         body: submitData,
       });
 
+      const result = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error('Submission failed');
+        setErrors((prev) => ({
+          ...prev,
+          submit:
+            typeof result.error === 'string'
+              ? result.error
+              : 'Something went wrong. Please try again or contact us directly.',
+        }));
+        setSubmitStatus('error');
+        return;
       }
 
       setSubmitStatus('success');
@@ -238,9 +301,15 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
       }, 3000);
-    } catch (error) {
+    } catch {
       setSubmitStatus('error');
+      setErrors((prev) => ({
+        ...prev,
+        submit: 'Something went wrong. Please try again or contact us directly.',
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -262,7 +331,14 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
           aria-hidden="true"
         >
           <label htmlFor="companyWebsite">Company Website</label>
-          <input id="companyWebsite" name="companyWebsite" type="text" tabIndex={-1} autoComplete="off" />
+          <input
+            ref={honeypotRef}
+            id="companyWebsite"
+            name="companyWebsite"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+          />
         </div>
 
         {/* Name */}
@@ -391,10 +467,32 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
           )}
         </div>
 
+        <div id="field-turnstile" className="flex flex-col items-center gap-2">
+          {turnstileSiteKey ? (
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={turnstileSiteKey}
+              onSuccess={onTurnstileSuccess}
+              onExpire={onTurnstileExpire}
+              onError={onTurnstileError}
+              options={{ theme: 'dark' }}
+            />
+          ) : (
+            <p className="text-sm text-amber-400/90 text-center">
+              Contact form verification is not configured (missing NEXT_PUBLIC_TURNSTILE_SITE_KEY).
+            </p>
+          )}
+          {errors.turnstile && (
+            <p className="text-sm text-red-400 text-center" role="alert">
+              {errors.turnstile}
+            </p>
+          )}
+        </div>
+
         {/* Submit Button */}
         <motion.button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !turnstileSiteKey}
           className={`
             w-full px-8 py-4 bg-accent-red text-white uppercase text-sm font-semibold tracking-wider
             rounded-lg transition-all duration-300
@@ -442,10 +540,10 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
               className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 flex items-center"
               role="alert"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Something went wrong. Please try again or contact us directly.</span>
+              <span>{errors.submit || 'Something went wrong. Please try again or contact us directly.'}</span>
             </motion.div>
           )}
         </AnimatePresence>
