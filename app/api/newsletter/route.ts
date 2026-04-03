@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { prisma } from '@/lib/db/prisma';
 import { getClientIp, pgFixedWindowRateLimit } from '@/lib/rateLimit';
 import { verifyTurnstileToken, isTurnstileVerificationConfigured } from '@/lib/turnstile';
+import { getNewsletterSiteUrl } from '@/lib/newsletter/siteUrl';
+import { newNewsletterToken, normalizeNewsletterEmail } from '@/lib/newsletter/tokens';
+import { sendNewsletterWelcomeEmail, sendNewsletterInternalSignupEmail } from '@/lib/newsletter/sendEmails';
+import { addNewsletterAudienceContact } from '@/lib/newsletter/resendAudience';
 
 let resend: Resend | null = null;
 
@@ -9,15 +14,6 @@ function getResend(): Resend | null {
   if (!process.env.RESEND_API_KEY) return null;
   if (!resend) resend = new Resend(process.env.RESEND_API_KEY);
   return resend;
-}
-
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 export async function POST(request: NextRequest) {
@@ -59,17 +55,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }
 
-    const email = (body.email || '').trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const rawEmail = (body.email || '').trim();
+    if (!rawEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) {
       return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
     }
-    if (email.length > 254) {
+    if (rawEmail.length > 254) {
       return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
     }
 
-    const businessEmail = process.env.BUSINESS_EMAIL || process.env.RESEND_FROM_EMAIL;
-    if (!businessEmail) {
-      console.error('BUSINESS_EMAIL is not set');
+    const email = normalizeNewsletterEmail(rawEmail);
+
+    if (!process.env.RESEND_FROM_EMAIL) {
+      console.error('RESEND_FROM_EMAIL is not set (required for welcome emails)');
       return NextResponse.json(
         { error: 'Email service is not configured. Please contact support.' },
         { status: 500 }
@@ -84,30 +81,93 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const safe = escapeHtml(email);
-    const { error } = await resendInstance.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'Yeti Welding <onboarding@resend.dev>',
-      to: [businessEmail],
-      replyTo: email,
-      subject: 'Blog newsletter signup',
-      html: `
-        <!DOCTYPE html><html><body style="font-family:sans-serif;line-height:1.6">
-        <p><strong>Blog newsletter request</strong></p>
-        <p>Email: <a href="mailto:${safe}">${safe}</a></p>
-        <p style="color:#666;font-size:12px">Submitted from yetiwelding.com/blog</p>
-        </body></html>`,
-      text: `Blog newsletter signup\n\nEmail: ${email}\n`,
+    const existing = await prisma.newsletterSubscription.findUnique({
+      where: { email },
     });
 
-    if (error) {
-      console.error('Resend newsletter error:', error);
-      return NextResponse.json({ error: 'Failed to subscribe. Please try again later.' }, { status: 500 });
+    if (existing?.confirmedAt && !existing.unsubscribedAt) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: "You're already on the list. We'll be in touch from the shop.",
+        },
+        { status: 200 }
+      );
+    }
+
+    const now = new Date();
+    const confirmToken = newNewsletterToken();
+    let unsubscribeToken: string;
+
+    if (existing) {
+      if (existing.unsubscribedAt) {
+        unsubscribeToken = newNewsletterToken();
+        await prisma.newsletterSubscription.update({
+          where: { email },
+          data: {
+            confirmedAt: now,
+            unsubscribedAt: null,
+            confirmToken,
+            unsubscribeToken,
+          },
+        });
+      } else {
+        unsubscribeToken = existing.unsubscribeToken;
+        await prisma.newsletterSubscription.update({
+          where: { email },
+          data: {
+            confirmedAt: now,
+            confirmToken,
+          },
+        });
+      }
+    } else {
+      unsubscribeToken = newNewsletterToken();
+      await prisma.newsletterSubscription.create({
+        data: {
+          email,
+          source: 'blog',
+          confirmToken,
+          unsubscribeToken,
+          confirmedAt: now,
+        },
+      });
+    }
+
+    const audienceResult = await addNewsletterAudienceContact(resendInstance, email);
+    if (!audienceResult.ok) {
+      console.error('Resend audience contact error on signup:', audienceResult.error);
+    }
+
+    const site = getNewsletterSiteUrl();
+    const blogUrl = `${site}/blog`;
+    const unsubscribeUrl = `${site}/api/newsletter/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+
+    const welcome = await sendNewsletterWelcomeEmail(resendInstance, {
+      to: email,
+      blogUrl,
+      unsubscribeUrl,
+    });
+    if (welcome.error) {
+      console.error('Newsletter welcome email error:', welcome.error);
+      return NextResponse.json({ error: 'Failed to send welcome email. Please try again later.' }, { status: 500 });
+    }
+
+    const businessEmail = process.env.BUSINESS_EMAIL || process.env.RESEND_FROM_EMAIL;
+    if (businessEmail) {
+      const internal = await sendNewsletterInternalSignupEmail(resendInstance, {
+        businessEmail,
+        subscriberEmail: email,
+      });
+      if (internal.error) {
+        console.error('Internal newsletter signup email error:', internal.error);
+      }
     }
 
     return NextResponse.json(
       {
         success: true,
-        message: "Thanks — you're on the list. We'll be in touch from the shop.",
+        message: "You're on the list — check your inbox for a welcome note from the shop.",
       },
       { status: 200 }
     );

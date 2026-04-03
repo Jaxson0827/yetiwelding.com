@@ -1,7 +1,7 @@
 'use client';
 
-import { Suspense, useMemo, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useMemo, useEffect, useState, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { BlogHero, BlogPostCard, BlogSidebar } from '@/components/blog';
@@ -14,8 +14,16 @@ const featuredPosts = getFeaturedBlogPosts(3);
 
 const POSTS_PER_PAGE = 5;
 
+const NEWSLETTER_BANNER_COPY: Record<string, { tone: 'ok' | 'warn' | 'bad'; text: string }> = {
+  confirmed: { tone: 'ok', text: "You're subscribed to shop updates." },
+  unsubscribed: { tone: 'ok', text: 'You have been unsubscribed from the newsletter.' },
+  invalid: { tone: 'warn', text: 'That newsletter link is invalid or expired.' },
+  error: { tone: 'bad', text: 'Something went wrong. Please try signing up again from the sidebar.' },
+};
+
 function BlogPageContent({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [pagesShown, setPagesShown] = useState(1);
@@ -71,6 +79,16 @@ function BlogPageContent({ turnstileSiteKey }: { turnstileSiteKey: string }) {
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
+  const newsletterFlash = searchParams.get('newsletter');
+  const newsletterBanner = newsletterFlash ? NEWSLETTER_BANNER_COPY[newsletterFlash] : null;
+
+  const dismissNewsletterBanner = useCallback(() => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete('newsletter');
+    const q = p.toString();
+    router.replace(q ? `/blog?${q}` : '/blog');
+  }, [router, searchParams]);
+
   return (
     <>
       <script
@@ -95,6 +113,30 @@ function BlogPageContent({ turnstileSiteKey }: { turnstileSiteKey: string }) {
         <Header />
         <BlogHero />
         <SectionDivider />
+
+        {newsletterBanner && (
+          <div className="container mx-auto max-w-7xl px-4 pt-6">
+            <div
+              role="status"
+              className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-sm border px-4 py-3 text-sm ${
+                newsletterBanner.tone === 'ok'
+                  ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-100'
+                  : newsletterBanner.tone === 'warn'
+                    ? 'border-amber-500/40 bg-amber-950/30 text-amber-100'
+                    : 'border-red-500/40 bg-red-950/40 text-red-100'
+              }`}
+            >
+              <p>{newsletterBanner.text}</p>
+              <button
+                type="button"
+                onClick={dismissNewsletterBanner}
+                className="shrink-0 text-xs uppercase tracking-wide underline underline-offset-2 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-sm px-1 py-0.5 -mx-1"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="container mx-auto max-w-7xl px-4 py-10 md:py-14">
           <div className="flex flex-col lg:grid lg:grid-cols-[1fr_320px] lg:gap-12 xl:gap-16">
