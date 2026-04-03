@@ -90,10 +90,6 @@ export default async function BlogArticlePage({ params }: PageProps) {
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <a href="#main-content" className="skip-to-content">
-        Skip to main content
-      </a>
-
       <main id="main-content" className="min-h-screen bg-black">
         <Header />
         <article>

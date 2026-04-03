@@ -55,7 +55,7 @@ const sections = [
         <ul className="list-disc pl-6 mt-2 space-y-1 text-white/80">
           <li>Include accessibility as part of our design and development process</li>
           <li>Use semantic HTML and ARIA attributes where appropriate</li>
-          <li>Provide skip-to-content links for keyboard and screen reader users</li>
+          <li>Maintain logical heading structure and focus order for keyboard users</li>
           <li>Ensure sufficient color contrast and visible focus indicators</li>
           <li>Test with keyboard navigation and assistive technologies</li>
           <li>Solicit and address feedback from users with disabilities</li>
@@ -159,10 +159,6 @@ const sections = [
 export default function AccessibilityPage() {
   return (
     <>
-      <a href="#main-content" className="skip-to-content">
-        Skip to main content
-      </a>
-
       <main id="main-content" className="min-h-screen bg-black">
         <Header />
 

@@ -5,9 +5,6 @@ import Footer from '@/components/Footer';
 export default function BlogPostNotFound() {
   return (
     <>
-      <a href="#main-content" className="skip-to-content">
-        Skip to main content
-      </a>
       <main id="main-content" className="min-h-screen bg-black">
         <Header />
         <div className="container mx-auto max-w-2xl px-4 py-20 md:py-28 text-center">

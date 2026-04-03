@@ -172,22 +172,6 @@ span[style*="position: relative"] {
   border-radius: 2px;
 }
 
-/* Skip to Content */
-.skip-to-content {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: #DC143C;
-  color: white;
-  padding: 8px;
-  z-index: 100;
-  text-decoration: none;
-}
-
-.skip-to-content:focus {
-  top: 0;
-}
-
 /* Scroll progress indicator */
 .scroll-progress {
   position: fixed;
