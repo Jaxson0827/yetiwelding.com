@@ -34,7 +34,7 @@ export default function BlogNewsletterSignup({ turnstileSiteKey }: BlogNewslette
     }
     if (!token) {
       setStatus('error');
-      setMessage('Complete the verification below.');
+      setMessage('Wait a moment for verification, then try again.');
       return;
     }
     setStatus('loading');
@@ -104,10 +104,7 @@ export default function BlogNewsletterSignup({ turnstileSiteKey }: BlogNewslette
         </div>
 
         {turnstileSiteKey ? (
-          <div className="space-y-2 min-h-[70px]" data-turnstile-newsletter>
-            <p id="blog-newsletter-turnstile-label" className="text-xs text-white/55">
-              Security check (required)
-            </p>
+          <div className="min-h-[70px]" data-turnstile-newsletter>
             <Turnstile
               ref={turnstileRef}
               siteKey={turnstileSiteKey}
