@@ -69,12 +69,8 @@ export default function Footer() {
     { label: 'Certifications', href: '/#certifications' },
   ];
 
-  const estimatorName = 'Request an Estimate';
-  const estimatorPhone = '801-995-8906';
-  const estimatorEmail = 'office@yetiwelding.com';
-
   return (
-    <footer ref={footerRef} className="w-full bg-black text-white py-12 px-4 relative overflow-hidden">
+    <footer ref={footerRef} className="w-full bg-black text-white py-10 px-4 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -86,7 +82,7 @@ export default function Footer() {
       <div className="container mx-auto relative z-10">
         {/* Main Footer Content */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 mb-6"
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
@@ -393,92 +389,12 @@ export default function Footer() {
           </motion.div>
         </motion.div>
 
-        {/* Estimator Contact Section */}
+        {/* Bottom Bar */}
         <motion.div
-          className="border-t border-white/20 pt-8 mt-8"
+          className="border-t border-white/20 pt-6 mt-6 flex flex-col md:flex-row justify-between items-center text-xs text-white/70"
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.3, duration: 0.6 }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-white uppercase text-sm font-semibold mb-4 tracking-wider">
-                ESTIMATOR
-              </h3>
-              <div className="space-y-3 text-sm">
-                <motion.a
-                  href={`tel:${estimatorPhone.replace(/-/g, '')}`}
-                  className="flex items-center text-white/70 hover:text-accent-red transition-colors"
-                  whileHover={{ x: 5 }}
-                >
-                  <svg
-                    className="w-4 h-4 mr-2 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
-                  </svg>
-                  <span>{estimatorPhone}</span>
-                </motion.a>
-                <motion.a
-                  href={`mailto:${estimatorEmail}`}
-                  className="flex items-center text-white/70 hover:text-accent-red transition-colors"
-                  whileHover={{ x: 5 }}
-                >
-                  <svg
-                    className="w-4 h-4 mr-2 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span>{estimatorEmail}</span>
-                </motion.a>
-                <motion.a
-                  href="/contact"
-                  className="inline-flex items-center text-accent-red hover:text-[#B01030] transition-colors text-sm font-semibold uppercase tracking-wider mt-2"
-                  whileHover={{ x: 5 }}
-                >
-                  {estimatorName}
-                  <svg
-                    className="w-4 h-4 ml-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </motion.a>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Bottom Bar */}
-        <motion.div
-          className="border-t border-white/20 pt-6 mt-8 flex flex-col md:flex-row justify-between items-center text-xs text-white/70"
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.4, duration: 0.6 }}
         >
           <p>©2026 Yeti Welding.</p>
           <div className="flex flex-wrap gap-4 mt-4 md:mt-0">
