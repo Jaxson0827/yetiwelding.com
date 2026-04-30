@@ -56,8 +56,8 @@ export const services: Service[] = [
   {
     id: 'structural-welding',
     name: 'Structural Welding',
-    shortDescription: 'Professional structural welding for buildings, bridges, and heavy-duty applications.',
-    description: 'We specialize in structural welding for commercial and industrial projects. Our certified welders have extensive experience with steel structures, ensuring strength, durability, and code compliance. From skyscrapers to bridges, we deliver reliable structural solutions.',
+    shortDescription: 'Professional structural welding for buildings, industrial facilities, and heavy-duty applications.',
+    description: 'We specialize in structural welding for commercial and industrial projects. Our certified welders have extensive experience with steel structures, ensuring strength, durability, and code compliance. Whether it's new construction or facility upgrades, we deliver reliable structural solutions.',
     features: [
       'Certified welders',
       'Code-compliant work',
