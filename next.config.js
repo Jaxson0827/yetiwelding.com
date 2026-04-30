@@ -27,6 +27,20 @@ const nextConfig = {
     unoptimized: false,
     remotePatterns: [],
   },
+  async redirects() {
+    return [
+      {
+        source: '/home',
+        destination: 'https://www.yetiwelding.com/',
+        permanent: true,
+      },
+      {
+        source: '/gallery',
+        destination: 'https://www.yetiwelding.com/projects',
+        permanent: true,
+      },
+    ]
+  },
   async headers() {
     return [
       {
