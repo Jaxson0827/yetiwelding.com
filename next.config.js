@@ -31,12 +31,12 @@ const nextConfig = {
     return [
       {
         source: '/home',
-        destination: 'https://www.yetiwelding.com/',
+        destination: 'https://yetiwelding.com/',
         permanent: true,
       },
       {
         source: '/gallery',
-        destination: 'https://www.yetiwelding.com/projects',
+        destination: 'https://yetiwelding.com/projects',
         permanent: true,
       },
     ]
