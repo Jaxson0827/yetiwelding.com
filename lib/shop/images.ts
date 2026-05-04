@@ -4,126 +4,118 @@
 // Single source of truth for every image used in the /shop microsite.
 // Every component / data file imports from here.
 //
-// HOW TO USE:
-//   1. Drop your real images into the matching /public/shop/<folder>/ path
-//      shown next to each constant (or any path you prefer).
-//   2. Update the right-hand string of the slot you replaced.
-//   3. The site automatically picks up the new image.
+// Assets live under /public/shop/<folder>/*.png. Update paths here when files
+// are added or renamed.
 //
-// While images are still being gathered, slots fall back to existing
-// /public/projects/photoNN.jpg photos so the site keeps rendering.
-//
-// See public/shop/README.md for the human-readable shopping list.
+// See public/shop/README.md for a human-readable slot list.
 // =============================================================================
 
 // ---------- Hero (landing page) ----------
-// Target: /public/shop/hero/landing.jpg   (recommended ~2400×900, lifestyle)
-export const HERO_LANDING = '/projects/photo28.jpg';
+// /public/shop/hero/landing.png
+export const HERO_LANDING = '/shop/hero/landing.png';
 
 // ---------- Categories ----------
-// Target: /public/shop/categories/<slug>.jpg   (recommended ~1600×1000)
-export const CAT_LANDSCAPE_EDGING   = '/projects/photo28.jpg';
-export const CAT_EDGING_ACCESSORIES = '/projects/photo29.jpg';
-export const CAT_PLANTERS           = '/projects/photo30.jpg';
-export const CAT_FIRE_PITS          = '/projects/photo31.jpg';
-export const CAT_THE_SIGN           = '/projects/photo32.jpg';
-export const CAT_TREE_RINGS         = '/projects/photo33.jpg';
-export const CAT_RAISED_BEDS        = '/garden_boxes/garden_box_hero.png';
+// /public/shop/categories/<slug>.png
+export const CAT_LANDSCAPE_EDGING = '/shop/categories/landscape-edging.png';
+export const CAT_EDGING_ACCESSORIES = '/shop/categories/edging-accessories.png';
+export const CAT_PLANTERS = '/shop/categories/planters.png';
+export const CAT_FIRE_PITS = '/shop/categories/fire-pits.png';
+export const CAT_THE_SIGN = '/shop/categories/the-sign.png';
+export const CAT_TREE_RINGS = '/shop/categories/tree-rings.png';
+export const CAT_RAISED_BEDS = '/shop/categories/raised-beds.png';
 
 // ---------- Products (lead photo per product) ----------
-// Target: /public/shop/products/<slug>.jpg   (recommended ~1600×1600 square, product on neutral bg)
-// Optional gallery extras: <slug>-2.jpg, <slug>-3.jpg, <slug>-4.jpg, <slug>-5.jpg
-export const PROD_EDGING_2FT          = '/projects/photo28.jpg';
-export const PROD_EDGING_4FT          = '/projects/photo29.jpg';
-export const PROD_EDGING_DRAIN        = '/projects/photo30.jpg';
-export const PROD_EDGING_BRIDGE       = '/projects/photo31.jpg';
-export const PROD_EDGING_SHORT        = '/projects/photo34.jpg';
-export const PROD_EDGING_START_FINISH = '/projects/photo35.jpg';
-export const PROD_FIREPIT_BONFIRE     = '/projects/photo31.jpg';
-export const PROD_FIREPIT_CAMPFIRE    = '/projects/photo37.jpg';
-export const PROD_SIGN_MODERN         = '/projects/photo32.jpg';
-export const PROD_SIGN_PREMIUM        = '/projects/photo36.jpg';
-export const PROD_PLANTER_GENERIC     = '/projects/photo30.jpg';
+// /public/shop/products/<slug>.png
+export const PROD_EDGING_2FT = '/shop/products/edging-2ft.png';
+export const PROD_EDGING_4FT = '/shop/products/edging-4ft.png';
+export const PROD_EDGING_DRAIN = '/shop/products/edging-drain.png';
+export const PROD_EDGING_BRIDGE = '/shop/products/edging-bridge.png';
+export const PROD_EDGING_SHORT = '/shop/products/edging-short.png';
+export const PROD_EDGING_START_FINISH = '/shop/products/edging-start-finish.png';
+export const PROD_FIREPIT_BONFIRE = '/shop/products/firepit-bonfire.png';
+export const PROD_FIREPIT_CAMPFIRE = '/shop/products/firepit-campfire.png';
+export const PROD_SIGN_MODERN = '/shop/products/sign-modern.png';
+export const PROD_SIGN_PREMIUM = '/shop/products/sign-premium.png';
+export const PROD_PLANTER_GENERIC = '/shop/products/planter-generic.png';
+
+// Optional extra angles for PDP galleries (same basename under /variants/)
+export const PROD_FIREPIT_BONFIRE_EXTRA = '/shop/variants/firepit-bonfire-2.png';
+export const PROD_FIREPIT_CAMPFIRE_EXTRA = '/shop/variants/firepit-campfire-2.png';
 
 // ---------- Variant option thumbnails ----------
-// Target: /public/shop/variants/<key>.jpg   (recommended ~400×400, square crop)
-export const VAR_EDGING_H4   = '/projects/photo31.jpg';
-export const VAR_EDGING_H6   = '/projects/photo28.jpg';
-export const VAR_EDGING_H8   = '/projects/photo29.jpg';
-export const VAR_EDGING_H14  = '/projects/photo30.jpg';
-export const VAR_EDGING_BEND_STRAIGHT = '/projects/photo28.jpg';
-export const VAR_EDGING_BEND_45       = '/projects/photo29.jpg';
-export const VAR_EDGING_BEND_90       = '/projects/photo30.jpg';
-export const VAR_FIREPIT_CAMPFIRE     = '/projects/photo37.jpg';
-export const VAR_FIREPIT_BONFIRE      = '/projects/photo31.jpg';
+// /public/shop/variants/<key>.png
+export const VAR_EDGING_H4 = '/shop/variants/edging-h4.png';
+export const VAR_EDGING_H6 = '/shop/variants/edging-h6.png';
+export const VAR_EDGING_H8 = '/shop/variants/edging-h8.png';
+export const VAR_EDGING_H14 = '/shop/variants/edging-h14.png';
+export const VAR_EDGING_BEND_STRAIGHT = '/shop/variants/edging-bend-straight.png';
+export const VAR_EDGING_BEND_45 = '/shop/variants/edging-bend-45.png';
+export const VAR_EDGING_BEND_90 = '/shop/variants/edging-bend-90.png';
+// No separate small crops in /variants/ — use product leads for option cards.
+export const VAR_FIREPIT_CAMPFIRE = PROD_FIREPIT_CAMPFIRE;
+export const VAR_FIREPIT_BONFIRE = PROD_FIREPIT_BONFIRE;
 
 // ---------- Mega-menu icons (small, square) ----------
-// Target: /public/shop/nav-icons/<key>.jpg   (recommended ~200×200)
-// Most nav items reuse PROD_* / CAT_* images; the ones below are only for items
-// that don't have a matching product/category (the "Learn" column).
-export const NAV_FAQ          = '/projects/photo40.jpg';
-export const NAV_ABOUT_STEEL  = '/projects/photo41.jpg';
-export const NAV_DATA_SHEETS  = '/projects/photo42.jpg';
-export const NAV_PRO_PROGRAM  = '/projects/photo43.jpg';
-export const NAV_ABOUT_US     = '/homepage/featuredproject_night.jpg';
-export const NAV_CONTACT      = '/projects/photo44.jpg';
+// /public/shop/nav-icons/<key>.png
+export const NAV_FAQ = '/shop/nav-icons/faq.png';
+export const NAV_ABOUT_STEEL = '/shop/nav-icons/about-steel.png';
+export const NAV_DATA_SHEETS = '/shop/nav-icons/data-sheets.png';
+export const NAV_PRO_PROGRAM = '/shop/nav-icons/pro-program.png';
+export const NAV_ABOUT_US = '/shop/nav-icons/about-us.png';
+export const NAV_CONTACT = '/shop/nav-icons/contact.png';
 
-// ---------- Mega-menu image cards (large, in image-card mega menus) ----------
-// Target: /public/shop/nav-cards/<key>.jpg   (recommended ~680×400, 16:10)
-export const NAVCARD_SIGN_MODERN        = '/projects/photo32.jpg';
-export const NAVCARD_SIGN_PREMIUM       = '/projects/photo36.jpg';
-export const NAVCARD_FIREPIT_BONFIRE    = '/projects/photo31.jpg';
-export const NAVCARD_FIREPIT_CAMPFIRE   = '/projects/photo37.jpg';
-export const NAVCARD_INSTALLATION_GUIDE = '/projects/photo38.jpg';
-export const NAVCARD_INSTALLATION_VIDEO = '/projects/photo39.jpg';
+// ---------- Mega-menu image cards ----------
+// Dedicated nav-card art optional; reuse product/category PNGs until then.
+export const NAVCARD_SIGN_MODERN = PROD_SIGN_MODERN;
+export const NAVCARD_SIGN_PREMIUM = PROD_SIGN_PREMIUM;
+export const NAVCARD_FIREPIT_BONFIRE = PROD_FIREPIT_BONFIRE;
+export const NAVCARD_FIREPIT_CAMPFIRE = PROD_FIREPIT_CAMPFIRE;
+// No dedicated install/video stills yet — use edging imagery that reads “on the job”.
+export const NAVCARD_INSTALLATION_GUIDE = PROD_EDGING_START_FINISH;
+export const NAVCARD_INSTALLATION_VIDEO = PROD_EDGING_BRIDGE;
 
 // ---------- Editorial pages ----------
-// Target: /public/shop/editorial/<key>.jpg
-export const EDITORIAL_INSTALLATION_HERO = '/projects/photo38.jpg'; // 2400×900, action shot
-export const EDITORIAL_FAQ_HERO          = '/projects/photo38.jpg'; // 2400×900, dark/textural
-export const EDITORIAL_ABOUT_STEEL_HERO  = '/projects/photo41.jpg'; // 2400×900, COR-TEN closeup
-export const EDITORIAL_ABOUT_DETAIL_1    = '/projects/photo36.jpg'; // 1600×900
-export const EDITORIAL_ABOUT_DETAIL_2    = '/projects/photo42.jpg'; // 1600×900
+// Reuse on-hand shop PNGs until /public/shop/editorial/ is populated.
+export const EDITORIAL_INSTALLATION_HERO = HERO_LANDING;
+export const EDITORIAL_FAQ_HERO = CAT_FIRE_PITS;
+export const EDITORIAL_ABOUT_STEEL_HERO = CAT_LANDSCAPE_EDGING;
+export const EDITORIAL_ABOUT_DETAIL_1 = PROD_SIGN_PREMIUM;
+export const EDITORIAL_ABOUT_DETAIL_2 = PROD_EDGING_4FT;
 
-// Tools grid (4 photos, square)
-export const EDITORIAL_TOOL_WOOD_BLOCK = '/projects/photo38.jpg';
-export const EDITORIAL_TOOL_HAMMER     = '/projects/photo39.jpg';
-export const EDITORIAL_TOOL_KNEE_PADS  = '/projects/photo40.jpg';
-export const EDITORIAL_TOOL_SAFETY     = '/projects/photo41.jpg';
+export const EDITORIAL_TOOL_WOOD_BLOCK = VAR_EDGING_BEND_STRAIGHT;
+export const EDITORIAL_TOOL_HAMMER = VAR_EDGING_BEND_45;
+export const EDITORIAL_TOOL_KNEE_PADS = VAR_EDGING_BEND_90;
+export const EDITORIAL_TOOL_SAFETY = VAR_EDGING_H4;
 
-// Promo insert + 4 process steps (4:3)
-export const EDITORIAL_INSTALL_KIT_PROMO = '/projects/photo42.jpg';
-export const EDITORIAL_STEP_PREPARE      = '/projects/photo28.jpg';
-export const EDITORIAL_STEP_POSITION     = '/projects/photo29.jpg';
-export const EDITORIAL_STEP_HAMMER       = '/projects/photo30.jpg';
-export const EDITORIAL_STEP_CONNECT      = '/projects/photo31.jpg';
+export const EDITORIAL_INSTALL_KIT_PROMO = CAT_EDGING_ACCESSORIES;
+export const EDITORIAL_STEP_PREPARE = PROD_EDGING_2FT;
+export const EDITORIAL_STEP_POSITION = PROD_EDGING_4FT;
+export const EDITORIAL_STEP_HAMMER = PROD_EDGING_DRAIN;
+export const EDITORIAL_STEP_CONNECT = PROD_EDGING_BRIDGE;
 
 // ---------- UGC / customer reviews grid ----------
-// Target: /public/shop/reviews/ugc-NN.jpg   (recommended ~600×600 square)
+// Built from in-repo shop art until real UGC lands in /public/shop/reviews/.
 export const UGC_PHOTOS: string[] = [
-  '/projects/photo28.jpg',
-  '/projects/photo29.jpg',
-  '/projects/photo30.jpg',
-  '/projects/photo31.jpg',
-  '/projects/photo33.jpg',
-  '/projects/photo34.jpg',
-  '/projects/photo35.jpg',
-  '/projects/photo36.jpg',
-  '/projects/photo37.jpg',
-  '/projects/photo38.jpg',
-  '/projects/photo39.jpg',
-  '/projects/photo40.jpg',
-  '/projects/photo41.jpg',
-  '/projects/photo42.jpg',
-  '/projects/photo43.jpg',
-  '/projects/photo44.jpg',
+  HERO_LANDING,
+  CAT_LANDSCAPE_EDGING,
+  CAT_EDGING_ACCESSORIES,
+  CAT_PLANTERS,
+  CAT_FIRE_PITS,
+  CAT_THE_SIGN,
+  CAT_TREE_RINGS,
+  CAT_RAISED_BEDS,
+  PROD_EDGING_2FT,
+  PROD_EDGING_4FT,
+  PROD_EDGING_DRAIN,
+  PROD_EDGING_BRIDGE,
+  PROD_FIREPIT_BONFIRE,
+  PROD_FIREPIT_CAMPFIRE,
+  PROD_SIGN_MODERN,
+  PROD_SIGN_PREMIUM,
 ];
 
-// ---------- Helper: build product gallery from a lead image ----------
-// Looks for <basePath>-2.jpg ... <basePath>-5.jpg by appending suffixes; while
-// you have only one photo per product, this just returns [lead, lead, ...].
-export function productGallery(leadPath: string): string[] {
-  // For now, repeat the lead image so the gallery component still has 5 slots.
-  // Once you have additional photos, return the full array of paths instead.
-  return [leadPath, leadPath, leadPath, leadPath, leadPath];
+// ---------- Helper: build product gallery from a lead image + optional extras ----------
+export function productGallery(leadPath: string, extras?: readonly string[]): string[] {
+  const tail = (extras ?? []).filter((p) => p && p !== leadPath);
+  return [leadPath, ...tail];
 }

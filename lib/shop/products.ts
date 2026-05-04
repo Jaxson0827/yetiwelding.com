@@ -9,6 +9,8 @@ import {
   PROD_EDGING_START_FINISH,
   PROD_FIREPIT_BONFIRE,
   PROD_FIREPIT_CAMPFIRE,
+  PROD_FIREPIT_BONFIRE_EXTRA,
+  PROD_FIREPIT_CAMPFIRE_EXTRA,
   PROD_SIGN_MODERN,
   PROD_SIGN_PREMIUM,
   PROD_PLANTER_GENERIC,
@@ -106,7 +108,7 @@ export const shopProducts: ShopProduct[] = [
     basePrice: 590,
     rating: 4.9,
     reviewCount: 84,
-    images: productGallery(PROD_FIREPIT_BONFIRE),
+    images: productGallery(PROD_FIREPIT_BONFIRE, [PROD_FIREPIT_BONFIRE_EXTRA]),
     variantGroups: [
       {
         id: 'size',
@@ -247,7 +249,7 @@ const stubProducts: ShopProduct[] = [
     basePrice: 290,
     rating: 4.9,
     reviewCount: 62,
-    images: productGallery(PROD_FIREPIT_CAMPFIRE),
+    images: productGallery(PROD_FIREPIT_CAMPFIRE, [PROD_FIREPIT_CAMPFIRE_EXTRA]),
     variantGroups: [],
     features: [{ text: 'Compact for small patios' }],
     specs: [{ label: 'Size', value: '29.5" × 32.5" × 15.5"' }],
