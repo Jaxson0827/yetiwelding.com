@@ -35,7 +35,7 @@ export default function Header({ showCart = true }: HeaderProps) {
         { label: 'Dumpster Gates', href: '/order/dumpster-gates' },
         { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
         { label: 'Pergolas', href: '/order/pergolas' },
-        { label: 'Garden Boxes', href: '/order/garden-boxes' },
+        { label: 'Lawn & Garden', href: '/shop' },
       ]
     },
     { label: 'SERVICES', href: '/services' },
