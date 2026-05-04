@@ -1,4 +1,13 @@
 import { ShopCategory } from './types';
+import {
+  CAT_LANDSCAPE_EDGING,
+  CAT_EDGING_ACCESSORIES,
+  CAT_PLANTERS,
+  CAT_FIRE_PITS,
+  CAT_THE_SIGN,
+  CAT_TREE_RINGS,
+  CAT_RAISED_BEDS,
+} from './images';
 
 // Category copy taken verbatim from the Edge Right reference site as starter content.
 // Replace with Yeti-specific products and photography when available.
@@ -14,8 +23,8 @@ export const shopCategories: ShopCategory[] = [
     priceFrom: 'From $4/ft',
     productCount: 8,
     productCountLabel: '8 products',
-    heroImage: '/projects/photo28.jpg',
-    thumbImage: '/projects/photo28.jpg',
+    heroImage: CAT_LANDSCAPE_EDGING,
+    thumbImage: CAT_LANDSCAPE_EDGING,
   },
   {
     slug: 'edging-accessories',
@@ -27,8 +36,8 @@ export const shopCategories: ShopCategory[] = [
     priceFrom: 'From $11',
     productCount: 10,
     productCountLabel: '10 products',
-    heroImage: '/projects/photo29.jpg',
-    thumbImage: '/projects/photo29.jpg',
+    heroImage: CAT_EDGING_ACCESSORIES,
+    thumbImage: CAT_EDGING_ACCESSORIES,
   },
   {
     slug: 'planters',
@@ -39,8 +48,8 @@ export const shopCategories: ShopCategory[] = [
     priceFrom: 'From $35',
     productCount: 9,
     productCountLabel: '9 products',
-    heroImage: '/projects/photo30.jpg',
-    thumbImage: '/projects/photo30.jpg',
+    heroImage: CAT_PLANTERS,
+    thumbImage: CAT_PLANTERS,
   },
   {
     slug: 'fire-pits',
@@ -51,8 +60,8 @@ export const shopCategories: ShopCategory[] = [
     priceFrom: 'From $290',
     productCount: 2,
     productCountLabel: '2 variants',
-    heroImage: '/projects/photo31.jpg',
-    thumbImage: '/projects/photo31.jpg',
+    heroImage: CAT_FIRE_PITS,
+    thumbImage: CAT_FIRE_PITS,
   },
   {
     slug: 'the-sign',
@@ -63,8 +72,8 @@ export const shopCategories: ShopCategory[] = [
     priceFrom: 'From $135',
     productCount: 8,
     productCountLabel: '8 variants',
-    heroImage: '/projects/photo32.jpg',
-    thumbImage: '/projects/photo32.jpg',
+    heroImage: CAT_THE_SIGN,
+    thumbImage: CAT_THE_SIGN,
   },
   {
     slug: 'tree-rings',
@@ -75,8 +84,8 @@ export const shopCategories: ShopCategory[] = [
     priceFrom: 'From $120',
     productCount: 6,
     productCountLabel: '6 variants',
-    heroImage: '/projects/photo33.jpg',
-    thumbImage: '/projects/photo33.jpg',
+    heroImage: CAT_TREE_RINGS,
+    thumbImage: CAT_TREE_RINGS,
   },
   {
     slug: 'raised-beds',
@@ -87,8 +96,8 @@ export const shopCategories: ShopCategory[] = [
     priceFrom: 'From $100',
     productCount: 6,
     productCountLabel: '6 variants',
-    heroImage: '/garden_boxes/garden_box_hero.png',
-    thumbImage: '/garden_boxes/garden_box_hero.png',
+    heroImage: CAT_RAISED_BEDS,
+    thumbImage: CAT_RAISED_BEDS,
   },
 ];
 

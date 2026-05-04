@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import AnimatedCounter from './AnimatedCounter';
+import { HERO_LANDING } from '@/lib/shop/images';
 
 export default function ShopHero() {
   return (
@@ -10,7 +11,7 @@ export default function ShopHero() {
       <div className="absolute inset-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/projects/photo28.jpg"
+          src={HERO_LANDING}
           alt=""
           className="h-full w-full object-cover"
           loading="eager"

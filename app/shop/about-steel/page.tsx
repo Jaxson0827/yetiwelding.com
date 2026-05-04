@@ -1,5 +1,10 @@
 import { Metadata } from 'next';
 import EditorialHero from '@/components/shop/editorial/EditorialHero';
+import {
+  EDITORIAL_ABOUT_STEEL_HERO,
+  EDITORIAL_ABOUT_DETAIL_1,
+  EDITORIAL_ABOUT_DETAIL_2,
+} from '@/lib/shop/images';
 
 export const metadata: Metadata = {
   title: 'What is COR-TEN Steel? | Yeti Steel Goods',
@@ -14,7 +19,7 @@ export default function AboutSteelPage() {
       <EditorialHero
         title="What is COR-TEN Steel?"
         subtitle="Discover the timeless beauty and durability of weathering steel"
-        image="/projects/photo41.jpg"
+        image={EDITORIAL_ABOUT_STEEL_HERO}
       />
 
       <article className="px-4 py-16 md:py-20">
@@ -36,7 +41,7 @@ export default function AboutSteelPage() {
           <figure className="overflow-hidden rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/projects/photo36.jpg"
+              src={EDITORIAL_ABOUT_DETAIL_1}
               alt="COR-TEN architectural detail"
               className="h-72 w-full object-cover md:h-96"
               loading="lazy"
@@ -74,7 +79,7 @@ export default function AboutSteelPage() {
           <figure className="overflow-hidden rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/projects/photo42.jpg"
+              src={EDITORIAL_ABOUT_DETAIL_2}
               alt="Iconic weathering-steel architecture"
               className="h-72 w-full object-cover md:h-96"
               loading="lazy"

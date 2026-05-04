@@ -5,25 +5,7 @@ import Avatar from '@/components/shop/landing/Avatar';
 import TrustpilotMock from '@/components/shop/landing/TrustpilotMock';
 import { homepageReviews } from '@/lib/shop/reviews';
 import { ShopProduct } from '@/lib/shop/types';
-
-const ugcPhotos = [
-  '/projects/photo28.jpg',
-  '/projects/photo29.jpg',
-  '/projects/photo30.jpg',
-  '/projects/photo31.jpg',
-  '/projects/photo33.jpg',
-  '/projects/photo34.jpg',
-  '/projects/photo35.jpg',
-  '/projects/photo36.jpg',
-  '/projects/photo37.jpg',
-  '/projects/photo38.jpg',
-  '/projects/photo39.jpg',
-  '/projects/photo40.jpg',
-  '/projects/photo41.jpg',
-  '/projects/photo42.jpg',
-  '/projects/photo43.jpg',
-  '/projects/photo44.jpg',
-];
+import { UGC_PHOTOS as ugcPhotos } from '@/lib/shop/images';
 
 export default function CustomerReviews({ product }: { product: ShopProduct }) {
   const featured = homepageReviews.slice(0, 2).map((r, i) => ({

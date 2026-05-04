@@ -1,5 +1,17 @@
 import { Metadata } from 'next';
 import EditorialHero from '@/components/shop/editorial/EditorialHero';
+import {
+  EDITORIAL_INSTALLATION_HERO,
+  EDITORIAL_TOOL_WOOD_BLOCK,
+  EDITORIAL_TOOL_HAMMER,
+  EDITORIAL_TOOL_KNEE_PADS,
+  EDITORIAL_TOOL_SAFETY,
+  EDITORIAL_INSTALL_KIT_PROMO,
+  EDITORIAL_STEP_PREPARE,
+  EDITORIAL_STEP_POSITION,
+  EDITORIAL_STEP_HAMMER,
+  EDITORIAL_STEP_CONNECT,
+} from '@/lib/shop/images';
 
 export const metadata: Metadata = {
   title: 'Installation Guide | Yeti Steel Goods',
@@ -12,22 +24,22 @@ const tools = [
   {
     title: 'Wood Block',
     subtitle: 'For hammering COR-TEN landscape edging',
-    image: '/projects/photo38.jpg',
+    image: EDITORIAL_TOOL_WOOD_BLOCK,
   },
   {
     title: 'Hammer',
     subtitle: 'For securing the edging in place',
-    image: '/projects/photo39.jpg',
+    image: EDITORIAL_TOOL_HAMMER,
   },
   {
     title: 'Knee Pads',
     subtitle: 'For comfortable installation',
-    image: '/projects/photo40.jpg',
+    image: EDITORIAL_TOOL_KNEE_PADS,
   },
   {
     title: 'Safety Gear',
     subtitle: 'Safety glasses and gloves',
-    image: '/projects/photo41.jpg',
+    image: EDITORIAL_TOOL_SAFETY,
   },
 ];
 
@@ -37,28 +49,28 @@ const steps = [
     title: 'Prepare',
     body:
       'Use an edger or shovel to help loosen the soil and define the path where edging will be installed.',
-    image: '/projects/photo28.jpg',
+    image: EDITORIAL_STEP_PREPARE,
   },
   {
     number: '02',
     title: 'Position',
     body:
       'Position the edging with the teeth down along the defined path. Start in the most visible corners for best results.',
-    image: '/projects/photo29.jpg',
+    image: EDITORIAL_STEP_POSITION,
   },
   {
     number: '03',
     title: 'Hammer',
     body:
       'Place wood block over the spine of the edging and drive down with a hammer.',
-    image: '/projects/photo30.jpg',
+    image: EDITORIAL_STEP_HAMMER,
   },
   {
     number: '04',
     title: 'Connect',
     body:
       'Place edging end to end, attach clamp between the notch on both ends. Drive down to secure clamp.',
-    image: '/projects/photo31.jpg',
+    image: EDITORIAL_STEP_CONNECT,
   },
 ];
 
@@ -68,7 +80,7 @@ export default function InstallationPage() {
       <EditorialHero
         title="Installation Guide"
         subtitle="A comprehensive guide to installing your landscape edging with precision and care"
-        image="/projects/photo38.jpg"
+        image={EDITORIAL_INSTALLATION_HERO}
       />
 
       {/* Essential Tools */}
@@ -112,7 +124,7 @@ export default function InstallationPage() {
             <div className="aspect-square w-24 shrink-0 overflow-hidden rounded-md bg-white/5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/projects/photo42.jpg"
+                src={EDITORIAL_INSTALL_KIT_PROMO}
                 alt=""
                 className="h-full w-full object-cover"
               />
