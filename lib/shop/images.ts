@@ -42,6 +42,9 @@ export const PROD_PLANTER_GENERIC = '/shop/products/planter-generic.png';
 export const PROD_FIREPIT_BONFIRE_EXTRA = '/shop/variants/firepit-bonfire-2.png';
 export const PROD_FIREPIT_CAMPFIRE_EXTRA = '/shop/variants/firepit-campfire-2.png';
 
+// Second angle for planter PDPs (product lead lives under /products/)
+export const PROD_PLANTER_GENERIC_EXTRA = '/shop/variants/planter-generic.png';
+
 // ---------- Variant option thumbnails ----------
 // /public/shop/variants/<key>.png
 export const VAR_EDGING_H4 = '/shop/variants/edging-h4.png';
@@ -65,54 +68,39 @@ export const NAV_ABOUT_US = '/shop/nav-icons/about-us.png';
 export const NAV_CONTACT = '/shop/nav-icons/contact.png';
 
 // ---------- Mega-menu image cards ----------
-// Dedicated nav-card art optional; reuse product/category PNGs until then.
-export const NAVCARD_SIGN_MODERN = PROD_SIGN_MODERN;
-export const NAVCARD_SIGN_PREMIUM = PROD_SIGN_PREMIUM;
-export const NAVCARD_FIREPIT_BONFIRE = PROD_FIREPIT_BONFIRE;
-export const NAVCARD_FIREPIT_CAMPFIRE = PROD_FIREPIT_CAMPFIRE;
-// No dedicated install/video stills yet — use edging imagery that reads “on the job”.
-export const NAVCARD_INSTALLATION_GUIDE = PROD_EDGING_START_FINISH;
-export const NAVCARD_INSTALLATION_VIDEO = PROD_EDGING_BRIDGE;
+// /public/shop/nav-cards/<key>.png
+export const NAVCARD_SIGN_MODERN = '/shop/nav-cards/nav-cards-sign-modern.png';
+export const NAVCARD_SIGN_PREMIUM = '/shop/nav-cards/nav-cards-sign-premium.png';
+export const NAVCARD_FIREPIT_BONFIRE = '/shop/nav-cards/nav-cards-firepit-bonfire.png';
+export const NAVCARD_FIREPIT_CAMPFIRE = '/shop/nav-cards/nav-cards-firepit-campfire.png';
+export const NAVCARD_INSTALLATION_GUIDE = '/shop/nav-cards/nav-cards-installation-guide.png';
+export const NAVCARD_INSTALLATION_VIDEO = '/shop/nav-cards/nav-cards-installation-video.png';
 
 // ---------- Editorial pages ----------
-// Reuse on-hand shop PNGs until /public/shop/editorial/ is populated.
-export const EDITORIAL_INSTALLATION_HERO = HERO_LANDING;
-export const EDITORIAL_FAQ_HERO = CAT_FIRE_PITS;
-export const EDITORIAL_ABOUT_STEEL_HERO = CAT_LANDSCAPE_EDGING;
-export const EDITORIAL_ABOUT_DETAIL_1 = PROD_SIGN_PREMIUM;
-export const EDITORIAL_ABOUT_DETAIL_2 = PROD_EDGING_4FT;
+// /public/shop/editorial/<key>.png (step 04 asset not in bundle — reuse edging bridge shot)
+export const EDITORIAL_INSTALLATION_HERO = '/shop/editorial/editorial-installation-hero.png';
+export const EDITORIAL_FAQ_HERO = '/shop/editorial/editorial-faq-hero.png';
+export const EDITORIAL_ABOUT_STEEL_HERO = '/shop/editorial/editorial-about-steel-hero.png';
+export const EDITORIAL_ABOUT_DETAIL_1 = '/shop/editorial/editorial-about-steel-detail-1.png';
+export const EDITORIAL_ABOUT_DETAIL_2 = '/shop/editorial/editorial-about-steel-detail-2.png';
 
-export const EDITORIAL_TOOL_WOOD_BLOCK = VAR_EDGING_BEND_STRAIGHT;
-export const EDITORIAL_TOOL_HAMMER = VAR_EDGING_BEND_45;
-export const EDITORIAL_TOOL_KNEE_PADS = VAR_EDGING_BEND_90;
-export const EDITORIAL_TOOL_SAFETY = VAR_EDGING_H4;
+export const EDITORIAL_TOOL_WOOD_BLOCK = '/shop/editorial/editorial-tools-wood-block.png';
+export const EDITORIAL_TOOL_HAMMER = '/shop/editorial/editorial-tools-hammer.png';
+export const EDITORIAL_TOOL_KNEE_PADS = '/shop/editorial/editorial-tools-knee-pads.png';
+export const EDITORIAL_TOOL_SAFETY = '/shop/editorial/editorial-tools-safety.png';
 
-export const EDITORIAL_INSTALL_KIT_PROMO = CAT_EDGING_ACCESSORIES;
-export const EDITORIAL_STEP_PREPARE = PROD_EDGING_2FT;
-export const EDITORIAL_STEP_POSITION = PROD_EDGING_4FT;
-export const EDITORIAL_STEP_HAMMER = PROD_EDGING_DRAIN;
+export const EDITORIAL_INSTALL_KIT_PROMO = '/shop/editorial/editorial-install-kit-promo.png';
+export const EDITORIAL_STEP_PREPARE = '/shop/editorial/editorial-step-01-prepare.png';
+export const EDITORIAL_STEP_POSITION = '/shop/editorial/editorial-step-02-position.png';
+export const EDITORIAL_STEP_HAMMER = '/shop/editorial/editorial-step-03-hammer.png';
 export const EDITORIAL_STEP_CONNECT = PROD_EDGING_BRIDGE;
 
 // ---------- UGC / customer reviews grid ----------
-// Built from in-repo shop art until real UGC lands in /public/shop/reviews/.
-export const UGC_PHOTOS: string[] = [
-  HERO_LANDING,
-  CAT_LANDSCAPE_EDGING,
-  CAT_EDGING_ACCESSORIES,
-  CAT_PLANTERS,
-  CAT_FIRE_PITS,
-  CAT_THE_SIGN,
-  CAT_TREE_RINGS,
-  CAT_RAISED_BEDS,
-  PROD_EDGING_2FT,
-  PROD_EDGING_4FT,
-  PROD_EDGING_DRAIN,
-  PROD_EDGING_BRIDGE,
-  PROD_FIREPIT_BONFIRE,
-  PROD_FIREPIT_CAMPFIRE,
-  PROD_SIGN_MODERN,
-  PROD_SIGN_PREMIUM,
-];
+// /public/shop/reviews/reviews-ugc-01.png … reviews-ugc-16.png
+export const UGC_PHOTOS: string[] = Array.from({ length: 16 }, (_, i) => {
+  const n = String(i + 1).padStart(2, '0');
+  return `/shop/reviews/reviews-ugc-${n}.png`;
+});
 
 // ---------- Helper: build product gallery from a lead image + optional extras ----------
 export function productGallery(leadPath: string, extras?: readonly string[]): string[] {
