@@ -1,4 +1,5 @@
 import { trimbleLidarPostBodyHtml } from '@/lib/blog/trimbleLidarPostBody';
+import { chooseFabricatorPostBodyHtml } from '@/lib/blog/chooseFabricatorPostBody';
 
 export interface BlogPost {
   slug: string;
@@ -17,6 +18,28 @@ export interface BlogPost {
 }
 
 const postsUnsorted: BlogPost[] = [
+  {
+    slug: 'choose-steel-fabricator-utah',
+    title:
+      'How to Choose a Custom Stair and Railing Fabricator in Utah: 10 Things Contractors and Architects Should Verify',
+    kicker: 'Buying & vetting advice',
+    excerpt:
+      'Not every fabricator who bids your stair and railing scope has the experience, certifications, and process to deliver it. Here are 10 specific things to verify before awarding custom steel work in Utah.',
+    author: 'Yeti Welding',
+    publishedAt: '2026-05-15',
+    coverImage: '/blog/choose_fabricator_post/post-cover.jpg',
+    categories: ['Resources', 'Fabrication'],
+    tags: [
+      'Utah',
+      'Steel fabrication',
+      'Custom stairs',
+      'Railings',
+      'Contractors',
+      'Architects',
+      'Procurement',
+    ],
+    bodyHtml: chooseFabricatorPostBodyHtml,
+  },
   {
     slug: 'trimble-lidar-sketchup-steel-detailing',
     title:
@@ -48,7 +71,10 @@ function sortByDateDesc(a: BlogPost, b: BlogPost): number {
 export const blogPosts: BlogPost[] = [...postsUnsorted].sort(sortByDateDesc);
 
 /** Sidebar “featured” order; filled from newest posts if a slug is missing */
-const FEATURED_SLUG_ORDER = ['trimble-lidar-sketchup-steel-detailing'] as const;
+const FEATURED_SLUG_ORDER = [
+  'choose-steel-fabricator-utah',
+  'trimble-lidar-sketchup-steel-detailing',
+] as const;
 
 export function getFeaturedBlogPosts(limit = 3): BlogPost[] {
   const bySlug = new Map(blogPosts.map((p) => [p.slug, p]));
