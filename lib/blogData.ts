@@ -1,5 +1,6 @@
 import { trimbleLidarPostBodyHtml } from '@/lib/blog/trimbleLidarPostBody';
 import { chooseFabricatorPostBodyHtml } from '@/lib/blog/chooseFabricatorPostBody';
+import { miscMetalsGuidePostBodyHtml } from '@/lib/blog/miscMetalsGuidePostBody';
 
 export interface BlogPost {
   slug: string;
@@ -18,6 +19,27 @@ export interface BlogPost {
 }
 
 const postsUnsorted: BlogPost[] = [
+  {
+    slug: 'what-is-a-miscellaneous-metals-contractor',
+    title: 'What Is a Miscellaneous Metals Contractor? A Utah Fabricator\'s Complete Guide',
+    kicker: 'Industry knowledge',
+    excerpt:
+      'Miscellaneous metals is one of the most misunderstood line items in commercial construction. Here is a complete guide to what the trade covers, how it differs from structural steel, and what qualifies a contractor to perform it.',
+    author: 'Yeti Welding',
+    publishedAt: '2026-05-15',
+    coverImage: '/blog/misc_metals_guide/post_cover.JPG',
+    categories: ['Resources', 'Fabrication'],
+    tags: [
+      'Utah',
+      'Miscellaneous metals',
+      'Steel fabrication',
+      'Custom stairs',
+      'Railings',
+      'Commercial construction',
+      'Division 05',
+    ],
+    bodyHtml: miscMetalsGuidePostBodyHtml,
+  },
   {
     slug: 'choose-steel-fabricator-utah',
     title:
@@ -72,6 +94,7 @@ export const blogPosts: BlogPost[] = [...postsUnsorted].sort(sortByDateDesc);
 
 /** Sidebar “featured” order; filled from newest posts if a slug is missing */
 const FEATURED_SLUG_ORDER = [
+  'what-is-a-miscellaneous-metals-contractor',
   'choose-steel-fabricator-utah',
   'trimble-lidar-sketchup-steel-detailing',
 ] as const;
