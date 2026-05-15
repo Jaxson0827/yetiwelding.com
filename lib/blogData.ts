@@ -90,7 +90,18 @@ function sortByDateDesc(a: BlogPost, b: BlogPost): number {
   return b.publishedAt.localeCompare(a.publishedAt);
 }
 
-export const blogPosts: BlogPost[] = [...postsUnsorted].sort(sortByDateDesc);
+/** Today's date as YYYY-MM-DD in local time — used to filter future-dated posts. */
+function todayYmd(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export const blogPosts: BlogPost[] = [...postsUnsorted]
+  .filter((p) => p.publishedAt <= todayYmd())
+  .sort(sortByDateDesc);
 
 /** Sidebar “featured” order; filled from newest posts if a slug is missing */
 const FEATURED_SLUG_ORDER = [
