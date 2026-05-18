@@ -58,8 +58,11 @@ export default function Footer() {
 
   // Services
   const services: FooterLink[] = [
-    { label: 'Custom Fabrication', href: '/services#custom-fabrication' },
-    { label: 'Structural Welding', href: '/services#structural-welding' },
+    { label: 'Gates & Enclosures', href: '/services#gates-enclosures' },
+    { label: 'Railing Systems', href: '/services#railing-systems' },
+    { label: 'Monument Structures', href: '/services#monument-structures' },
+    { label: 'Structural Steel', href: '/services#structural-steel' },
+    { label: 'Shade Structures', href: '/services#shade-structures' },
     { label: 'Ornamental Work', href: '/services#ornamental-work' },
   ];
 

@@ -72,47 +72,57 @@ export default function ServicesCTA() {
           </motion.p>
 
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.5, duration: 0.6 }}
           >
-            <motion.a
-              href="/contact"
-              className="group relative inline-flex items-center justify-center px-10 py-4 border-2 border-white bg-transparent text-white uppercase text-sm font-semibold tracking-[0.15em] overflow-hidden"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <motion.span
-                className="relative z-10"
-                initial={{ opacity: 1 }}
-                whileHover={{ opacity: 0 }}
+            {/* Track 1: Ready to commit */}
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-white/50 text-xs uppercase tracking-[0.15em]">Ready to start?</p>
+              <motion.a
+                href="/contact"
+                className="group relative inline-flex items-center justify-center px-10 py-4 border-2 border-white bg-transparent text-white uppercase text-sm font-semibold tracking-[0.15em] overflow-hidden"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                GET A QUOTE
-              </motion.span>
-              <motion.div
-                className="absolute inset-0 bg-white"
-                initial={{ x: '-100%' }}
-                whileHover={{ x: 0 }}
-                transition={{ duration: 0.3 }}
-              />
-              <motion.span
-                className="absolute inset-0 flex items-center justify-center text-black z-10"
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-              >
-                GET A QUOTE
-              </motion.span>
-            </motion.a>
+                <motion.span
+                  className="relative z-10"
+                  initial={{ opacity: 1 }}
+                  whileHover={{ opacity: 0 }}
+                >
+                  GET A QUOTE
+                </motion.span>
+                <motion.div
+                  className="absolute inset-0 bg-white"
+                  initial={{ x: '-100%' }}
+                  whileHover={{ x: 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+                <motion.span
+                  className="absolute inset-0 flex items-center justify-center text-black z-10"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                >
+                  GET A QUOTE
+                </motion.span>
+              </motion.a>
+            </div>
 
-            <motion.a
-              href="tel:8019958906"
-              className="group relative inline-flex items-center justify-center px-10 py-4 border-2 border-white/30 bg-white/5 backdrop-blur-sm text-white uppercase text-sm font-semibold tracking-[0.15em]"
-              whileHover={{ scale: 1.05, borderColor: 'rgba(255, 255, 255, 0.6)' }}
-              whileTap={{ scale: 0.95 }}
-            >
-              CALL US: 801-995-8906
-            </motion.a>
+            <div className="text-white/20 hidden sm:block text-2xl font-thin">|</div>
+
+            {/* Track 2: Not sure yet */}
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-white/50 text-xs uppercase tracking-[0.15em]">Not sure what you need?</p>
+              <motion.a
+                href="tel:8019958906"
+                className="group relative inline-flex items-center justify-center px-10 py-4 border-2 border-white/30 bg-white/5 backdrop-blur-sm text-white uppercase text-sm font-semibold tracking-[0.15em]"
+                whileHover={{ scale: 1.05, borderColor: 'rgba(255, 255, 255, 0.6)' }}
+                whileTap={{ scale: 0.95 }}
+              >
+                SCHEDULE A CONSULTATION
+              </motion.a>
+            </div>
           </motion.div>
         </motion.div>
       </div>
