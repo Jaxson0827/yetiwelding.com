@@ -134,7 +134,7 @@ export default function WhoWeWorkWith() {
             src="/homepage/about.JPG"
             alt="The Yeti Welding crew"
             fill
-            className="object-cover object-top"
+            className="object-cover object-center"
             sizes="(max-width: 1280px) 100vw, 1280px"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
