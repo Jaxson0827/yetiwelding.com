@@ -46,6 +46,11 @@ const sections = [
             instructions
           </li>
           <li>
+            <strong>Newsletter signup:</strong> Email address, when you subscribe to shop updates from the
+            blog sidebar. We store this in our database and sync it to our email service (Resend) so we can
+            send you updates. You can unsubscribe at any time via the link in any email we send.
+          </li>
+          <li>
             <strong>Payment:</strong> Payment is processed by Stripe. We do not store full credit card numbers.
             Stripe&apos;s privacy policy applies to payment data:{' '}
             <a
@@ -82,6 +87,7 @@ const sections = [
           <li>Process and fulfill orders, including shipping and delivery</li>
           <li>Respond to contact form submissions and customer inquiries</li>
           <li>Send order confirmations, shipping updates, and related transactional emails</li>
+          <li>Send newsletter updates (project highlights, shop news, and tips) to subscribers who have opted in</li>
           <li>Improve our Site, products, and services</li>
           <li>Comply with legal obligations and protect our rights</li>
           <li>Prevent fraud and enforce our terms</li>
@@ -119,7 +125,10 @@ const sections = [
             </a>
           </li>
           <li>
-            <strong>Resend:</strong> Transactional email delivery. Resend&apos;s privacy policy:{' '}
+            <strong>Resend:</strong> Transactional and newsletter email delivery. We share your email address
+            with Resend to send order confirmations, contact replies, welcome emails, and newsletter updates.
+            Newsletter subscribers are stored in a Resend Audience contact list. Resend&apos;s privacy
+            policy:{' '}
             <a
               href="https://resend.com/legal/privacy-policy"
               target="_blank"
@@ -165,6 +174,12 @@ const sections = [
           We retain order and contact information as long as needed to fulfill orders, provide customer
           support, comply with legal obligations (e.g., tax records), and resolve disputes. Cart data in your
           browser is under your control and can be cleared at any time.
+        </p>
+        <p className="mt-4">
+          Newsletter subscription records (email address, signup date, and unsubscribe status) are retained
+          for as long as the subscription is active and for a reasonable period afterward for compliance and
+          audit purposes. If you unsubscribe, your record is marked unsubscribed and you will no longer
+          receive emails; you may request full deletion by contacting us.
         </p>
       </>
     ),
@@ -238,7 +253,8 @@ const sections = [
         </ul>
         <p className="mt-4">
           Our legal bases for processing include: performance of a contract (order fulfillment), legitimate
-          interests (customer service, fraud prevention), and compliance with legal obligations.
+          interests (customer service, fraud prevention), compliance with legal obligations, and consent
+          (newsletter subscriptions — you may withdraw consent at any time by unsubscribing).
         </p>
       </>
     ),
@@ -282,7 +298,7 @@ export default function PrivacyPolicyPage() {
               Privacy Policy
             </h1>
             <p className="mt-4 text-white/70 text-lg">
-              Last Updated: February 19, 2025
+              Last Updated: May 18, 2026
             </p>
           </div>
         </section>

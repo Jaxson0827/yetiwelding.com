@@ -36,7 +36,20 @@ export async function addNewsletterAudienceContact(
   });
 
   if (!error) return { ok: true };
-  if (isResendContactCreateBenignError(error)) return { ok: true };
+
+  if (isResendContactCreateBenignError(error)) {
+    // Contact already exists (e.g. previously unsubscribed re-subscriber).
+    // Explicitly mark them as subscribed so re-subscribes take effect in Resend.
+    const { error: updateError } = await resend.contacts.update({
+      email,
+      unsubscribed: false,
+    });
+    if (!updateError) return { ok: true };
+    const m = errMessage(updateError).toLowerCase();
+    if (m.includes('not found') || m.includes('404')) return { ok: true };
+    return { ok: false, error: updateError };
+  }
+
   return { ok: false, error };
 }
 

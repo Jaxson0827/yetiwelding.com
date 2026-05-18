@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { prisma } from '@/lib/db/prisma';
 import { setNewsletterContactUnsubscribed } from '@/lib/newsletter/resendAudience';
+import { sendNewsletterUnsubscribeConfirmationEmail } from '@/lib/newsletter/sendEmails';
 import { getNewsletterSiteUrl } from '@/lib/newsletter/siteUrl';
 
 let resend: Resend | null = null;
@@ -47,6 +48,15 @@ export async function GET(request: NextRequest) {
       const unsubResult = await setNewsletterContactUnsubscribed(resendInstance, sub.email);
       if (!unsubResult.ok) {
         console.error('Resend unsubscribe update error:', unsubResult.error);
+      }
+
+      const site = getNewsletterSiteUrl();
+      const confirmation = await sendNewsletterUnsubscribeConfirmationEmail(resendInstance, {
+        to: sub.email,
+        blogUrl: `${site}/blog`,
+      });
+      if (confirmation.error) {
+        console.error('Unsubscribe confirmation email error:', confirmation.error);
       }
     }
 
