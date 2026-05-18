@@ -79,9 +79,9 @@ export default function ServicesHero() {
           className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 uppercase tracking-tight leading-none text-glow text-shadow-strong"
           variants={itemVariants}
         >
-          BUILT DIFFERENT.
+          CUSTOM METALWORK.
           <br />
-          <span className="text-accent-red">WELDED RIGHT.</span>
+          <span className="text-accent-red">BUILT TO OUTLAST.</span>
         </motion.h1>
 
         <motion.p

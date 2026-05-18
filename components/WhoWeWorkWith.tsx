@@ -3,6 +3,7 @@
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const audiences = [
   {
@@ -120,6 +121,27 @@ export default function WhoWeWorkWith() {
           <p className="text-white/60 text-lg max-w-2xl mx-auto">
             Whoever you are, we've built something for someone like you — and we know what you actually care about.
           </p>
+        </motion.div>
+
+        {/* Team Photo */}
+        <motion.div
+          className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.2, duration: 0.8 }}
+        >
+          <Image
+            src="/homepage/about.JPG"
+            alt="The Yeti Welding crew"
+            fill
+            className="object-cover object-top"
+            sizes="(max-width: 1280px) 100vw, 1280px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+          <div className="absolute bottom-5 left-6">
+            <p className="text-white/90 text-sm font-semibold uppercase tracking-[0.15em]">The Yeti Welding Crew</p>
+            <p className="text-white/50 text-xs mt-0.5">Springville, UT — Est. 2016</p>
+          </div>
         </motion.div>
 
         {/* Cards Grid */}
