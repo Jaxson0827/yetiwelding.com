@@ -1,6 +1,7 @@
 import { trimbleLidarPostBodyHtml } from '@/lib/blog/trimbleLidarPostBody';
 import { chooseFabricatorPostBodyHtml } from '@/lib/blog/chooseFabricatorPostBody';
 import { miscMetalsGuidePostBodyHtml } from '@/lib/blog/miscMetalsGuidePostBody';
+import { tubeLaserPostBodyHtml } from '@/lib/blog/tubeLaserPostBody';
 
 export interface BlogPost {
   slug: string;
@@ -19,6 +20,29 @@ export interface BlogPost {
 }
 
 const postsUnsorted: BlogPost[] = [
+  {
+    slug: 'what-is-tube-laser-cutting',
+    title:
+      'What Is Tube Laser Cutting? How It Works, When to Use It, and What It Means for Steel Fabrication',
+    kicker: 'Fabrication technology',
+    excerpt:
+      'Tube laser cutting replaces sawing, drilling, and notching in one CNC pass. Here is how it works, how it compares to traditional tube processing, and when it matters on commercial steel projects.',
+    author: 'Yeti Welding',
+    publishedAt: '2026-06-05',
+    coverImage: '/blog/tube_laser_post/post-cover.jpg',
+    categories: ['Resources', 'Fabrication', 'Technology'],
+    tags: [
+      'Tube laser cutting',
+      'HSS',
+      'CNC',
+      'Steel fabrication',
+      'Pipe and tube railings',
+      'Miscellaneous metals',
+      'Utah',
+      'Commercial construction',
+    ],
+    bodyHtml: tubeLaserPostBodyHtml,
+  },
   {
     slug: 'what-is-a-miscellaneous-metals-contractor',
     title: 'What Is a Miscellaneous Metals Contractor? A Utah Fabricator\'s Complete Guide',
@@ -105,6 +129,7 @@ export const blogPosts: BlogPost[] = [...postsUnsorted]
 
 /** Sidebar “featured” order; filled from newest posts if a slug is missing */
 const FEATURED_SLUG_ORDER = [
+  'what-is-tube-laser-cutting',
   'what-is-a-miscellaneous-metals-contractor',
   'choose-steel-fabricator-utah',
   'trimble-lidar-sketchup-steel-detailing',
