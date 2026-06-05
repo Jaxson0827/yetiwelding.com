@@ -26,7 +26,7 @@ const postsUnsorted: BlogPost[] = [
       'What Is Tube Laser Cutting? How It Works, When to Use It, and What It Means for Steel Fabrication',
     kicker: 'Fabrication technology',
     excerpt:
-      'Tube laser cutting replaces sawing, drilling, and notching in one CNC pass. Here is how it works, how it compares to traditional tube processing, and when it matters on commercial steel projects.',
+      'Tube laser cutting cuts, miters, slots, and holes tube and HSS in one setup. What it is, how it compares to saw-and-drill processing, and when it actually matters on a commercial job.',
     author: 'Yeti Welding',
     publishedAt: '2026-06-05',
     coverImage: '/blog/tube_laser_post/post-cover.jpg',
