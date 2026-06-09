@@ -2,6 +2,7 @@ import { trimbleLidarPostBodyHtml } from '@/lib/blog/trimbleLidarPostBody';
 import { chooseFabricatorPostBodyHtml } from '@/lib/blog/chooseFabricatorPostBody';
 import { miscMetalsGuidePostBodyHtml } from '@/lib/blog/miscMetalsGuidePostBody';
 import { tubeLaserPostBodyHtml } from '@/lib/blog/tubeLaserPostBody';
+import { shopCertificationsPostBodyHtml } from '@/lib/blog/shopCertificationsPostBody';
 
 export interface BlogPost {
   slug: string;
@@ -20,6 +21,31 @@ export interface BlogPost {
 }
 
 const postsUnsorted: BlogPost[] = [
+  {
+    slug: 'welding-fabrication-shop-certifications-guide',
+    title:
+      'Welding & Fabrication Shop Certifications: A Fab Shop Owner\'s Guide to AISC, Clark County, DFCM, and More',
+    kicker: 'Certifications & compliance',
+    excerpt:
+      'AISC, IAS, AWS, Clark County, DFCM — a practical guide for fab shop owners on which certifications matter, how to get them, and how one credential can unlock another, using our real Clark County to Utah DFCM path as an example.',
+    author: 'Yeti Welding',
+    publishedAt: '2026-06-09',
+    coverImage: '/blog/shop_certifications/post-cover.jpg',
+    categories: ['Resources', 'Fabrication', 'Compliance'],
+    tags: [
+      'AISC certification',
+      'Clark County approved fabricator',
+      'DFCM',
+      'IAS AC172',
+      'AWS D1.1',
+      'CWI',
+      'Special inspection',
+      'IBC 1704',
+      'Utah',
+      'Nevada',
+    ],
+    bodyHtml: shopCertificationsPostBodyHtml,
+  },
   {
     slug: 'what-is-tube-laser-cutting',
     title:
@@ -129,6 +155,7 @@ export const blogPosts: BlogPost[] = [...postsUnsorted]
 
 /** Sidebar “featured” order; filled from newest posts if a slug is missing */
 const FEATURED_SLUG_ORDER = [
+  'welding-fabrication-shop-certifications-guide',
   'what-is-tube-laser-cutting',
   'what-is-a-miscellaneous-metals-contractor',
   'choose-steel-fabricator-utah',
