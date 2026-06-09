@@ -32,7 +32,7 @@ export const tubeLaserPostBodyHtml = `
       <h3>Downstream</h3>
       <p>Parts go to welding, coating, or assembly. Edges are clean enough that fit-up in the bay is faster — assuming the detailing was right to begin with.</p>
       <figure class="blog-media-slot">
-        <img src="/blog/tube_laser_post/tube-laser-process.jpg" alt="Steel fabrication shop floor with tube and HSS work in progress." loading="lazy" />
+        <img src="/blog/tube_laser_post/tube-laser-process.png" alt="Steel fabrication shop floor with tube and HSS work in progress." loading="lazy" />
         <figcaption>Tube laser work happens in the shop before parts hit the welding bay — which is where fit problems get expensive to fix.</figcaption>
       </figure>
 
@@ -71,7 +71,7 @@ export const tubeLaserPostBodyHtml = `
       </ul>
       <p>Every manual setup between saw, drill, and layout table adds tolerance. A tube laser cuts most of that stack-up out before the part gets to the welder.</p>
       <figure class="blog-media-slot">
-        <img src="/blog/tube_laser_post/tube-cut-detail.jpg" alt="Close-up of a cut steel tube connection on a stair or railing fabrication job." loading="lazy" />
+        <img src="/blog/tube_laser_post/tube-cut-detail.png" alt="Close-up of a cut steel tube connection on a stair or railing fabrication job." loading="lazy" />
         <figcaption>Fit problems discovered during installation are the expensive ones. Most of them start upstream in how the tube was cut.</figcaption>
       </figure>
 
