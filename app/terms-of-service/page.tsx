@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'Terms of Service | Yeti Welding',
   description:
     'Yeti Welding Terms of Service. Read the terms governing your use of our website, orders, payment, shipping, and more.',
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: true },
   alternates: { canonical: 'https://yetiwelding.com/terms-of-service' },
 };
 
