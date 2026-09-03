@@ -23,7 +23,6 @@ export default function PricingSummary({
   quoteReason,
 }: PricingSummaryProps) {
   const router = useRouter();
-  const [showBreakdown, setShowBreakdown] = useState(false);
   const [customSizeAcknowledged, setCustomSizeAcknowledged] = useState(false);
 
   const showGetQuote = QUOTE_ONLY_MODE || requiresQuote;
@@ -31,8 +30,6 @@ export default function PricingSummary({
   const handleGetQuote = () => {
     if (QUOTE_ONLY_MODE) {
       saveQuoteDraft('dumpster-gate', config, {
-        totalPrice: priceBreakdown.totalPrice,
-        unitPrice: priceBreakdown.unitPrice,
         leadTime: priceBreakdown.leadTime,
       });
       router.push('/contact?from=quote');
@@ -96,54 +93,6 @@ export default function PricingSummary({
           )}
         </div>
 
-        {/* Custom Size Pricing Header */}
-        {config.isCustom && (
-          <div className="mb-3">
-            <h4 className="text-white font-semibold text-sm">Custom Size Pricing</h4>
-          </div>
-        )}
-
-        {/* Pricing Breakdown - Mobile Expandable */}
-        <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => setShowBreakdown(!showBreakdown)}
-            className="md:hidden w-full flex items-center justify-between text-white/70 text-sm mb-2 hover:text-white transition-colors"
-          >
-            <span>Pricing breakdown</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${showBreakdown ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          {/* Desktop: Always visible, Mobile: Conditional */}
-          <div className={`${showBreakdown ? 'block' : 'hidden'} md:block space-y-2`}>
-            {priceBreakdown.lineItems.map((item, index) => (
-              <div key={index} className="flex justify-between text-sm">
-                <span className="text-white/70">{item.label}</span>
-                <span className="text-white">${item.amount.toFixed(2)}</span>
-              </div>
-            ))}
-            {config.quantity > 1 && (
-              <div className="flex justify-between text-sm pt-2 border-t border-white/10">
-                <span className="text-white/70">Unit Price:</span>
-                <span className="text-white">${priceBreakdown.unitPrice.toFixed(2)}</span>
-              </div>
-            )}
-            {config.quantity > 1 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Quantity:</span>
-                <span className="text-white">× {config.quantity}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Lead Time */}
         <div className="mb-4 pb-4 border-b border-white/10">
           <div className="flex justify-between items-center text-sm">
@@ -157,15 +106,11 @@ export default function PricingSummary({
           )}
         </div>
 
-        {/* Total Price */}
-        <div className="mb-6">
-          <div className="flex justify-between items-baseline">
-            <span className="text-white/70 text-sm">Total:</span>
-            <span className="text-white text-2xl font-bold">
-              ${priceBreakdown.totalPrice.toFixed(2)}
-            </span>
-          </div>
-        </div>
+        {showGetQuote && (
+          <p className="text-white/70 text-sm mb-4">
+            We&apos;ll send pricing after we review this configuration.
+          </p>
+        )}
 
         {/* Custom Fabrication Safety */}
         {config.isCustom && (
@@ -252,4 +197,3 @@ export default function PricingSummary({
     </div>
   );
 }
-

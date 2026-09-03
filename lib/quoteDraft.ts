@@ -68,9 +68,14 @@ export function formatQuoteDraftForMessage(draft: QuoteDraft): string {
       lines.push(JSON.stringify(draft.configuration, null, 2));
   }
 
-  if (draft.priceSummary.totalPrice != null) {
+  const includeEstimatedTotal =
+    draft.productType !== 'dumpster-gate' && draft.priceSummary.totalPrice != null;
+
+  if (includeEstimatedTotal || draft.priceSummary.leadTime) {
     lines.push('');
-    lines.push(`Estimated total: $${draft.priceSummary.totalPrice.toFixed(2)}`);
+  }
+  if (includeEstimatedTotal) {
+    lines.push(`Estimated total: $${draft.priceSummary.totalPrice!.toFixed(2)}`);
   }
   if (draft.priceSummary.leadTime) {
     lines.push(`Lead time: ${draft.priceSummary.leadTime}`);
