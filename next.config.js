@@ -39,6 +39,13 @@ const nextConfig = {
         destination: 'https://yetiwelding.com/projects',
         permanent: true,
       },
+      // Retired Yeti Steel Goods storefront. ':path*' makes the trailing
+      // segments optional, so this covers the bare '/shop' too.
+      {
+        source: '/shop/:path*',
+        destination: '/order',
+        permanent: true,
+      },
     ]
   },
   async headers() {

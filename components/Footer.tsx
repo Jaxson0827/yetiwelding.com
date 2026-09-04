@@ -53,7 +53,6 @@ export default function Footer() {
     { label: 'Dumpster Gates', href: '/order/dumpster-gates' },
     { label: 'Steel Plate Embeds', href: '/order/steel-embeds' },
     { label: 'Pergolas', href: '/order/pergolas' },
-    { label: 'Lawn & Garden', href: '/shop' },
   ];
 
   // Services
