@@ -1,18 +1,21 @@
-import { FlatCompat } from '@eslint/eslintrc';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+// eslint-config-next 16 ships native flat config, so no FlatCompat shim is
+// needed. The core-web-vitals entry already bundles next/typescript.
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-export default [
+const config = [
   {
-    ignores: ['.next/**', 'node_modules/**', 'out/**', 'dist/**', 'coverage/**'],
+    ignores: [
+      '.next/**',
+      'node_modules/**',
+      'out/**',
+      'dist/**',
+      'coverage/**',
+      // Vendored copy of a previous site. Not imported by the app and not
+      // part of the Next.js build, so it is not linted.
+      'legacypergola-site/**',
+    ],
   },
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  ...nextCoreWebVitals,
 ];
 
+export default config;
