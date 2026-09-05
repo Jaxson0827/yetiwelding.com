@@ -80,7 +80,7 @@ export default function Home() {
               longitude: '-111.6107',
             },
             priceRange: '$$',
-            image: 'https://yetiwelding.com/homepage/hero.JPG',
+            image: 'https://yetiwelding.com/og/yeti-og.jpg',
             aggregateRating: {
               '@type': 'AggregateRating',
               ratingValue: '5',

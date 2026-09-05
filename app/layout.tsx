@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     siteName: "Yeti Welding",
     images: [
       {
-        url: "/homepage/hero.JPG",
+        url: "/og/yeti-og.jpg",
         width: 1200,
         height: 630,
         alt: "Yeti Welding Workshop - Professional Welding Services",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Yeti Welding | Professional Welding Services",
     description: "Founded in 2016. Trusted craftsmanship in custom fabrication, structural welding, and ornamental work.",
-    images: ["/homepage/hero.JPG"],
+    images: ["/og/yeti-og.jpg"],
   },
   robots: {
     index: true,

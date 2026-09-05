@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     siteName: 'Yeti Welding',
     images: [
       {
-        url: '/homepage/hero.JPG',
+        url: '/og/yeti-og.jpg',
         width: 1200,
         height: 630,
         alt: 'Yeti Welding - Order Custom Products',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Order | Yeti Welding',
     description: 'Order custom welding and fabrication products online.',
-    images: ['/homepage/hero.JPG'],
+    images: ['/og/yeti-og.jpg'],
   },
   alternates: {
     canonical: 'https://yetiwelding.com/order',

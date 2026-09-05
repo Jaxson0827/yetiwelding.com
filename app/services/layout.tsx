@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     siteName: 'Yeti Welding',
     images: [
       {
-        url: 'https://yetiwelding.com/homepage/hero.JPG',
+        url: 'https://yetiwelding.com/og/yeti-og.jpg',
         width: 1200,
         height: 630,
         alt: 'Yeti Welding Services',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Our Services | Yeti Welding',
     description: 'Professional welding and fabrication services delivered with precision, craftsmanship, and attention to detail.',
-    images: ['https://yetiwelding.com/homepage/hero.JPG'],
+    images: ['https://yetiwelding.com/og/yeti-og.jpg'],
   },
   alternates: {
     canonical: 'https://yetiwelding.com/services',

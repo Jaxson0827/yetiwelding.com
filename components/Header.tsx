@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useOptionalCart } from '@/contexts/CartContext';
 import Link from 'next/link';
+import Image from 'next/image';
+import yetiLogo from '@/public/brand/yeti-logo.png';
 import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
 
 interface HeaderProps {
@@ -21,10 +23,6 @@ export default function Header({ showCart = true }: HeaderProps) {
   const cart = useOptionalCart();
   const itemCount = cart ? cart.getItemCount() : fallbackItemCount;
   const desktopOrderDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Increment this version number when you update the logo to force cache refresh
-  const LOGO_VERSION = '4';
-  const logoPath = `/Website Logo.png?v=${LOGO_VERSION}`;
 
   const navItems = [
     { label: 'HOME', href: '/' },
@@ -155,14 +153,15 @@ export default function Header({ showCart = true }: HeaderProps) {
             transition={{ duration: 0.3 }}
             style={{ marginBottom: isScrolled ? '-32px' : '-32px', background: 'transparent' }}
           >
-            {/* Using regular img tag instead of Next.js Image to support query string cache-busting */}
-            <img
-              src={logoPath}
+            {/* Static import: Next.js content-hashes the URL, so the logo
+                cache-busts itself whenever the file changes. */}
+            <Image
+              src={yetiLogo}
               alt="Yeti Welding Logo"
               className="object-contain w-full h-full"
               style={{ top: '-12px', left: '1px', position: 'relative' }}
-              loading="eager"
-              suppressHydrationWarning
+              sizes="128px"
+              priority
             />
           </motion.div>
         </motion.a>

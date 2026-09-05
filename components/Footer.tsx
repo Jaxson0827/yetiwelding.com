@@ -1,6 +1,8 @@
 'use client';
 
 import { motion, useInView } from 'framer-motion';
+import Image from 'next/image';
+import yetiLogo from '@/public/brand/yeti-logo.png';
 import { useRef } from 'react';
 
 interface FooterLink {
@@ -9,9 +11,6 @@ interface FooterLink {
 }
 
 export default function Footer() {
-  // Increment this version number when you update the logo to force cache refresh
-  const LOGO_VERSION = '4';
-  const logoPath = `/Website Logo.png?v=${LOGO_VERSION}`;
   const footerRef = useRef<HTMLElement>(null);
   const isInView = useInView(footerRef, { once: true, margin: '-50px' });
 
@@ -103,13 +102,12 @@ export default function Footer() {
               style={{ background: 'transparent' }}
               aria-label="Yeti Welding — Home"
             >
-              {/* Using regular img tag instead of Next.js Image to support query string cache-busting */}
-              <img
-                src={logoPath}
+              <Image
+                src={yetiLogo}
                 alt="Yeti Welding Logo"
                 className="object-contain w-full h-full"
+                sizes="64px"
                 loading="lazy"
-                suppressHydrationWarning
               />
             </motion.a>
             <p className="text-white/70 text-sm mb-4 max-w-xs">

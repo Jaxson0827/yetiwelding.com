@@ -44,7 +44,7 @@ export const orderProducts: OrderProductMeta[] = [
       'steel plate embeds utah',
     ],
     url: `${base}/order/steel-embeds`,
-    ogImage: '/homepage/hero.JPG',
+    ogImage: '/og/yeti-og.jpg',
   },
   {
     id: 'pergolas',
@@ -61,7 +61,7 @@ export const orderProducts: OrderProductMeta[] = [
       'shade structure kits utah',
     ],
     url: `${base}/order/pergolas`,
-    ogImage: '/homepage/hero.JPG',
+    ogImage: '/og/yeti-og.jpg',
   },
   {
     id: 'garden-boxes',
@@ -78,7 +78,7 @@ export const orderProducts: OrderProductMeta[] = [
       'custom garden boxes utah',
     ],
     url: `${base}/order/garden-boxes`,
-    ogImage: '/homepage/hero.JPG',
+    ogImage: '/og/yeti-og.jpg',
   },
 ];
 

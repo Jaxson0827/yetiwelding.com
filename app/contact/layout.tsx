@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     siteName: 'Yeti Welding',
     images: [
       {
-        url: '/homepage/hero.JPG',
+        url: '/og/yeti-og.jpg',
         width: 1200,
         height: 630,
         alt: 'Yeti Welding - Contact Us',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Contact Us | Yeti Welding',
     description: 'Get a quote for your welding or fabrication project.',
-    images: ['/homepage/hero.JPG'],
+    images: ['/og/yeti-og.jpg'],
   },
   alternates: {
     canonical: 'https://yetiwelding.com/contact',
