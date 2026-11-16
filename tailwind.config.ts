@@ -10,6 +10,9 @@ const config: Config = {
     extend: {
       fontFamily: {
         playfair: ['"Playfair Display"', 'serif'],
+        // Dumpster gate page: expanded display face + drawing-sheet lettering (see lib/fonts.ts)
+        display: ['var(--font-archivo)', 'Arial', 'sans-serif'],
+        drafting: ['var(--font-b612)', 'Arial', 'sans-serif'],
       },
       colors: {
         background: "var(--background)",
@@ -27,6 +30,16 @@ const config: Config = {
         'gray-cool': {
           100: '#0F0F0F',
           200: '#1F1F1F',
+        },
+        // Dumpster gate page palette: mill-scale steel + drawing paper. Crimson stays accent-red.
+        gate: {
+          plate: '#16191C',
+          'plate-hi': '#1F2327',
+          rule: '#2C3237',
+          mute: '#8C959C',
+          paper: '#E9ECE7',
+          'paper-rule': '#C9CEC8',
+          ink: '#1B1D1F',
         },
       },
       animation: {

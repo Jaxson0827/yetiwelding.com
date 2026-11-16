@@ -1,146 +1,71 @@
-'use client';
-
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import DumpsterGateHero from '@/components/dumpster-gates/DumpsterGateHero';
 import DumpsterGateConfigurator from '@/components/dumpster-gates/DumpsterGateConfigurator';
+import {
+  ClosingCta,
+  Faq,
+  GATE_FAQ,
+  Gallery,
+  HowItWorks,
+  MeasuringGuide,
+  Specs,
+} from '@/components/dumpster-gates/GatePageSections';
 import ProductPageSchema from '@/components/seo/ProductPageSchema';
 import { getOrderProductBySlug } from '@/lib/orderProductData';
+import { GATE_ONLINE_CHECKOUT } from '@/lib/onlineCheckout';
+import { archivo, b612 } from '@/lib/fonts';
 
 export default function DumpsterGatesPage() {
   const product = getOrderProductBySlug('dumpster-gates')!;
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: GATE_FAQ.map(([q, a]) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  };
+
   return (
     <>
       <ProductPageSchema product={product} />
-      <main className="min-h-screen bg-black">
-      <Header showCart />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <main className={`${archivo.variable} ${b612.variable} min-h-screen bg-black`}>
+        <Header showCart />
 
-      <DumpsterGateHero />
+        <DumpsterGateHero online={GATE_ONLINE_CHECKOUT} />
 
-      <div className="h-px bg-gradient-to-r from-transparent via-[#4a7c59]/20 to-transparent" />
-      <section id="configurator" className="pt-12 pb-12 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <DumpsterGateConfigurator />
-        </div>
-      </section>
-
-      {/* What's Included Section */}
-      <section className="w-full py-20 px-4 bg-white/5">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="text-white text-3xl font-bold mb-8 text-center">What's Included</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="text-white/80">Fully welded steel frame</p>
+        <section id="configurator" aria-labelledby="configure-heading" className="scroll-mt-20 border-t border-gate-rule bg-black pb-20 pt-16">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="mb-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <h2
+                id="configure-heading"
+                className="font-display text-3xl font-extrabold leading-tight text-white [font-stretch:115%] sm:text-4xl"
+              >
+                Configure your gate
+              </h2>
+              <p className="max-w-md text-sm leading-relaxed text-gate-mute sm:text-right">
+                Numbers in red are yours. Change any of them and the drawing follows.{' '}
+                <a href="#measure-heading" className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">
+                  How to measure
+                </a>
+              </p>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="text-white/80">Hinges installed</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="text-white/80">Latch hardware included</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="text-white/80">Shop drawings available on request</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#DC143C] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="text-white/80">Fabricated by Yeti Welding</p>
-            </div>
+            <DumpsterGateConfigurator />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Installation Notes Section */}
-      <section className="w-full py-20 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="text-white text-3xl font-bold mb-6">Installation Notes</h2>
-          <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-            <p className="text-white/80 mb-4">
-              These gates are intended for steel or masonry dumpster enclosures.
-            </p>
-            <p className="text-white/80">
-              Concrete embeds and anchors not included unless specified.
-            </p>
-            <a
-              href="#"
-              className="inline-block mt-4 text-[#DC143C] hover:text-[#DC143C]/90 text-sm transition-colors"
-            >
-              Download install guidelines (PDF)
-            </a>
-          </div>
-        </div>
-      </section>
+        <HowItWorks online={GATE_ONLINE_CHECKOUT} />
+        <MeasuringGuide />
+        <Gallery />
+        <Specs />
+        <Faq />
+        <ClosingCta />
 
-      {/* FAQ Section */}
-      <section className="w-full py-20 px-4 bg-white/5">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="text-white text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
-          <div className="space-y-6">
-            <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-2">Can you make custom sizes?</h3>
-              <p className="text-white/80">
-                Yes, we can fabricate custom sizes. Please contact us for a quote on non-standard dimensions.
-              </p>
-            </div>
-            <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-2">Do you ship or local pickup only?</h3>
-              <p className="text-white/80">
-                We offer both shipping and local pickup. Shipping costs will be calculated at checkout.
-              </p>
-            </div>
-            <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-2">What's the lead time?</h3>
-              <p className="text-white/80">
-                Standard lead time is 2-3 weeks. Powder coat adds 3-5 business days. Galvanized finishes may require extended lead time.
-              </p>
-            </div>
-            <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-2">Are these code compliant?</h3>
-              <p className="text-white/80">
-                Yes, our gates are fabricated to meet standard building codes. For specific code requirements, please contact us.
-              </p>
-            </div>
-            <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-2">Can I mount to CMU?</h3>
-              <p className="text-white/80">
-                Yes, these gates can be mounted to CMU (concrete masonry units). Proper anchors and installation methods should be used.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Footer />
-    </main>
+        <Footer />
+      </main>
     </>
   );
 }
-
-
-
-
-
-

@@ -4,7 +4,6 @@ import { allShopProducts, getProductBySlug } from '@/lib/shop/products';
 import ProductDetail from '@/components/shop/product/ProductDetail';
 import RelatedProducts from '@/components/shop/product/RelatedProducts';
 import ProductDescription from '@/components/shop/product/ProductDescription';
-import CustomerReviews from '@/components/shop/product/CustomerReviews';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -41,7 +40,7 @@ export default async function ProductPage({ params }: PageProps) {
       <ProductDetail product={product} />
       <RelatedProducts products={related} />
       <ProductDescription product={product} />
-      <CustomerReviews product={product} />
+      {/* Reviews removed until we have real Yeti reviews to show (see components/shop/product/CustomerReviews.tsx). */}
     </>
   );
 }

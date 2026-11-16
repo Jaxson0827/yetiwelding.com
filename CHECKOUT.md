@@ -4,6 +4,14 @@ This file is the canonical, **up-to-date** description of how checkout works in 
 
 ---
 
+## Dumpster gates (Nov 2026)
+
+Gate-only carts use their own checkout path. Full details are in `DUMPSTER_GATES.md`.
+- `GateCheckout` UI (`components/checkout/GateCheckout.tsx`): contact, then pickup or free local delivery (ZIP zone), then terms checkbox.
+- `lib/checkout/gateCheckoutSession.ts`: creates a Stripe Customer (shop address as the shipping address for pickup, so tax is sourced at the shop), then a Checkout Session with `customer_update`, address collection only for delivery, and $0 delivery rate.
+- Webhook: reads `collected_information.shipping_details` (the top-level `shipping_details` field no longer exists on API 2025-03-31+, so Stripe-edited addresses were silently dropped before this fix), and flags `delivery_out_of_zone`.
+- Per-product on/off: `lib/onlineCheckout.ts` (`NEXT_PUBLIC_ONLINE_CHECKOUT_PRODUCTS`), enforced in `/api/checkout/session`.
+
 ## Quick summary
 
 There are **two distinct checkout flows**:

@@ -1,0 +1,313 @@
+zip,city,state,est_drive_minutes,road_miles
+82929,"Little America",WY,164,172
+82930,"Evanston",WY,113,108
+82931,"Evanston",WY,112,110
+82933,"Fort Bridger",WY,138,140
+82934,"Granger",WY,169,175
+82936,"Lonetree",WY,175,168
+82937,"Lyman",WY,146,145
+82939,"Mountain View",WY,163,149
+83101,"Kemmerer",WY,159,157
+83116,"Diamondville",WY,158,157
+83121,"Frontier",WY,161,159
+83124,"Opal",WY,171,171
+83214,"Arimo",ID,163,184
+83232,"Dayton",ID,165,163
+83234,"Downey",ID,163,179
+83237,"Franklin",ID,157,153
+83243,"Holbrook",ID,165,173
+83245,"Inkom",ID,175,200
+83246,"Lava Hot Springs",ID,177,198
+83250,"Mccammon",ID,169,190
+83252,"Malad City",ID,142,158
+83263,"Preston",ID,163,161
+83281,"Swanlake",ID,173,189
+83286,"Weston",ID,157,157
+84001,"Altamont",UT,144,118
+84002,"Altonah",UT,148,119
+84003,"American Fork",UT,26,22
+84004,"Alpine",UT,33,26
+84005,"Eagle Mountain",UT,34,31
+84006,"Bingham Canyon",UT,51,47
+84007,"Bluebell",UT,147,121
+84009,"South Jordan",UT,39,38
+84010,"Bountiful",UT,60,60
+84011,"Bountiful",UT,59,61
+84013,"Cedar Valley",UT,45,41
+84014,"Centerville",UT,62,63
+84015,"Clearfield",UT,79,81
+84016,"Clearfield",UT,76,78
+84017,"Coalville",UT,102,73
+84018,"Croydon",UT,93,83
+84020,"Draper",UT,34,33
+84021,"Duchesne",UT,110,95
+84022,"Dugway",UT,99,86
+84024,"Echo",UT,86,75
+84025,"Farmington",UT,66,68
+84026,"Fort Duchesne",UT,144,130
+84027,"Fruitland",UT,109,86
+84028,"Garden City",UT,177,170
+84029,"Grantsville",UT,82,85
+84031,"Hanna",UT,111,83
+84032,"Heber City",UT,45,35
+84033,"Henefer",UT,88,78
+84036,"Kamas",UT,93,58
+84037,"Kaysville",UT,71,72
+84038,"Laketown",UT,163,158
+84039,"Lapoint",UT,159,140
+84040,"Layton",UT,75,75
+84041,"Layton",UT,73,75
+84042,"Lindon",UT,21,17
+84043,"Lehi",UT,25,24
+84044,"Magna",UT,58,59
+84045,"Saratoga Springs",UT,32,27
+84047,"Midvale",UT,42,41
+84049,"Midway",UT,46,35
+84050,"Morgan",UT,92,91
+84051,"Mountain Home",UT,143,113
+84052,"Myton",UT,131,115
+84053,"Neola",UT,157,135
+84054,"North Salt Lake",UT,57,57
+84055,"Oakley",UT,80,60
+84056,"Hill Afb",UT,93,86
+84057,"Orem",UT,18,16
+84058,"Orem",UT,16,13
+84059,"Orem",UT,48,15
+84060,"Park City",UT,64,53
+84061,"Peoa",UT,71,58
+84062,"Pleasant Grove",UT,23,19
+84063,"Randlett",UT,165,142
+84064,"Randolph",UT,144,140
+84065,"Riverton",UT,40,37
+84066,"Roosevelt",UT,141,125
+84067,"Roy",UT,80,83
+84068,"Park City",UT,64,52
+84069,"Rush Valley",UT,77,69
+84070,"Sandy",UT,40,38
+84071,"Stockton",UT,75,70
+84072,"Tabiona",UT,124,100
+84073,"Talmage",UT,135,109
+84074,"Tooele",UT,81,82
+84075,"Syracuse",UT,77,79
+84076,"Tridell",UT,165,143
+84078,"Vernal",UT,170,154
+84079,"Vernal",UT,168,153
+84080,"Vernon",UT,67,60
+84081,"West Jordan",UT,50,47
+84082,"Wallsburg",UT,58,32
+84083,"Wendover",UT,148,171
+84084,"West Jordan",UT,46,44
+84085,"Whiterocks",UT,164,141
+84086,"Woodruff",UT,142,133
+84087,"Woods Cross",UT,58,60
+84088,"West Jordan",UT,45,42
+84089,"Clearfield",UT,107,97
+84090,"Sandy",UT,46,44
+84091,"Sandy",UT,46,44
+84092,"Sandy",UT,50,44
+84093,"Sandy",UT,46,42
+84094,"Sandy",UT,41,39
+84095,"South Jordan",UT,42,40
+84096,"Herriman",UT,43,41
+84097,"Orem",UT,20,16
+84098,"Park City",UT,68,56
+84101,"Salt Lake City",UT,49,51
+84102,"Salt Lake City",UT,53,53
+84103,"Salt Lake City",UT,56,53
+84104,"Salt Lake City",UT,52,52
+84105,"Salt Lake City",UT,52,51
+84106,"Salt Lake City",UT,51,49
+84107,"Salt Lake City",UT,44,44
+84108,"Salt Lake City",UT,54,54
+84109,"Salt Lake City",UT,52,53
+84110,"Salt Lake City",UT,46,44
+84111,"Salt Lake City",UT,52,52
+84112,"Salt Lake City",UT,60,56
+84113,"Salt Lake City",UT,58,55
+84114,"Salt Lake City",UT,46,44
+84115,"Salt Lake City",UT,48,48
+84116,"Salt Lake City",UT,52,53
+84117,"Salt Lake City",UT,47,47
+84118,"Salt Lake City",UT,50,48
+84119,"Salt Lake City",UT,52,51
+84120,"Salt Lake City",UT,52,51
+84121,"Salt Lake City",UT,52,50
+84122,"Salt Lake City",UT,46,44
+84123,"Salt Lake City",UT,47,45
+84124,"Salt Lake City",UT,52,49
+84125,"Salt Lake City",UT,46,44
+84126,"Salt Lake City",UT,46,44
+84127,"Salt Lake City",UT,46,44
+84128,"Salt Lake City",UT,52,51
+84129,"Salt Lake City",UT,46,46
+84130,"Salt Lake City",UT,46,44
+84131,"Salt Lake City",UT,46,44
+84132,"Salt Lake City",UT,58,55
+84133,"Salt Lake City",UT,53,52
+84134,"Salt Lake City",UT,46,44
+84136,"Salt Lake City",UT,53,52
+84138,"Salt Lake City",UT,51,51
+84139,"Salt Lake City",UT,51,51
+84141,"Salt Lake City",UT,46,44
+84143,"Salt Lake City",UT,52,53
+84144,"Salt Lake City",UT,51,52
+84145,"Salt Lake City",UT,46,44
+84147,"Salt Lake City",UT,51,51
+84148,"Salt Lake City",UT,57,55
+84150,"Salt Lake City",UT,46,44
+84151,"Salt Lake City",UT,46,44
+84152,"Salt Lake City",UT,51,51
+84157,"Salt Lake City",UT,46,44
+84158,"Salt Lake City",UT,64,59
+84165,"Salt Lake City",UT,46,44
+84170,"Salt Lake City",UT,46,44
+84171,"Salt Lake City",UT,46,44
+84180,"Salt Lake City",UT,52,52
+84184,"Salt Lake City",UT,47,47
+84189,"Salt Lake City",UT,51,51
+84190,"Salt Lake City",UT,46,44
+84199,"Salt Lake City",UT,49,50
+84201,"Ogden",UT,83,88
+84244,"Ogden",UT,89,87
+84301,"Bear River City",UT,111,116
+84302,"Brigham City",UT,103,108
+84304,"Cache Junction",UT,134,136
+84305,"Clarkston",UT,139,143
+84306,"Collinston",UT,132,130
+84307,"Corinne",UT,111,114
+84308,"Cornish",UT,153,151
+84309,"Deweyville",UT,114,121
+84310,"Eden",UT,108,104
+84311,"Fielding",UT,124,130
+84312,"Garland",UT,116,124
+84314,"Honeyville",UT,111,117
+84315,"Hooper",UT,87,87
+84316,"Howell",UT,141,144
+84317,"Huntsville",UT,96,95
+84318,"Hyde Park",UT,136,138
+84319,"Hyrum",UT,123,128
+84320,"Lewiston",UT,154,153
+84321,"Logan",UT,131,133
+84322,"Logan",UT,119,125
+84323,"Logan",UT,127,132
+84324,"Mantua",UT,106,111
+84325,"Mendon",UT,126,129
+84326,"Millville",UT,128,130
+84327,"Newton",UT,138,140
+84328,"Paradise",UT,132,134
+84330,"Plymouth",UT,128,137
+84331,"Portage",UT,132,144
+84332,"Providence",UT,129,132
+84333,"Richmond",UT,145,146
+84334,"Riverside",UT,119,129
+84335,"Smithfield",UT,139,141
+84336,"Snowville",UT,142,158
+84337,"Tremonton",UT,115,123
+84338,"Trenton",UT,147,150
+84339,"Wellsville",UT,118,123
+84340,"Willard",UT,95,99
+84341,"Logan",UT,134,137
+84401,"Ogden",UT,85,87
+84402,"Ogden",UT,89,87
+84403,"Ogden",UT,80,82
+84404,"Ogden",UT,89,91
+84405,"Ogden",UT,81,82
+84407,"Ogden",UT,86,88
+84408,"Ogden",UT,81,82
+84409,"Ogden",UT,89,87
+84412,"Ogden",UT,89,87
+84414,"Ogden",UT,91,95
+84415,"Ogden",UT,89,87
+84501,"Price",UT,77,70
+84513,"Castle Dale",UT,114,100
+84516,"Clawson",UT,125,109
+84518,"Cleveland",UT,100,88
+84520,"East Carbon",UT,107,94
+84521,"Elmo",UT,109,87
+84522,"Emery",UT,143,149
+84523,"Ferron",UT,132,114
+84525,"Green River",UT,144,134
+84526,"Helper",UT,78,65
+84528,"Huntington",UT,103,91
+84529,"Kenilworth",UT,76,67
+84537,"Orangeville",UT,116,101
+84539,"Sunnyside",UT,109,95
+84540,"Thompson",UT,163,160
+84542,"Wellington",UT,83,76
+84601,"Provo",UT,11,9
+84602,"Provo",UT,22,19
+84603,"Provo",UT,11,6
+84604,"Provo",UT,15,10
+84605,"Provo",UT,48,15
+84606,"Provo",UT,13,9
+84620,"Aurora",UT,94,100
+84621,"Axtell",UT,95,84
+84622,"Centerfield",UT,90,79
+84623,"Chester",UT,64,61
+84624,"Delta",UT,84,83
+84626,"Elberta",UT,33,28
+84627,"Ephraim",UT,74,69
+84628,"Eureka",UT,42,36
+84629,"Fairview",UT,52,46
+84630,"Fayette",UT,78,71
+84631,"Fillmore",UT,87,96
+84632,"Fountain Green",UT,49,49
+84633,"Goshen",UT,28,23
+84634,"Gunnison",UT,87,77
+84635,"Hinckley",UT,97,92
+84636,"Holden",UT,80,87
+84637,"Kanosh",UT,108,109
+84638,"Leamington",UT,67,66
+84639,"Levan",UT,54,58
+84640,"Lynndyl",UT,74,72
+84642,"Manti",UT,82,76
+84643,"Mayfield",UT,98,89
+84644,"Meadow",UT,92,103
+84645,"Mona",UT,33,30
+84646,"Moroni",UT,58,56
+84647,"Mount Pleasant",UT,66,55
+84648,"Nephi",UT,38,38
+84649,"Oak City",UT,86,77
+84651,"Payson",UT,15,10
+84652,"Redmond",UT,100,104
+84653,"Salem",UT,51,15
+84654,"Salina",UT,93,100
+84655,"Santaquin",UT,22,18
+84656,"Scipio",UT,65,73
+84657,"Sigurd",UT,101,106
+84660,"Spanish Fork",UT,8,4
+84662,"Spring City",UT,85,61
+84663,"Springville",UT,6,3
+84664,"Mapleton",UT,10,6
+84665,"Sterling",UT,89,82
+84667,"Wales",UT,65,59
+84701,"Richfield",UT,116,116
+84711,"Annabella",UT,118,118
+84712,"Antimony",UT,170,164
+84713,"Beaver",UT,135,151
+84715,"Bicknell",UT,163,158
+84720,"Cedar City",UT,175,202
+84721,"Cedar City",UT,175,202
+84723,"Circleville",UT,163,163
+84724,"Elsinore",UT,114,122
+84730,"Glenwood",UT,111,113
+84731,"Greenville",UT,143,156
+84732,"Greenwich",UT,144,140
+84739,"Joseph",UT,120,128
+84740,"Junction",UT,151,157
+84743,"Kingston",UT,157,159
+84744,"Koosharem",UT,132,133
+84747,"Loa",UT,167,156
+84749,"Lyman",UT,151,152
+84750,"Marysvale",UT,141,144
+84751,"Milford",UT,164,177
+84752,"Minersville",UT,152,168
+84754,"Monroe",UT,126,127
+84759,"Panguitch",UT,178,198
+84760,"Paragonah",UT,156,180
+84761,"Parowan",UT,160,184
+84766,"Sevier",UT,128,138
+84772,"Summit",UT,164,191
+84773,"Teasdale",UT,170,165
+84775,"Torrey",UT,169,165
+89883,"West Wendover",NV,150,172

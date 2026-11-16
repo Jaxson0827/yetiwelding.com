@@ -5,7 +5,9 @@ import { priceGate } from '@/lib/dumpsterGates/pricing';
 import { pricePergola } from '@/lib/pergolas/pricing';
 import { priceGardenBox } from '@/lib/gardenBoxes/pricing';
 import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
-import { calculateShippingLive, ShippingMethod } from '@/lib/shipping/calculator';
+import { calculateShippingLive, isGateOnlyCart, ShippingMethod } from '@/lib/shipping/calculator';
+import { isOnlineCheckoutEnabled } from '@/lib/onlineCheckout';
+import { createGateCheckoutSession } from '@/lib/checkout/gateCheckoutSession';
 import { normalizeAndValidateCartItems } from '@/lib/checkout/cartValidation';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
 import { prisma } from '@/lib/db/prisma';
@@ -67,11 +69,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { checkoutId, items, customerInfo, selectedShippingMethod } = body as {
+    const { checkoutId, items, customerInfo, selectedShippingMethod, termsAccepted, termsVersion } = body as {
       checkoutId?: string;
       items?: unknown;
       customerInfo?: CustomerInfo;
       selectedShippingMethod?: ShippingMethod;
+      termsAccepted?: boolean;
+      termsVersion?: string;
     };
 
     if (!checkoutId || typeof checkoutId !== 'string' || checkoutId.length < 10) {
@@ -81,6 +85,39 @@ export async function POST(request: NextRequest) {
     const validated = normalizeAndValidateCartItems(items);
     if (!validated.ok) {
       return NextResponse.json({ error: 'Invalid cart items', details: validated.errors }, { status: 400 });
+    }
+
+    // Only products that are on sale online can be paid for (stale carts can hold quote-only items).
+    const notForSale = validated.normalizedItems.filter((it) => !isOnlineCheckoutEnabled(it.productType));
+    if (notForSale.length > 0) {
+      return NextResponse.json(
+        { error: 'Some items in your cart are quote-only. Remove them to continue.' },
+        { status: 400 }
+      );
+    }
+
+    const baseUrlForRedirects = (() => {
+      const trimmed = (process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com').trim().replace(/\/+$/, '');
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    })();
+
+    // Dumpster gates: pickup or local delivery, terms acceptance, no carrier shipping.
+    if (isGateOnlyCart(validated.normalizedItems)) {
+      const result = await createGateCheckoutSession({
+        stripe: stripeInstance,
+        checkoutId,
+        items: validated.normalizedItems,
+        customerInfo: customerInfo as any,
+        fulfillment: selectedShippingMethod,
+        termsAccepted,
+        termsVersion,
+        baseUrl: baseUrlForRedirects,
+        clientIp: ip,
+      });
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ url: result.url, sessionId: result.sessionId });
     }
 
     if (!customerInfo?.email || !customerInfo?.shippingAddress?.zip || !customerInfo?.shippingAddress?.state) {

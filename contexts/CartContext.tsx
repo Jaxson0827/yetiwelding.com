@@ -26,6 +26,8 @@ interface CartContextType {
   clearCart: () => void;
   getTotalPrice: () => number;
   getItemCount: () => number;
+  /** False until the saved cart has been read from localStorage (first client effect). */
+  isLoaded: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -187,6 +189,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         getTotalPrice,
         getItemCount,
+        isLoaded: isInitialized,
       }}
     >
       {children}

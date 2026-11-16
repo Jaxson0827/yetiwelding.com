@@ -49,14 +49,17 @@ export default function ShippingInfo({
           <div>
             <p className="text-white/60 text-sm mb-2">Pickup Location</p>
             <div className="text-white">
-              <p className="font-semibold">Local Pickup</p>
-              <p>Pick up at our facility in Springville, UT</p>
+              <p className="font-semibold">Free pickup at our shop</p>
+              <p>1680 W 1600 S, Springville, UT 84663</p>
+              <p className="text-white/60 text-sm mt-1">We&apos;ll call when your order is ready.</p>
             </div>
           </div>
         ) : (
           customerInfo?.shippingAddress && (
             <div>
-              <p className="text-white/60 text-sm mb-2">Shipping Address</p>
+              <p className="text-white/60 text-sm mb-2">
+                {shippingMethod === 'local_delivery' ? 'Delivery address' : 'Shipping Address'}
+              </p>
               <div className="text-white">
                 {customerInfo.name && <p className="font-semibold">{customerInfo.name}</p>}
                 <p>{customerInfo.shippingAddress.street}</p>
@@ -76,7 +79,11 @@ export default function ShippingInfo({
           <div>
             <p className="text-white/60 text-sm mb-1">Shipping Method</p>
             <p className="text-white">
-              {shippingMethod === 'pickup' ? 'Local Pickup' : shippingMethod.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              {shippingMethod === 'pickup'
+                ? 'Local Pickup'
+                : shippingMethod === 'local_delivery'
+                  ? "Free delivery (we'll call to schedule)"
+                  : shippingMethod.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
             </p>
           </div>
         )}

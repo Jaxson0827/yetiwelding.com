@@ -1,0 +1,19 @@
+const raw = "__DATA__";
+const pts = raw.split(';').map(s => { const [zip, lon, lat] = s.split(','); return { zip, lon, lat }; });
+const src = "-111.6176,40.1448";
+const out = [];
+for (let i = 0; i < pts.length; i += 90) {
+  const batch = pts.slice(i, i + 90);
+  const coords = [src, ...batch.map(p => p.lon + ',' + p.lat)].join(';');
+  const url = 'https://router.project-osrm.org/table/v1/driving/' + coords + '?sources=0&annotations=duration,distance';
+  let j = null;
+  for (let attempt = 0; attempt < 3 && !j; attempt++) {
+    try { const r = await fetch(url); if (r.ok) j = await r.json(); else await new Promise(res => setTimeout(res, 1500)); } catch (e) { await new Promise(res => setTimeout(res, 1500)); }
+  }
+  if (!j || j.code !== 'Ok') { out.push('ERR' + i); continue; }
+  const d = j.durations[0]; const m = j.distances[0];
+  batch.forEach((p, k) => out.push(p.zip + ':' + (d[k + 1] == null ? 'x' : Math.round(d[k + 1] / 60)) + ':' + (m[k + 1] == null ? 'x' : Math.round(m[k + 1] / 1609.34))));
+  await new Promise(res => setTimeout(res, 1100));
+}
+window.__osrm = out.join(' ');
+window.__osrm.length + ' chars, ' + out.length + ' entries, errors: ' + out.filter(x => x.startsWith('ERR')).length

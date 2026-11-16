@@ -7,7 +7,8 @@ import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import type { PergolaConfig } from '@/lib/pergolas/types';
 import type { GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { GARDEN_BOX_FINISHES, GARDEN_BOX_ADD_ON_LABELS } from '@/lib/gardenBoxes/types';
-import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import { formatDimension } from '@/lib/dumpsterGates/validation';
+import { getFinishLabel, getGateHeightFt } from '@/lib/dumpsterGates/display';
 import { COLORS } from '@/lib/pergolas/colors';
 import { getDesign } from '@/lib/pergolas/panels';
 
@@ -111,25 +112,15 @@ export default function CartItem({ item, onRemove, onQuantityChange }: CartItemP
       );
     }
     const config = item.configuration as DumpsterGateConfig;
-      const sizeDisplay = getDumpsterGateSizeDisplay(config);
-      const powderCoatColorLabel =
-        config.finish === 'powder-coat-black' && config.powderCoatColor
-          ? config.powderCoatColor.charAt(0).toUpperCase() + config.powderCoatColor.slice(1)
-          : null;
       return (
         <div className="space-y-1">
-          <h4 className="text-white font-semibold">
-            Dumpster Gate
-          </h4>
+          <h4 className="text-white font-semibold">Custom steel dumpster gate</h4>
           <p className="text-white/70 text-sm">
-            Size: {sizeDisplay} • Style: {config.style.replace('-', ' ')}
+            {formatDimension(config.enclosureLengthFt)} enclosure • {formatDimension(getGateHeightFt(config))} tall •
+            double swing
           </p>
           <p className="text-white/70 text-sm">
-            Finish:{' '}
-            {config.finish === 'powder-coat-black'
-              ? `Powder coat${powderCoatColorLabel ? ` (${powderCoatColorLabel})` : ''}`
-              : config.finish.replace('-', ' ')}{' '}
-            • {config.mounting.replace('-', ' ')}
+            {getFinishLabel(config)} • {config.mounting === 'with-posts' ? 'Steel posts included' : 'Gate only'}
           </p>
         </div>
       );

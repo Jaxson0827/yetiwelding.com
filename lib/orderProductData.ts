@@ -19,7 +19,7 @@ export const orderProducts: OrderProductMeta[] = [
     shortDescription:
       'Custom steel dumpster enclosure gates. Standard or custom sizes, multiple finishes.',
     description:
-      'Order custom dumpster gates for steel or masonry enclosures. Yeti Welding fabricates dumpster gates in Utah. Configure size, style, finish, and mounting online.',
+      'Custom steel dumpster enclosure gates built to your measurements in Springville, Utah. Configure your gate online, see a live dimensioned drawing, and get free pickup or free delivery within about 3 hours.',
     keywords: [
       'dumpster gates',
       'yeti welding dumpster gates',
@@ -27,7 +27,7 @@ export const orderProducts: OrderProductMeta[] = [
       'custom dumpster gates utah',
     ],
     url: `${base}/order/dumpster-gates`,
-    ogImage: '/dumpstergate/dumpster_gate_hero.png',
+    ogImage: '/projects/photo9.jpg',
   },
   {
     id: 'steel-embeds',

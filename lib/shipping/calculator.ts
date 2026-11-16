@@ -2,6 +2,8 @@ import { CartItem } from '@/contexts/CartContext';
 import { getShippoShippingOptions } from '@/lib/shipping/providers/shippo';
 import { estimateTotalDimensionsIn, estimateTotalWeightLb } from '@/lib/shipping/packaging';
 import type { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
+import { isZipInDeliveryZone, SHOP_ADDRESS_ONE_LINE } from '@/lib/delivery/zone';
+import { isGateOnlyCart } from '@/lib/checkout/cartKinds';
 import {
   calculateFreightUsd,
   type FreightInputs,
@@ -20,7 +22,7 @@ export interface ShippingAddress {
   country: string;
 }
 
-export type ShippingMethod = 'standard' | 'expedited' | 'freight' | 'pickup';
+export type ShippingMethod = 'standard' | 'expedited' | 'freight' | 'pickup' | 'local_delivery';
 
 export interface ShippingOption {
   method: ShippingMethod;
@@ -90,30 +92,35 @@ const BASE_RATES: Record<number, Record<ShippingMethod, number>> = {
     expedited: 0.75, // $0.75 per lb
     freight: 0.40, // $0.40 per lb (for large/heavy items)
     pickup: 0,
+    local_delivery: 0,
   },
   2: {
     standard: 0.65,
     expedited: 0.90,
     freight: 0.55,
     pickup: 0,
+    local_delivery: 0,
   },
   3: {
     standard: 0.80,
     expedited: 1.10,
     freight: 0.70,
     pickup: 0,
+    local_delivery: 0,
   },
   4: {
     standard: 0.95,
     expedited: 1.30,
     freight: 0.85,
     pickup: 0,
+    local_delivery: 0,
   },
   5: {
     standard: 1.50,
     expedited: 2.00,
     freight: 1.20,
     pickup: 0,
+    local_delivery: 0,
   },
 };
 
@@ -123,6 +130,7 @@ const MINIMUM_SHIPPING: Record<ShippingMethod, number> = {
   expedited: 45.00,
   freight: 50.00,
   pickup: 0,
+  local_delivery: 0,
 };
 
 // Estimated delivery days by method
@@ -131,6 +139,7 @@ const DELIVERY_DAYS: Record<ShippingMethod, string> = {
   expedited: '3-5 business days',
   freight: '5-10 business days',
   pickup: '1-3 business days',
+  local_delivery: 'We call to schedule delivery',
 };
 
 /**
@@ -227,6 +236,52 @@ function buildPickupOption(): ShippingOption {
     provider: 'local_pickup',
     estimatedDaysMin: 1,
     estimatedDaysMax: 3,
+  };
+}
+
+/**
+ * Dumpster gates are never shipped by carrier. They're picked up free at the shop, or delivered
+ * free within about 3 hours' drive (ZIP list in lib/delivery/zoneZips.ts).
+ */
+export { isGateOnlyCart };
+
+export function buildGatePickupOption(): ShippingOption {
+  return {
+    method: 'pickup',
+    name: 'Free pickup at our shop',
+    description: `${SHOP_ADDRESS_ONE_LINE}. We'll call when your gate is ready.`,
+    cost: 0,
+    estimatedDays: "We'll call when it's ready",
+    provider: 'local_pickup',
+    estimatedDaysMin: 10,
+    estimatedDaysMax: 20,
+  };
+}
+
+export function buildGateDeliveryOption(): ShippingOption {
+  return {
+    method: 'local_delivery',
+    name: 'Free delivery',
+    description: "We deliver within about 3 hours of our Springville shop and call ahead to schedule.",
+    cost: 0,
+    estimatedDays: 'We call to schedule delivery',
+    provider: 'yeti_delivery',
+    estimatedDaysMin: 10,
+    estimatedDaysMax: 20,
+  };
+}
+
+/** Pickup always; delivery only when the ZIP is inside the delivery zone. */
+export function getGateFulfillmentCalculation(zip?: string, preferredMethod?: ShippingMethod): ShippingCalculation {
+  const options: ShippingOption[] = [buildGatePickupOption()];
+  if (isZipInDeliveryZone(zip)) options.push(buildGateDeliveryOption());
+  const selectedMethod: ShippingMethod =
+    preferredMethod && options.some((o) => o.method === preferredMethod) ? preferredMethod : 'pickup';
+  return {
+    options,
+    selectedMethod,
+    totalWeight: 0,
+    totalDimensions: { length: 0, width: 0, height: 0 },
   };
 }
 
@@ -392,6 +447,10 @@ export async function calculateShippingLive(
   preferredMethod?: ShippingMethod,
   freight?: FreightInputs
 ): Promise<ShippingCalculation> {
+  if (isGateOnlyCart(items)) {
+    return getGateFulfillmentCalculation(address?.zip, preferredMethod);
+  }
+
   // Guard: basic address presence required for carrier rates.
   const hasFullAddress =
     !!address?.street && !!address?.city && !!address?.state && !!address?.zip && !!address?.country;

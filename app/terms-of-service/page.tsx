@@ -80,6 +80,66 @@ const sections = [
     ),
   },
   {
+    id: 'custom-dumpster-gates',
+    title: 'Custom Dumpster Gates',
+    content: (
+      <>
+        <p>
+          These terms apply to dumpster gates ordered and paid for on our website. They add to the rest of these
+          Terms; where they differ, this section controls for dumpster gate orders.
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Your measurements</h3>
+        <p className="mt-2">
+          Gates are built to the dimensions you enter when you configure your order. You are responsible for
+          measuring your enclosure accurately. Our measuring guide on the order page shows what to measure.
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Approval drawing</h3>
+        <p className="mt-2">
+          After you pay, we email you a shop drawing showing your gate&apos;s dimensions. We start fabrication only
+          after you approve that drawing in writing (a reply to our email is enough). If the drawing needs to change,
+          tell us before you approve it. If a change affects the price, we will confirm the new price with you before
+          we start, and refund or invoice the difference.
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Cancellations and returns</h3>
+        <p className="mt-2">
+          You may cancel for a full refund any time before you approve the drawing. Once you approve it, your gate is
+          fabricated to your measurements and the order can&apos;t be cancelled or returned. This does not limit your
+          rights if the gate is defective or does not match your approved drawing (see Warranty and Disclaimers).
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Lead time</h3>
+        <p className="mt-2">
+          Lead times shown on the website are estimates that start when you approve the drawing. Powder coat and
+          galvanizing add time. We will tell you if we expect a delay.
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Pickup</h3>
+        <p className="mt-2">
+          Pickup is free at our shop at 1680 W 1600 S, Springville, UT 84663. We will contact you when your gate is
+          ready. Please bring a vehicle or trailer that can safely carry it. Risk of loss passes to you when the gate
+          leaves our shop.
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Local delivery</h3>
+        <p className="mt-2">
+          Delivery is free to addresses within our delivery area, about a 3-hour drive from our shop, as determined
+          by the delivery ZIP code at checkout. We will contact you to schedule a delivery date. We deliver to a
+          location at the site that our truck can safely reach; someone should be available, or leave clear
+          instructions in your order notes. Risk of loss passes to you when the gate is delivered. If the address you
+          confirm at payment is outside our delivery area, we will contact you to arrange pickup, quoted delivery, or a
+          refund.
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Installation and site work</h3>
+        <p className="mt-2">
+          Online orders do not include installation, concrete, anchors, or embeds unless they are listed in your
+          order. You are responsible for installation, and for any permits and code requirements that apply to it.
+        </p>
+        <h3 className="mt-4 font-semibold text-white">Finishes</h3>
+        <p className="mt-2">
+          Raw steel will rust until it is coated. Primer is a base coat and should be top-coated for long-term
+          protection. Powder coat and galvanized finishes can vary slightly in color and texture.
+        </p>
+      </>
+    ),
+  },
+  {
     id: 'payment-terms',
     title: 'Payment Terms',
     content: (
@@ -115,7 +175,8 @@ const sections = [
       <>
         <p>
           Shipping is calculated at checkout based on your delivery address and product dimensions and
-          weight. Delivery times are estimates and not guarantees.
+          weight. Delivery times are estimates and not guarantees. Dumpster gates are not shipped by carrier; see
+          Custom Dumpster Gates for pickup and local delivery.
         </p>
         <p className="mt-4">
           Risk of loss of goods passes to you upon delivery to the carrier. You are responsible for
@@ -309,7 +370,7 @@ export default function TermsOfServicePage() {
               Terms of Service
             </h1>
             <p className="mt-4 text-white/70 text-lg">
-              Last Updated: February 19, 2025
+              Last Updated: November 16, 2026
             </p>
           </div>
         </section>
@@ -319,7 +380,7 @@ export default function TermsOfServicePage() {
           <div className="container mx-auto max-w-3xl">
             <div className="space-y-12">
               {sections.map((section) => (
-                <article key={section.id} id={section.id}>
+                <article key={section.id} id={section.id} className="scroll-mt-28">
                   <h2 className="text-2xl font-bold text-white uppercase tracking-tight border-b border-white/20 pb-2 mb-4">
                     {section.title}
                   </h2>

@@ -68,3 +68,17 @@ For local pickup:
 - Add it to Vercel env vars for **Production + Preview**
 - Share it only with staff who need admin access
 
+### 8) Dumpster gate orders (pickup / free local delivery)
+
+Online gate orders arrive like any other order (email + `/admin/orders`). The list shows a **Pickup** or **Free delivery** tag.
+
+1. **Same day:** send the customer a shop drawing with their dimensions (the order email lists them). Ask them to reply to approve.
+2. **Before approval:** the customer can cancel for a full refund. Refund in Stripe, then set the order to `cancelled`.
+3. **After approval:** set status → `in_production`. Lead time on the site is 2–3 weeks from approval.
+4. **When it's done:**
+   - Pickup: call the customer, set status → `ready`.
+   - Delivery: call to schedule, then set status → `shipped` when it's on the truck, and `delivered` after.
+5. **`needs_review` with `delivery_out_of_zone`:** the customer changed their address on Stripe's page to somewhere outside the delivery area. Call them: pickup, a quoted delivery, or a refund.
+
+See `DUMPSTER_GATES.md` for pricing, the on/off switch, and the delivery area.
+

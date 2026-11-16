@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { generateShopPacket } from '@/lib/steelEmbeds/generateShopPacket';
-import { storeOrder } from '../order-status/route';
+import { storeOrder } from '@/lib/steelEmbeds/legacyOrderStore';
 
 /**
  * Process order after successful checkout

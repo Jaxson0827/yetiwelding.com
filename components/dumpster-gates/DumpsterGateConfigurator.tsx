@@ -1,211 +1,173 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DumpsterGateConfig, getCartKey } from '@/lib/dumpsterGates/types';
 import { priceGate } from '@/lib/dumpsterGates/pricing';
+import { formatDimension } from '@/lib/dumpsterGates/validation';
+import { getGateHeightFt, getGateQuoteReasons, getMaxWallHeightFt } from '@/lib/dumpsterGates/display';
 import { useCart } from '@/contexts/CartContext';
-import { formatDimension, getSlopeDiffIn, isSlopeWithinTolerance } from '@/lib/dumpsterGates/validation';
-import DimensionGraphic from './DimensionGraphic';
+import { GATE_ONLINE_CHECKOUT } from '@/lib/onlineCheckout';
+import { saveQuoteDraft } from '@/lib/quoteDraft';
+import DrawingSheet from './DrawingSheet';
 import ConfigurationPanel from './ConfigurationPanel';
-import PricingSummary from './PricingSummary';
+import PricingSummary, { formatUsd } from './PricingSummary';
 
-function getMaxBlockHeightFt(cfg: Pick<DumpsterGateConfig, 'leftHeightFt' | 'rightHeightFt'>) {
-  return Math.max(cfg.leftHeightFt, cfg.rightHeightFt);
-}
-
-function getGateHeightFt(
-  cfg: Pick<DumpsterGateConfig, 'leftHeightFt' | 'rightHeightFt' | 'bottomGapIn'>
-): number {
-  const maxBlockHeightFt = getMaxBlockHeightFt(cfg);
-  const gateHeightFt = maxBlockHeightFt - cfg.bottomGapIn / 12;
-  return Math.max(0, gateHeightFt);
-}
+const INITIAL: DumpsterGateConfig = {
+  size: 'custom',
+  style: 'double-swing',
+  finish: 'prime-painted',
+  mounting: 'with-posts',
+  quantity: 1,
+  isCustom: true,
+  widthFt: 14,
+  heightFt: 6 - 4 / 12,
+  enclosureLengthFt: 14,
+  leftHeightFt: 6,
+  rightHeightFt: 6,
+  blockWidthIn: 8,
+  bottomGapIn: 4,
+};
 
 export default function DumpsterGateConfigurator() {
+  const router = useRouter();
   const { addItem } = useCart();
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [config, setConfig] = useState<DumpsterGateConfig>({
-    size: 'custom',
-    style: 'double-swing',
-    finish: 'prime-painted',
-    mounting: 'with-posts',
-    quantity: 1,
-    isCustom: true,
-    widthFt: 14,
-    heightFt: getGateHeightFt({ leftHeightFt: 6, rightHeightFt: 6, bottomGapIn: 4 }),
+  const [config, setConfig] = useState<DumpsterGateConfig>(INITIAL);
+  const [justAdded, setJustAdded] = useState(false);
 
-    enclosureLengthFt: 14,
-    leftHeightFt: 6,
-    rightHeightFt: 6,
-    blockWidthIn: 8,
-    bottomGapIn: 4,
-  });
-
-  const slopeDiffIn = useMemo(() => getSlopeDiffIn(config.leftHeightFt, config.rightHeightFt), [
-    config.leftHeightFt,
-    config.rightHeightFt,
-  ]);
-  const slopeWithinTolerance = useMemo(
-    () => isSlopeWithinTolerance(config.leftHeightFt, config.rightHeightFt, 3),
-    [config.leftHeightFt, config.rightHeightFt]
-  );
-  const powderCoatRequiresQuote = useMemo(() => {
-    if (config.finish !== 'powder-coat-black') return false;
-    return (config.powderCoatColor || 'black') !== 'black';
-  }, [config.finish, config.powderCoatColor]);
-
-  const requiresQuote = useMemo(
-    () => powderCoatRequiresQuote || !slopeWithinTolerance,
-    [powderCoatRequiresQuote, slopeWithinTolerance]
-  );
-
-  const quoteReason = useMemo(() => {
-    const parts: string[] = [];
-    if (powderCoatRequiresQuote) {
-      parts.push('Powder coat color selection requires a quote.');
-    }
-    if (!slopeWithinTolerance) {
-      parts.push(`Slope exceeds 3" tolerance (${Math.round(slopeDiffIn)}").`);
-    }
-    return parts.join(' ');
-  }, [powderCoatRequiresQuote, slopeDiffIn, slopeWithinTolerance]);
+  const quoteReasons = useMemo(() => getGateQuoteReasons(config), [config]);
+  const priceBreakdown = useMemo(() => priceGate(config), [config]);
+  const canBuy = GATE_ONLINE_CHECKOUT && quoteReasons.length === 0;
 
   const printValues = useMemo(() => {
-    const maxBlockHeightFt = getMaxBlockHeightFt(config);
-    const gateHeightFt = getGateHeightFt(config);
     const enclCTOCFt = Math.max(0, config.enclosureLengthFt - config.blockWidthIn / 12);
-
     return {
       enclOverall: formatDimension(config.enclosureLengthFt),
       enclCTOC: formatDimension(enclCTOCFt),
       lGap: '2"',
       cGap: '2"',
       rGap: '2"',
-      gateHeight: formatDimension(gateHeightFt),
-      // Placeholder: gate width formula needs fabrication team input. Currently uses enclosureLengthFt/2.
+      gateHeight: formatDimension(getGateHeightFt(config)),
+      // Leaf width needs the shop's real formula (gaps, post sizes); hidden on the drawing until then.
       gateWidth: formatDimension(config.enclosureLengthFt / 2),
       blockWidth: `${Math.round(config.blockWidthIn * 100) / 100}"`,
-      blockHeight: formatDimension(maxBlockHeightFt),
+      blockHeight: formatDimension(getMaxWallHeightFt(config)),
       bottomGap: `${config.bottomGapIn}"`,
       postDepth: `3'`,
     };
-  }, [
-    config.enclosureLengthFt,
-    config.leftHeightFt,
-    config.rightHeightFt,
-    config.blockWidthIn,
-    config.bottomGapIn,
-  ]);
-
-  // Calculate pricing
-  const priceBreakdown = useMemo(() => {
-    return priceGate(config);
   }, [config]);
 
-  // Handle configuration changes
-  const handleConfigChange = useCallback((partialConfig: Partial<DumpsterGateConfig>) => {
+  const handleConfigChange = useCallback((partial: Partial<DumpsterGateConfig>) => {
+    setJustAdded(false);
     setConfig((prev) => {
-      const next = { ...prev, ...partialConfig };
-
-      // Lock to custom-only + double swing.
+      const next = { ...prev, ...partial };
+      // Online gates are always custom-size, double swing.
       next.isCustom = true;
       next.size = 'custom';
       next.style = 'double-swing';
-
-      // Keep legacy pricing fields aligned with enclosure inputs.
+      // Legacy pricing fields follow the enclosure inputs.
       next.widthFt = next.enclosureLengthFt;
       next.heightFt = getGateHeightFt(next);
-
       return next;
     });
   }, []);
 
-  // Handle add to cart
   const handleAddToCart = useCallback(() => {
-    if (requiresQuote) return;
-    const cartKey = getCartKey(config);
-    const cartItem = {
-      id: cartKey,
-      productType: 'dumpster-gate' as const,
+    if (!canBuy) return;
+    addItem({
+      id: getCartKey(config),
+      productType: 'dumpster-gate',
       configuration: config,
       price: priceBreakdown.totalPrice,
-      isCustomFabrication: config.isCustom,
+      isCustomFabrication: true,
+    });
+    setJustAdded(true);
+  }, [addItem, canBuy, config, priceBreakdown.totalPrice]);
+
+  const handleRequestQuote = useCallback(() => {
+    saveQuoteDraft('dumpster-gate', config, { leadTime: priceBreakdown.leadTime });
+    router.push('/contact?from=quote');
+  }, [config, priceBreakdown.leadTime, router]);
+
+  // Phone-width sticky bar: visible while the configurator is on screen and the summary card isn't.
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [sectionInView, setSectionInView] = useState(false);
+  const [summaryInView, setSummaryInView] = useState(false);
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const a = new IntersectionObserver(([e]) => setSectionInView(e.isIntersecting), { threshold: 0 });
+    const b = new IntersectionObserver(([e]) => setSummaryInView(e.isIntersecting), { threshold: 0.2 });
+    if (sectionRef.current) a.observe(sectionRef.current);
+    if (summaryRef.current) b.observe(summaryRef.current);
+    return () => {
+      a.disconnect();
+      b.disconnect();
     };
-    addItem(cartItem);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
-  }, [config, priceBreakdown, addItem, requiresQuote]);
+  }, []);
+  const showBar = sectionInView && !summaryInView;
 
   return (
-    <div className="w-full">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        {/* Left Side: Dimension Graphic */}
-        <div className="order-2 lg:order-1">
-          <DimensionGraphic
-            values={printValues}
-            style={config.style}
-          />
-          {!slopeWithinTolerance && (
-            <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-              <p className="text-yellow-200 text-sm">
-                Slope detected: left/right height differs by {Math.round(slopeDiffIn)}&quot;. This exceeds our 3&quot; tolerance — please request a quote.
-              </p>
-            </div>
-          )}
+    <div ref={sectionRef}>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-10">
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <DrawingSheet config={config} printValues={printValues} />
         </div>
 
-        {/* Right Side: Configuration Panel + Pricing Summary */}
-        <div className="order-1 lg:order-2 space-y-8">
-          {/* Configuration Panel */}
-          <div className="bg-white/5 border-2 border-white/20 rounded-lg p-6 backdrop-blur-sm">
-            <h2 className="text-white text-2xl font-bold mb-6">Configure Your Gate</h2>
+        <div className="space-y-8">
+          <div className="border border-gate-rule bg-gate-plate p-5 sm:p-6">
             <ConfigurationPanel config={config} onConfigChange={handleConfigChange} />
           </div>
-
-          {/* Pricing Summary */}
-          <PricingSummary
-            config={config}
-            priceBreakdown={priceBreakdown}
-            onAddToCart={handleAddToCart}
-            requiresQuote={requiresQuote}
-            quoteReason={quoteReason}
-          />
+          <div ref={summaryRef} id="gate-summary">
+            <PricingSummary
+              config={config}
+              priceBreakdown={priceBreakdown}
+              online={GATE_ONLINE_CHECKOUT}
+              quoteReasons={quoteReasons}
+              onAddToCart={handleAddToCart}
+              onRequestQuote={handleRequestQuote}
+              justAdded={justAdded}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Success Notification */}
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            className="fixed bottom-8 right-8 bg-[#DC143C] text-white px-6 py-4 rounded-lg shadow-lg z-50"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span className="font-semibold">
-                Added {config.quantity} gate{config.quantity > 1 ? 's' : ''} to cart!
-              </span>
+      {/* Sticky action bar (phones and tablets) */}
+      <div
+        aria-hidden={!showBar}
+        className={`fixed inset-x-0 bottom-0 z-40 border-t border-gate-rule bg-black/95 px-4 py-3 backdrop-blur transition-transform duration-200 motion-reduce:transition-none lg:hidden ${
+          showBar ? 'translate-y-0' : 'pointer-events-none translate-y-full'
+        }`}
+      >
+        <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="truncate font-drafting text-xs text-gate-mute">
+              {formatDimension(config.enclosureLengthFt)} × {formatDimension(getGateHeightFt(config))} gate
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div className="font-display text-lg font-extrabold text-white [font-stretch:110%]">
+              {canBuy ? formatUsd(priceBreakdown.totalPrice) : 'Priced by quote'}
+            </div>
+          </div>
+          {canBuy && justAdded ? (
+            <a
+              href="/checkout"
+              tabIndex={showBar ? 0 : -1}
+              className="shrink-0 bg-white px-5 py-3 text-sm font-semibold text-black"
+            >
+              Go to checkout
+            </a>
+          ) : (
+            <button
+              type="button"
+              tabIndex={showBar ? 0 : -1}
+              onClick={canBuy ? handleAddToCart : handleRequestQuote}
+              className="shrink-0 bg-accent-red px-5 py-3 text-sm font-semibold text-white"
+            >
+              {canBuy ? 'Add to cart' : 'Request a quote'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
-

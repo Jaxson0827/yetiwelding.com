@@ -15,6 +15,8 @@ import { getCartKey as getGateCartKey } from '@/lib/dumpsterGates/types';
 import { getCartKey as getPergolaCartKey } from '@/lib/pergolas/types';
 import { getCartKey as getGardenBoxCartKey, type GardenBoxConfig } from '@/lib/gardenBoxes/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import { getGateSummaryLine } from '@/lib/dumpsterGates/display';
+import { isZipInDeliveryZone } from '@/lib/delivery/zone';
 import { getEmbedCartKey } from '@/lib/steelEmbeds/key';
 import { COLORS } from '@/lib/pergolas/colors';
 import { getDesign } from '@/lib/pergolas/panels';
@@ -186,6 +188,15 @@ export async function POST(request: NextRequest) {
     return Math.min(max, Math.max(min, Math.floor(parsed)));
   }
 
+  // Since Stripe API 2025-03-31, Checkout Sessions expose the collected shipping address at
+  // collected_information.shipping_details (the old top-level shipping_details is gone).
+  function getSessionShippingDetails(session: Stripe.Checkout.Session): { name?: string | null; address?: Stripe.Address | null } | null {
+    const collected = (session as any)?.collected_information?.shipping_details;
+    if (collected) return collected;
+    const legacy = (session as any)?.shipping_details;
+    return legacy || null;
+  }
+
   function stripeAddressToShippingAddress(addr: Stripe.Address | null | undefined) {
     if (!addr) return null;
     const street = [addr.line1, addr.line2].filter(Boolean).join(' ').trim();
@@ -214,7 +225,7 @@ export async function POST(request: NextRequest) {
 
   function buildCustomerInfoFromStripeSession(session: Stripe.Checkout.Session): any {
     const customerDetails = session.customer_details || null;
-    const shippingDetails = (session as any).shipping_details || null;
+    const shippingDetails = getSessionShippingDetails(session);
     const stripeShip = stripeAddressToShippingAddress(shippingDetails?.address);
     const name = shippingDetails?.name || customerDetails?.name || '';
     const email = customerDetails?.email || '';
@@ -489,6 +500,14 @@ export async function POST(request: NextRequest) {
       mismatches.push(`shipping_mismatch stripe=${stripeShipping} expected=${draft.expectedShippingCents}`);
     }
 
+    // Free local delivery: the address confirmed on Stripe's page must still be inside the zone.
+    if (draft.selectedShippingMethod === 'local_delivery') {
+      const finalZip = getSessionShippingDetails(session)?.address?.postal_code || null;
+      if (!finalZip || !isZipInDeliveryZone(finalZip)) {
+        mismatches.push(`delivery_out_of_zone zip=${finalZip || 'missing'}`);
+      }
+    }
+
     const needsReview = mismatches.length > 0;
 
     const paymentStatus = opts.forceMarkPaid || session.payment_status === 'paid' ? ('paid' as const) : ('pending' as const);
@@ -503,14 +522,14 @@ export async function POST(request: NextRequest) {
       const phone = session.customer_details?.phone || next.phone;
       if (phone) next.phone = phone;
 
-      const stripeShip = stripeAddressToShippingAddress((session as any).shipping_details?.address);
+      const stripeShip = stripeAddressToShippingAddress(getSessionShippingDetails(session)?.address);
       if (stripeShip) {
         next.shippingAddress = {
           ...(next.shippingAddress || {}),
           ...stripeShip,
         };
       }
-      const stripeName = (session as any).shipping_details?.name || session.customer_details?.name;
+      const stripeName = getSessionShippingDetails(session)?.name || session.customer_details?.name;
       if (stripeName) next.name = stripeName;
       return next;
     })();
@@ -673,7 +692,7 @@ export async function POST(request: NextRequest) {
         totalPriceCents: unitCents * qty,
         configuration: cfg as any,
         name: 'Dumpster Gate',
-        description: `Size: ${sizeDisplay} • Style: ${cfg.style.replace('-', ' ')}`,
+        description: cfg.isCustom ? getGateSummaryLine(cfg) : `Size: ${sizeDisplay} • Style: ${cfg.style.replace('-', ' ')}`,
       };
     });
 
@@ -787,7 +806,11 @@ export async function POST(request: NextRequest) {
       await maybeSendEmails({
         jobId: result.order.jobId,
         trackingToken: result.order.trackingToken,
-        items: draftItems,
+        // Show server-computed prices in emails (the cart's client-side price can be stale).
+        items: draftItems.map((it: any, i: number) => ({
+          ...it,
+          price: (orderItemsCreate[i]?.totalPriceCents ?? 0) / 100,
+        })),
         customerInfo: mergedCustomerInfo,
         orderTotalUsd: typeof totalCents === 'number' ? totalCents / 100 : 0,
       });

@@ -9,7 +9,7 @@ import CartSummary from '@/components/cart/CartSummary';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
+import { ANY_ONLINE_CHECKOUT, isOnlineCheckoutEnabled } from '@/lib/onlineCheckout';
 
 export default function CartPage() {
   const router = useRouter();
@@ -17,10 +17,15 @@ export default function CartPage() {
   const subtotal = getTotalPrice();
 
   useEffect(() => {
-    if (QUOTE_ONLY_MODE) {
+    if (!ANY_ONLINE_CHECKOUT) {
       router.replace('/contact');
     }
   }, [router]);
+
+  // Drop anything that's quote-only now (e.g. added to the cart before a product went quote-only).
+  useEffect(() => {
+    items.filter((it) => !isOnlineCheckoutEnabled(it.productType)).forEach((it) => removeItem(it.id));
+  }, [items, removeItem]);
 
   const handleCheckout = () => {
     if (items.length > 0) {
@@ -28,7 +33,7 @@ export default function CartPage() {
     }
   };
 
-  if (QUOTE_ONLY_MODE) {
+  if (!ANY_ONLINE_CHECKOUT) {
     return null;
   }
 
@@ -67,10 +72,10 @@ export default function CartPage() {
                 <h2 className="text-2xl font-bold text-white mb-4">Your cart is empty</h2>
                 <p className="text-white/60 mb-8">Start adding items to your cart to continue.</p>
                 <Link
-                  href="/order"
+                  href="/order/dumpster-gates"
                   className="inline-block bg-[#DC143C] hover:bg-[#B01030] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
                 >
-                  Browse Products
+                  Configure a dumpster gate
                 </Link>
               </div>
             ) : (

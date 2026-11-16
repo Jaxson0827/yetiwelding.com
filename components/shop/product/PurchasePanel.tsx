@@ -1,7 +1,6 @@
 'use client';
 
 import { ShopProduct } from '@/lib/shop/types';
-import StarRating from '@/components/shop/landing/StarRating';
 
 interface Props {
   product: ShopProduct;
@@ -12,15 +11,7 @@ interface Props {
 export default function PurchasePanel({ product, computedPrice, children }: Props) {
   return (
     <div className="space-y-6">
-      {/* Rating row */}
-      <div className="flex items-center gap-2 text-sm">
-        <StarRating value={product.rating} />
-        <span className="font-medium text-white">({product.rating})</span>
-        <span className="text-white/40">·</span>
-        <a href="#reviews" className="text-white/70 underline-offset-2 hover:text-white hover:underline">
-          {product.reviewCount} reviews
-        </a>
-      </div>
+      {/* Rating row removed: product ratings were placeholder data. Restore once real reviews exist. */}
 
       {/* Name + price */}
       <div className="flex items-start justify-between gap-4">

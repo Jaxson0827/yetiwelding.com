@@ -2,6 +2,7 @@ import { CartItem } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import { renderFulfillmentHtml, renderFulfillmentText } from './fulfillment';
 
 interface CustomerInfo {
   name: string;
@@ -16,6 +17,8 @@ interface CustomerInfo {
     country: string;
   };
   specialInstructions?: string;
+  fulfillment?: 'pickup' | 'local_delivery';
+  siteNotes?: string;
 }
 
 export function generateOrderConfirmationEmail(
@@ -236,7 +239,7 @@ export function generateOrderConfirmationEmail(
                 </table>
               </div>
               
-              <div class="section">
+${renderFulfillmentHtml(customerInfo, 'customer') ?? `              <div class="section">
                 <div class="section-title">Shipping Address</div>
                 <div class="info-row">
                   <span class="info-label">Name:</span>
@@ -262,7 +265,7 @@ export function generateOrderConfirmationEmail(
                   <span class="info-label">Email:</span>
                   ${customerInfo.email}
                 </div>
-              </div>
+              </div>`}
               
               ${customerInfo.specialInstructions ? `
               <div class="section">
@@ -276,8 +279,13 @@ export function generateOrderConfirmationEmail(
               <div class="section">
                 <div class="section-title">What's Next?</div>
                 <ul style="line-height: 2;">
+                  ${items.some((it) => it.productType === 'dumpster-gate') ? `
+                  <li>We'll email you a drawing of your gate with your dimensions. Reply to approve it, or tell us what to change</li>
+                  <li>Fabrication starts after you approve the drawing. Lead time is about 2-3 weeks from approval (powder coat adds 3-5 business days)</li>
+                  ` : `
                   <li>Our team will review your order and contact you if any clarification is needed</li>
                   <li>Standard lead time is 2-3 weeks. Rush orders may be available upon request</li>
+                  `}
                   <li>You'll receive updates as your order progresses</li>
                   <li>You can track your order status using your Job ID</li>
                 </ul>
@@ -345,17 +353,19 @@ ${items.map((item, index) => {
 
 Total: $${orderTotal.toFixed(2)}
 
-SHIPPING ADDRESS:
+${renderFulfillmentText(customerInfo, 'customer') ?? `SHIPPING ADDRESS:
 ${customerInfo.name}
 ${customerInfo.company ? `${customerInfo.company}\n` : ''}${customerInfo.shippingAddress.street}
 ${customerInfo.shippingAddress.city}, ${customerInfo.shippingAddress.state} ${customerInfo.shippingAddress.zip}
 ${customerInfo.shippingAddress.country}
 Phone: ${customerInfo.phone}
 Email: ${customerInfo.email}
+`}
 
 ${customerInfo.specialInstructions ? `SPECIAL INSTRUCTIONS:\n${customerInfo.specialInstructions}\n\n` : ''}WHAT'S NEXT:
-- Our team will review your order and contact you if any clarification is needed
-- Standard lead time is 2-3 weeks
+${items.some((it) => it.productType === 'dumpster-gate')
+  ? "- We'll email you a drawing of your gate with your dimensions. Reply to approve it, or tell us what to change\n- Fabrication starts after you approve the drawing. Lead time is about 2-3 weeks from approval"
+  : '- Our team will review your order and contact you if any clarification is needed\n- Standard lead time is 2-3 weeks'}
 - You'll receive updates as your order progresses
 - Track your order: ${opts?.trackingUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'https://yetiwelding.com'}/order/track/${jobId}`}
 

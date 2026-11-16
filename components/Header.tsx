@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useOptionalCart } from '@/contexts/CartContext';
 import Link from 'next/link';
-import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
+import { ANY_ONLINE_CHECKOUT } from '@/lib/onlineCheckout';
 
 interface HeaderProps {
   showCart?: boolean;
@@ -316,7 +316,7 @@ export default function Header({ showCart = true }: HeaderProps) {
         </nav>
 
         {/* Cart Button - hidden in quote-only mode */}
-        {showCart && !QUOTE_ONLY_MODE && (
+        {showCart && ANY_ONLINE_CHECKOUT && (
           <Link
             href="/cart"
             className="relative flex items-center gap-2 px-3 py-2 hover:bg-white/5 rounded transition-colors group"
@@ -498,7 +498,7 @@ export default function Header({ showCart = true }: HeaderProps) {
                   </div>
                 ))}
                 {/* Mobile Cart Link - hidden in quote-only mode */}
-                {showCart && !QUOTE_ONLY_MODE && (
+                {showCart && ANY_ONLINE_CHECKOUT && (
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}

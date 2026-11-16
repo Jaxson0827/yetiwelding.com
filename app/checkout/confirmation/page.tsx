@@ -183,13 +183,13 @@ function ConfirmationContent() {
                   <svg className="w-5 h-5 text-[#DC143C] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Our team will review your order and contact you if any clarification is needed</span>
+                  <span>We&apos;ll email you a drawing with your dimensions to approve. Fabrication starts once you approve it</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-[#DC143C] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Standard lead time is 2-3 weeks. Rush orders may be available upon request</span>
+                  <span>Lead time is about 2–3 weeks from approval. We&apos;ll call when it&apos;s ready for pickup or to schedule delivery</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-[#DC143C] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

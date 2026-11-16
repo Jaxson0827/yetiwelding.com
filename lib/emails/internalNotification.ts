@@ -2,6 +2,7 @@ import { CartItem } from '@/contexts/CartContext';
 import { EmbedSpec } from '@/lib/steelEmbeds/types';
 import { DumpsterGateConfig } from '@/lib/dumpsterGates/types';
 import { getDumpsterGateSizeDisplay } from '@/lib/dumpsterGates/validation';
+import { renderFulfillmentHtml, renderFulfillmentText } from './fulfillment';
 
 interface CustomerInfo {
   name: string;
@@ -308,14 +309,14 @@ export function generateInternalNotificationEmail(
                 </div>
               </div>
               
-              <div class="section">
+${renderFulfillmentHtml(customerInfo as any, 'internal') ?? `              <div class="section">
                 <div class="section-title">Shipping Address</div>
                 <div class="info-row">
                   ${customerInfo.shippingAddress.street}<br>
                   ${customerInfo.shippingAddress.city}, ${customerInfo.shippingAddress.state} ${customerInfo.shippingAddress.zip}<br>
                   ${customerInfo.shippingAddress.country}
                 </div>
-              </div>
+              </div>`}
               
               ${customerInfo.useBillingAddress && customerInfo.billingAddress ? `
               <div class="section">
@@ -377,10 +378,11 @@ Name: ${customerInfo.name}
 ${customerInfo.company ? `Company: ${customerInfo.company}\n` : ''}Email: ${customerInfo.email}
 Phone: ${customerInfo.phone}
 
-SHIPPING ADDRESS:
+${renderFulfillmentText(customerInfo as any, 'internal') ?? `SHIPPING ADDRESS:
 ${customerInfo.shippingAddress.street}
 ${customerInfo.shippingAddress.city}, ${customerInfo.shippingAddress.state} ${customerInfo.shippingAddress.zip}
 ${customerInfo.shippingAddress.country}
+`}
 
 ${customerInfo.useBillingAddress && customerInfo.billingAddress ? `
 BILLING ADDRESS:

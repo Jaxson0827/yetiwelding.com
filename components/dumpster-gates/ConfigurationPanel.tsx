@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { DumpsterGateConfig, Finish, MountingOption, PowderCoatColor } from '@/lib/dumpsterGates/types';
+import React, { useEffect, useId, useState } from 'react';
+import type { DumpsterGateConfig, Finish, MountingOption, PowderCoatColor } from '@/lib/dumpsterGates/types';
 import { formatDimension, parseDimension, validateBlockHeight, validateWidth } from '@/lib/dumpsterGates/validation';
-import ConfigDropdown, { DropdownOption } from '@/components/ConfigDropdown';
 
 interface ConfigurationPanelProps {
   config: DumpsterGateConfig;
@@ -12,494 +11,368 @@ interface ConfigurationPanelProps {
 
 type Unit = 'ft' | 'in';
 
-function roundToFraction(value: number, denom: number) {
-  return Math.round(value * denom) / denom;
-}
-
 function parseInchesInput(value: string): number | null {
-  if (!value || typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  // Accept: 72, 72", 72 in, 72 inches
-  const m = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:"|in|inch|inches)?\s*$/i);
-  if (!m) return null;
-  const inches = parseFloat(m[1]);
-  if (isNaN(inches)) return null;
-  return inches;
+  const m = value.trim().match(/^(\d+(?:\.\d+)?)\s*(?:"|in|inch|inches)?\s*$/i);
+  return m ? parseFloat(m[1]) : null;
 }
 
 function parseFeetByUnit(value: string, unit: Unit): number | null {
   if (unit === 'ft') return parseDimension(value);
   const inches = parseInchesInput(value);
-  if (inches === null) return null;
-  return inches / 12;
+  return inches === null ? null : inches / 12;
 }
 
 function formatByUnit(feet: number, unit: Unit): string {
   if (unit === 'ft') return formatDimension(feet);
-  const inches = roundToFraction(feet * 12, 16);
+  const inches = Math.round(feet * 12 * 16) / 16;
   const isWhole = Math.abs(inches - Math.round(inches)) < 1e-6;
   return `${isWhole ? Math.round(inches) : Math.round(inches * 100) / 100}"`;
 }
 
-function UnitToggle({ value, onChange }: { value: Unit; onChange: (unit: Unit) => void }) {
+const fieldBase =
+  'w-full bg-black/40 px-3.5 py-3 text-[15px] text-white placeholder:text-white/30 outline-none transition-colors ' +
+  'border focus-visible:border-accent-red focus-visible:ring-1 focus-visible:ring-accent-red';
+
+/** Feet/inches text input with its own unit toggle, parse + validation. */
+function DimensionInput({
+  label,
+  hint,
+  valueFt,
+  defaultUnit,
+  validate,
+  onCommit,
+}: {
+  label: string;
+  hint?: string;
+  valueFt: number;
+  defaultUnit: Unit;
+  validate: (ft: number) => string | undefined;
+  onCommit: (ft: number) => void;
+}) {
+  const id = useId();
+  const [unit, setUnit] = useState<Unit>(defaultUnit);
+  const [text, setText] = useState(formatByUnit(valueFt, defaultUnit));
+  const [error, setError] = useState<string | undefined>();
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) setText(formatByUnit(valueFt, unit));
+  }, [valueFt, unit, focused]);
+
+  const handleChange = (value: string) => {
+    setText(value);
+    const parsed = parseFeetByUnit(value, unit);
+    if (parsed === null) {
+      setError(unit === 'in' ? 'Use inches, like 96 or 96"' : `Use feet and inches, like 14' 6" or 14.5`);
+      return;
+    }
+    const err = validate(parsed);
+    setError(err);
+    if (!err) onCommit(parsed);
+  };
+
   return (
-    <div className="inline-flex shrink-0 overflow-hidden rounded-lg border-2 border-white/20 bg-white/5">
-      <button
-        type="button"
-        onClick={() => onChange('ft')}
-        className={`px-3 py-2 text-xs font-semibold transition-colors ${
-          value === 'ft' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
-        }`}
-        aria-pressed={value === 'ft'}
-      >
-        Ft
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('in')}
-        className={`px-3 py-2 text-xs font-semibold transition-colors ${
-          value === 'in' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
-        }`}
-        aria-pressed={value === 'in'}
-      >
-        In
-      </button>
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-white">
+        {label}
+      </label>
+      <div className="flex items-stretch">
+        <input
+          id={id}
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          value={text}
+          onChange={(e) => handleChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            const parsed = parseFeetByUnit(text, unit);
+            if (parsed !== null && !validate(parsed)) setText(formatByUnit(parsed, unit));
+          }}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
+          className={`${fieldBase} font-drafting ${error ? 'border-accent-red' : 'border-gate-rule'}`}
+        />
+        <div className="flex shrink-0 border border-l-0 border-gate-rule" role="group" aria-label={`${label} units`}>
+          {(['ft', 'in'] as Unit[]).map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() => {
+                const parsed = parseFeetByUnit(text, unit);
+                setUnit(u);
+                if (parsed !== null && !validate(parsed)) setText(formatByUnit(parsed, u));
+              }}
+              aria-pressed={unit === u}
+              className={`w-11 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent-red ${
+                unit === u ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+      </div>
+      {error ? (
+        <p id={`${id}-err`} className="mt-1.5 text-xs text-[#ff6b81]">
+          {error}
+        </p>
+      ) : hint ? (
+        <p id={`${id}-hint`} className="mt-1.5 text-xs leading-relaxed text-gate-mute">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-const FINISH_OPTIONS: { value: Finish; label: string; note?: string }[] = [
-  { value: 'raw-steel', label: 'Raw steel' },
-  { value: 'prime-painted', label: 'Prime painted' },
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="min-w-0 border-t border-gate-rule first:border-t-0">
+      <legend className="mb-4 flex items-center gap-3 pr-3">
+        <span
+          aria-hidden="true"
+          className="flex h-7 w-7 items-center justify-center border border-white/70 font-drafting text-[13px] font-bold text-white"
+        >
+          {n}
+        </span>
+        <span className="font-display text-lg font-bold text-white [font-stretch:112%]">{title}</span>
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
+const FINISH_OPTIONS: { value: Finish; label: string; note: string }[] = [
+  { value: 'prime-painted', label: 'Primed', note: 'Ready for your paint' },
   { value: 'powder-coat-black', label: 'Powder coat', note: 'Adds 3–5 business days' },
-  { value: 'galvanized', label: 'Galvanized' },
+  { value: 'galvanized', label: 'Galvanized', note: 'Longest-lasting, longer lead time' },
+  { value: 'raw-steel', label: 'Raw steel', note: 'Will rust until coated' },
 ];
 
 const POWDER_COAT_COLORS: { value: PowderCoatColor; label: string; hex: string }[] = [
-  { value: 'black', label: 'Black', hex: '#111827' },
-  { value: 'white', label: 'White', hex: '#ffffff' },
-  { value: 'gray', label: 'Gray', hex: '#9ca3af' },
-  { value: 'red', label: 'Red', hex: '#dc2626' },
-  { value: 'blue', label: 'Blue', hex: '#2563eb' },
-  { value: 'green', label: 'Green', hex: '#16a34a' },
-  { value: 'bronze', label: 'Bronze', hex: '#a16207' },
+  { value: 'black', label: 'Black', hex: '#111111' },
+  { value: 'white', label: 'White', hex: '#f4f4f2' },
+  { value: 'gray', label: 'Gray', hex: '#8f969b' },
+  { value: 'bronze', label: 'Bronze', hex: '#6b4a2b' },
+  { value: 'green', label: 'Green', hex: '#2f5a3a' },
+  { value: 'blue', label: 'Blue', hex: '#26456e' },
+  { value: 'red', label: 'Red', hex: '#8f1d1d' },
 ];
 
-export default function ConfigurationPanel({ config, onConfigChange }: ConfigurationPanelProps) {
-  const [enclLengthUnit, setEnclLengthUnit] = useState<Unit>('ft');
-  const [leftHeightUnit, setLeftHeightUnit] = useState<Unit>('ft');
-  const [rightHeightUnit, setRightHeightUnit] = useState<Unit>('ft');
-  const [blockWidthUnit, setBlockWidthUnit] = useState<Unit>('in');
+const MOUNTING_OPTIONS: { value: MountingOption; label: string; note: string }[] = [
+  { value: 'with-posts', label: 'Steel posts included', note: 'Posts set about 3\' deep in concrete beside your walls. Most enclosures need these.' },
+  { value: 'gate-only', label: 'Gate only', note: 'You already have steel posts or embeds to hang it on.' },
+];
 
-  const [enclLengthInput, setEnclLengthInput] = useState(formatDimension(config.enclosureLengthFt));
-  const [leftHeightInput, setLeftHeightInput] = useState(formatDimension(config.leftHeightFt));
-  const [rightHeightInput, setRightHeightInput] = useState(formatDimension(config.rightHeightFt));
-  const [blockWidthInput, setBlockWidthInput] = useState(`${Math.round(config.blockWidthIn * 100) / 100}"`);
-
-  const [enclLengthError, setEnclLengthError] = useState<string | undefined>();
-  const [leftHeightError, setLeftHeightError] = useState<string | undefined>();
-  const [rightHeightError, setRightHeightError] = useState<string | undefined>();
-  const [blockWidthError, setBlockWidthError] = useState<string | undefined>();
-
-  // Sync input values when config changes externally
-  useEffect(() => {
-    setEnclLengthInput(formatByUnit(config.enclosureLengthFt, enclLengthUnit));
-    setLeftHeightInput(formatByUnit(config.leftHeightFt, leftHeightUnit));
-    setRightHeightInput(formatByUnit(config.rightHeightFt, rightHeightUnit));
-
-    const blockWidthFt = config.blockWidthIn / 12;
-    setBlockWidthInput(formatByUnit(blockWidthFt, blockWidthUnit));
-  }, [
-    config.enclosureLengthFt,
-    config.leftHeightFt,
-    config.rightHeightFt,
-    config.blockWidthIn,
-    enclLengthUnit,
-    leftHeightUnit,
-    rightHeightUnit,
-    blockWidthUnit,
-  ]);
-
-  const handleEnclLengthChange = (value: string) => {
-    setEnclLengthInput(value);
-    const parsed = parseFeetByUnit(value, enclLengthUnit);
-    if (parsed === null) {
-      setEnclLengthError(enclLengthUnit === 'in' ? 'Invalid format. Examples: 168 or 168"' : 'Invalid format. Examples: 14\' 0", 14.5, 168"');
-      return;
-    }
-    const validation = validateWidth(parsed);
-    if (!validation.valid) {
-      setEnclLengthError(validation.error);
-      return;
-    }
-    setEnclLengthError(undefined);
-    onConfigChange({ enclosureLengthFt: parsed });
-  };
-
-  const handleLeftHeightChange = (value: string) => {
-    setLeftHeightInput(value);
-    const parsed = parseFeetByUnit(value, leftHeightUnit);
-    if (parsed === null) {
-      setLeftHeightError(leftHeightUnit === 'in' ? 'Invalid format. Examples: 72 or 72"' : 'Invalid format. Examples: 6\' 0", 6.0, 72"');
-      return;
-    }
-    const validation = validateBlockHeight(parsed);
-    if (!validation.valid) {
-      setLeftHeightError(validation.error);
-      return;
-    }
-    setLeftHeightError(undefined);
-    onConfigChange({ leftHeightFt: parsed });
-  };
-
-  const handleRightHeightChange = (value: string) => {
-    setRightHeightInput(value);
-    const parsed = parseFeetByUnit(value, rightHeightUnit);
-    if (parsed === null) {
-      setRightHeightError(rightHeightUnit === 'in' ? 'Invalid format. Examples: 72 or 72"' : 'Invalid format. Examples: 6\' 0", 6.0, 72"');
-      return;
-    }
-    const validation = validateBlockHeight(parsed);
-    if (!validation.valid) {
-      setRightHeightError(validation.error);
-      return;
-    }
-    setRightHeightError(undefined);
-    onConfigChange({ rightHeightFt: parsed });
-  };
-
-  const handleBlockWidthChange = (value: string) => {
-    setBlockWidthInput(value);
-    const parsedFt = parseFeetByUnit(value, blockWidthUnit);
-    if (parsedFt === null) {
-      setBlockWidthError(blockWidthUnit === 'in' ? 'Invalid format. Examples: 8 or 8"' : 'Invalid format. Examples: 0\' 8", 0.67, 8"');
-      return;
-    }
-    const inches = parsedFt * 12;
-    if (isNaN(inches) || inches <= 0) {
-      setBlockWidthError('Block width must be positive');
-      return;
-    }
-    setBlockWidthError(undefined);
-    onConfigChange({ blockWidthIn: Math.round(inches * 16) / 16 });
-  };
-
-  const handleBottomGapChange = (bottomGapIn: 4 | 5 | 6 | 7) => {
-    onConfigChange({ bottomGapIn });
-  };
-
-  const bottomGapOptions: DropdownOption[] = [
-    { value: '4', label: '4"' },
-    { value: '5', label: '5"' },
-    { value: '6', label: '6"' },
-    { value: '7', label: '7"' },
-  ];
-
-  const finishDropdownOptions: DropdownOption[] = FINISH_OPTIONS.map((o) => ({
-    value: o.value,
-    label: o.label,
-  }));
-
-  const handleFinishChange = (finish: Finish) => {
-    if (finish === 'powder-coat-black') {
-      onConfigChange({ finish, powderCoatColor: config.powderCoatColor || 'black' });
-      return;
-    }
-    onConfigChange({ finish, powderCoatColor: undefined });
-  };
-
-  const handleMountingChange = (mounting: MountingOption) => {
-    onConfigChange({ mounting });
-  };
-
-  const handleQuantityChange = (quantity: number) => {
-    if (quantity >= 1) {
-      onConfigChange({ quantity });
-    }
-  };
-
+function OptionCard({
+  name,
+  checked,
+  onChange,
+  label,
+  note,
+}: {
+  name: string;
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+  note: string;
+}) {
   return (
-    <div className="space-y-8">
-      {/* A. Enclosure Inputs */}
-      <div>
-        <label className="block text-white text-sm font-medium mb-3">
-          Enclosure Inputs <span className="text-red-500">*</span>
-        </label>
-        <div className="mt-4 space-y-4">
-          <div>
-            <label className="block text-white/70 text-sm mb-2">Enclosure overall (outside-to-outside)</label>
-            <div className="flex items-stretch gap-2">
-              <input
-                type="text"
-                value={enclLengthInput}
-                onChange={(e) => handleEnclLengthChange(e.target.value)}
-                onBlur={() => {
-                  const parsed = parseFeetByUnit(enclLengthInput, enclLengthUnit);
-                  if (parsed !== null && validateWidth(parsed).valid) {
-                    setEnclLengthInput(formatByUnit(parsed, enclLengthUnit));
-                  }
-                }}
-                placeholder={formatByUnit(config.enclosureLengthFt, enclLengthUnit)}
-                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
-                  enclLengthError
-                    ? 'border-red-500 focus:border-red-500'
-                    : 'border-white/20 focus:border-red-500'
-                }`}
-              />
-              <UnitToggle
-                value={enclLengthUnit}
-                onChange={(nextUnit) => {
-                  const parsed = parseFeetByUnit(enclLengthInput, enclLengthUnit);
-                  setEnclLengthUnit(nextUnit);
-                  if (parsed !== null && validateWidth(parsed).valid) {
-                    setEnclLengthInput(formatByUnit(parsed, nextUnit));
-                  }
-                }}
-              />
-            </div>
-            {enclLengthError && <p className="mt-1 text-red-400 text-xs">{enclLengthError}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-white/70 text-sm mb-2">Left block height</label>
-              <div className="flex items-stretch gap-2">
-                <input
-                  type="text"
-                  value={leftHeightInput}
-                  onChange={(e) => handleLeftHeightChange(e.target.value)}
-                  onBlur={() => {
-                    const parsed = parseFeetByUnit(leftHeightInput, leftHeightUnit);
-                    if (parsed !== null && validateBlockHeight(parsed).valid) {
-                      setLeftHeightInput(formatByUnit(parsed, leftHeightUnit));
-                    }
-                  }}
-                  placeholder={formatByUnit(config.leftHeightFt, leftHeightUnit)}
-                  className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
-                    leftHeightError
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-white/20 focus:border-red-500'
-                  }`}
-                />
-                <UnitToggle
-                  value={leftHeightUnit}
-                  onChange={(nextUnit) => {
-                    const parsed = parseFeetByUnit(leftHeightInput, leftHeightUnit);
-                    setLeftHeightUnit(nextUnit);
-                    if (parsed !== null && validateBlockHeight(parsed).valid) {
-                      setLeftHeightInput(formatByUnit(parsed, nextUnit));
-                    }
-                  }}
-                />
-              </div>
-              {leftHeightError && <p className="mt-1 text-red-400 text-xs">{leftHeightError}</p>}
-            </div>
-            <div>
-              <label className="block text-white/70 text-sm mb-2">Right block height</label>
-              <div className="flex items-stretch gap-2">
-                <input
-                  type="text"
-                  value={rightHeightInput}
-                  onChange={(e) => handleRightHeightChange(e.target.value)}
-                  onBlur={() => {
-                    const parsed = parseFeetByUnit(rightHeightInput, rightHeightUnit);
-                    if (parsed !== null && validateBlockHeight(parsed).valid) {
-                      setRightHeightInput(formatByUnit(parsed, rightHeightUnit));
-                    }
-                  }}
-                  placeholder={formatByUnit(config.rightHeightFt, rightHeightUnit)}
-                  className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
-                    rightHeightError
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-white/20 focus:border-red-500'
-                  }`}
-                />
-                <UnitToggle
-                  value={rightHeightUnit}
-                  onChange={(nextUnit) => {
-                    const parsed = parseFeetByUnit(rightHeightInput, rightHeightUnit);
-                    setRightHeightUnit(nextUnit);
-                    if (parsed !== null && validateBlockHeight(parsed).valid) {
-                      setRightHeightInput(formatByUnit(parsed, nextUnit));
-                    }
-                  }}
-                />
-              </div>
-              {rightHeightError && <p className="mt-1 text-red-400 text-xs">{rightHeightError}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
-                Block width
-              </label>
-              <div className="flex items-stretch gap-2">
-                <input
-                  type="text"
-                  value={blockWidthInput}
-                  onChange={(e) => handleBlockWidthChange(e.target.value)}
-                  onBlur={() => {
-                    const parsedFt = parseFeetByUnit(blockWidthInput, blockWidthUnit);
-                    if (parsedFt !== null && parsedFt > 0) {
-                      setBlockWidthInput(formatByUnit(parsedFt, blockWidthUnit));
-                    }
-                  }}
-                  placeholder={formatByUnit(config.blockWidthIn / 12, blockWidthUnit)}
-                  className={`w-full px-4 py-3 rounded-lg border-2 bg-white/5 text-white focus:outline-none ${
-                    blockWidthError
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-white/20 focus:border-red-500'
-                  }`}
-                />
-                <UnitToggle
-                  value={blockWidthUnit}
-                  onChange={(nextUnit) => {
-                    const parsed = parseFeetByUnit(blockWidthInput, blockWidthUnit);
-                    setBlockWidthUnit(nextUnit);
-                    if (parsed !== null && parsed > 0) {
-                      setBlockWidthInput(formatByUnit(parsed, nextUnit));
-                    }
-                  }}
-                />
-              </div>
-              {blockWidthError && <p className="mt-1 text-red-400 text-xs">{blockWidthError}</p>}
-              <p className="mt-1 text-white/60 text-xs">Examples: 8&quot;, 8 in, or 0&apos; 8&quot;</p>
-            </div>
-            <div>
-              <ConfigDropdown
-                label="Bottom gap"
-                options={bottomGapOptions}
-                value={String(config.bottomGapIn)}
-                onChange={(value) => handleBottomGapChange(parseInt(value, 10) as 4 | 5 | 6 | 7)}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* B. Finish */}
-      <div>
-        <ConfigDropdown
-          label="Finish"
-          options={finishDropdownOptions}
-          value={config.finish}
-          onChange={(value) => handleFinishChange(value as Finish)}
+    <label
+      className={`relative flex cursor-pointer flex-col gap-0.5 border px-3.5 py-3 transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-accent-red ${
+        checked ? 'border-white bg-white/[0.06]' : 'border-gate-rule hover:border-white/40'
+      }`}
+    >
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
+      <span className="flex items-center gap-2 text-[15px] font-semibold text-white">
+        <span
+          aria-hidden="true"
+          className={`h-3 w-3 shrink-0 border ${checked ? 'border-accent-red bg-accent-red' : 'border-white/50'}`}
         />
-        {config.finish === 'powder-coat-black' && (
-          <>
-            <p className="mt-2 text-white/60 text-sm">Adds 3–5 business days</p>
-
-            <div className="mt-4">
-              <label className="block text-white text-sm font-medium mb-3">
-                Powder coat color <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-7 gap-2">
-                {POWDER_COAT_COLORS.map((c) => {
-                  const selected = (config.powderCoatColor || 'black') === c.value;
-                  return (
-                    <button
-                      key={c.value}
-                      type="button"
-                      title={c.label}
-                      onClick={() => onConfigChange({ powderCoatColor: c.value })}
-                      className={`h-10 w-10 rounded-md border-2 transition-all ${
-                        selected ? 'border-red-500 ring-2 ring-red-500/40' : 'border-white/20 hover:border-white/40'
-                      }`}
-                      style={{ backgroundColor: c.hex }}
-                      aria-label={`Powder coat color: ${c.label}`}
-                      aria-pressed={selected}
-                    >
-                      <span className="sr-only">{c.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-white/60 text-xs">
-                Selected:{' '}
-                <span className="text-white/80 font-medium">
-                  {POWDER_COAT_COLORS.find((c) => c.value === (config.powderCoatColor || 'black'))?.label || 'Black'}
-                </span>
-              </p>
-            </div>
-          </>
-        )}
-        {config.finish === 'galvanized' && (
-          <div className="mt-2 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-            <p className="text-blue-200 text-sm">
-              Extended lead time. Contact us if schedule is critical.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* C. Post/Mounting Option */}
-      <div>
-        <label className="block text-white text-sm font-medium mb-3">
-          Mounting Option <span className="text-red-500">*</span>
-        </label>
-        <div className="space-y-2">
-          <label className="flex items-center p-3 rounded-lg border-2 border-white/20 bg-white/5 hover:border-white/40 cursor-pointer transition-all">
-            <input
-              type="radio"
-              name="mounting"
-              value="with-posts"
-              checked={config.mounting === 'with-posts'}
-              onChange={() => handleMountingChange('with-posts')}
-              className="mr-3 w-4 h-4 text-red-500 focus:ring-red-500 focus:ring-2"
-            />
-            <span className="text-white">Includes steel posts</span>
-          </label>
-          <label className="flex items-center p-3 rounded-lg border-2 border-white/20 bg-white/5 hover:border-white/40 cursor-pointer transition-all">
-            <input
-              type="radio"
-              name="mounting"
-              value="gate-only"
-              checked={config.mounting === 'gate-only'}
-              onChange={() => handleMountingChange('gate-only')}
-              className="mr-3 w-4 h-4 text-red-500 focus:ring-red-500 focus:ring-2"
-            />
-            <span className="text-white">Gate only (mount to existing steel)</span>
-          </label>
-        </div>
-        <p className="mt-2 text-white/60 text-sm">
-          Not sure? Most dumpster enclosures need posts.
-        </p>
-      </div>
-
-      {/* Quantity */}
-      <div>
-        <label className="block text-white text-sm font-medium mb-3">
-          Quantity
-        </label>
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => handleQuantityChange(config.quantity - 1)}
-            disabled={config.quantity <= 1}
-            className="w-10 h-10 rounded-lg border-2 border-white/20 bg-white/5 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-white/40 transition-all"
-          >
-            −
-          </button>
-          <input
-            type="number"
-            min="1"
-            value={config.quantity}
-            onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-            className="w-20 px-4 py-2 rounded-lg border-2 border-white/20 bg-white/5 text-white text-center focus:border-red-500 focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={() => handleQuantityChange(config.quantity + 1)}
-            className="w-10 h-10 rounded-lg border-2 border-white/20 bg-white/5 text-white hover:border-white/40 transition-all"
-          >
-            +
-          </button>
-        </div>
-      </div>
-    </div>
+        {label}
+      </span>
+      <span className="pl-5 text-xs leading-relaxed text-gate-mute">{note}</span>
+    </label>
   );
 }
 
+export default function ConfigurationPanel({ config, onConfigChange }: ConfigurationPanelProps) {
+  const powderColor = config.powderCoatColor || 'black';
+
+  return (
+    <div className="space-y-8">
+      <Step n={1} title="Enclosure width">
+        <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr]">
+          <DimensionInput
+            label="Outside of wall to outside of wall"
+            hint="Measure across the front of the enclosure."
+            valueFt={config.enclosureLengthFt}
+            defaultUnit="ft"
+            validate={(ft) => (validateWidth(ft).valid ? undefined : validateWidth(ft).error)}
+            onCommit={(ft) => onConfigChange({ enclosureLengthFt: ft })}
+          />
+          <DimensionInput
+            label="Wall thickness"
+            hint="One wall, at the opening."
+            valueFt={config.blockWidthIn / 12}
+            defaultUnit="in"
+            validate={(ft) => (ft > 0 && ft * 12 <= 24 ? undefined : 'Enter a wall thickness up to 24"')}
+            onCommit={(ft) => onConfigChange({ blockWidthIn: Math.round(ft * 12 * 16) / 16 })}
+          />
+        </div>
+      </Step>
+
+      <Step n={2} title="Wall heights">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <DimensionInput
+            label="Left wall"
+            hint="Pad to top of wall, at the front corner."
+            valueFt={config.leftHeightFt}
+            defaultUnit="ft"
+            validate={(ft) => (validateBlockHeight(ft).valid ? undefined : validateBlockHeight(ft).error)}
+            onCommit={(ft) => onConfigChange({ leftHeightFt: ft })}
+          />
+          <DimensionInput
+            label="Right wall"
+            hint="Same spot on the other side."
+            valueFt={config.rightHeightFt}
+            defaultUnit="ft"
+            validate={(ft) => (validateBlockHeight(ft).valid ? undefined : validateBlockHeight(ft).error)}
+            onCommit={(ft) => onConfigChange({ rightHeightFt: ft })}
+          />
+        </div>
+        <div className="mt-5">
+          <div id="gap-label" className="mb-1.5 text-sm font-medium text-white">
+            Gap under the gate
+          </div>
+          <div role="radiogroup" aria-labelledby="gap-label" className="inline-flex border border-gate-rule">
+            {([4, 5, 6, 7] as const).map((gap) => {
+              const active = config.bottomGapIn === gap;
+              return (
+                <button
+                  key={gap}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => onConfigChange({ bottomGapIn: gap })}
+                  className={`w-14 py-2.5 font-drafting text-sm transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent-red ${
+                    active ? 'bg-white font-bold text-black' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  {gap}&quot;
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-gate-mute">
+            More gap clears snow and an uneven pad. Gate height is your taller wall minus this gap.
+          </p>
+        </div>
+      </Step>
+
+      <Step n={3} title="Finish">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {FINISH_OPTIONS.map((o) => (
+            <OptionCard
+              key={o.value}
+              name="finish"
+              checked={config.finish === o.value}
+              onChange={() =>
+                onConfigChange(
+                  o.value === 'powder-coat-black'
+                    ? { finish: o.value, powderCoatColor: config.powderCoatColor || 'black' }
+                    : { finish: o.value, powderCoatColor: undefined }
+                )
+              }
+              label={o.label}
+              note={o.note}
+            />
+          ))}
+        </div>
+        {config.finish === 'powder-coat-black' && (
+          <div className="mt-4">
+            <div id="color-label" className="mb-2 text-sm font-medium text-white">
+              Color <span className="font-normal text-gate-mute">(black is standard, other colors are quoted)</span>
+            </div>
+            <div role="radiogroup" aria-labelledby="color-label" className="flex flex-wrap gap-2">
+              {POWDER_COAT_COLORS.map((c) => {
+                const selected = powderColor === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={c.label}
+                    title={c.label}
+                    onClick={() => onConfigChange({ powderCoatColor: c.value })}
+                    className={`h-9 w-9 border transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-red ${
+                      selected ? 'border-white ring-2 ring-white ring-offset-2 ring-offset-black' : 'border-white/25'
+                    }`}
+                    style={{ backgroundColor: c.hex }}
+                  />
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-gate-mute">
+              Selected: <span className="text-white">{POWDER_COAT_COLORS.find((c) => c.value === powderColor)?.label}</span>
+            </p>
+          </div>
+        )}
+      </Step>
+
+      <Step n={4} title="Posts and quantity">
+        <div className="grid gap-2">
+          {MOUNTING_OPTIONS.map((o) => (
+            <OptionCard
+              key={o.value}
+              name="mounting"
+              checked={config.mounting === o.value}
+              onChange={() => onConfigChange({ mounting: o.value })}
+              label={o.label}
+              note={o.note}
+            />
+          ))}
+        </div>
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <span id="qty-label" className="text-sm font-medium text-white">
+            How many gates like this?
+          </span>
+          <div className="flex items-stretch border border-gate-rule" role="group" aria-labelledby="qty-label">
+            <button
+              type="button"
+              onClick={() => config.quantity > 1 && onConfigChange({ quantity: config.quantity - 1 })}
+              disabled={config.quantity <= 1}
+              aria-label="One fewer"
+              className="w-10 text-lg text-white transition-colors hover:bg-white/10 disabled:text-white/25 disabled:hover:bg-transparent"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={config.quantity}
+              aria-label="Quantity"
+              onChange={(e) => {
+                const q = Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 1));
+                onConfigChange({ quantity: q });
+              }}
+              className="w-12 border-x border-gate-rule bg-transparent py-2 text-center font-drafting text-white outline-none [appearance:textfield] focus-visible:bg-white/10 [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <button
+              type="button"
+              onClick={() => config.quantity < 50 && onConfigChange({ quantity: config.quantity + 1 })}
+              aria-label="One more"
+              className="w-10 text-lg text-white transition-colors hover:bg-white/10"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </Step>
+    </div>
+  );
+}

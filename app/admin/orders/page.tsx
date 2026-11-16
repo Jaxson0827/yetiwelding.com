@@ -193,6 +193,12 @@ export default function AdminOrdersPage() {
                       </div>
                       <div className="mt-2 text-white/50 text-xs">
                         Items: {o.itemsCount} • {new Date(o.createdAt).toLocaleString()}
+                        {o.shippingMethod === 'pickup' && (
+                          <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-white/80">Pickup</span>
+                        )}
+                        {o.shippingMethod === 'local_delivery' && (
+                          <span className="ml-2 rounded bg-[#DC143C]/20 px-1.5 py-0.5 text-white">Free delivery</span>
+                        )}
                       </div>
                     </button>
                   ))}

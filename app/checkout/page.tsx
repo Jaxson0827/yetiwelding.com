@@ -12,14 +12,27 @@ import { estimateTotalWeightLb } from '@/lib/shipping/packaging';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { QUOTE_ONLY_MODE } from '@/lib/quoteOnlyMode';
+import { ANY_ONLINE_CHECKOUT } from '@/lib/onlineCheckout';
+import { isGateOnlyCart } from '@/lib/checkout/cartKinds';
+import GateCheckout from '@/components/checkout/GateCheckout';
 
 export default function CheckoutPage() {
+  const { items, isLoaded } = useCart();
+  if (!isLoaded) {
+    return <main className="min-h-screen bg-black" aria-busy="true" />;
+  }
+  if (ANY_ONLINE_CHECKOUT && items.length > 0 && isGateOnlyCart(items)) {
+    return <GateCheckout />;
+  }
+  return <LegacyCheckoutPage />;
+}
+
+function LegacyCheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCart();
   const router = useRouter();
 
   useEffect(() => {
-    if (QUOTE_ONLY_MODE) {
+    if (!ANY_ONLINE_CHECKOUT) {
       router.replace('/contact');
     }
   }, [router]);
@@ -252,7 +265,7 @@ export default function CheckoutPage() {
     setAddressForShipping(address);
   };
 
-  if (QUOTE_ONLY_MODE) {
+  if (!ANY_ONLINE_CHECKOUT) {
     return null; // Will redirect to /contact
   }
 

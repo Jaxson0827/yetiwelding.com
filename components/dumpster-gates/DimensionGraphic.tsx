@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { GateStyle } from '@/lib/dumpsterGates/types';
 
@@ -28,14 +27,21 @@ export interface DumpsterGatePrintValues {
 interface DimensionGraphicProps {
   values: DumpsterGatePrintValues;
   style: GateStyle;
+  /** Render without the white card + caption (used inside DrawingSheet). */
+  frameless?: boolean;
+  /** Dimension keys to leave off the drawing. */
+  hide?: ReadonlyArray<keyof DumpsterGatePrintValues>;
 }
 
 const VIEWBOX_W = DUMPSTER_GATE_PRINT_VIEWBOX.w;
 const VIEWBOX_H = DUMPSTER_GATE_PRINT_VIEWBOX.h;
+// The base print has an empty band below the footing; crop it so the drawing fills the sheet.
+const VISIBLE_H = 1370;
 
 // Dimension overlay colors
-const DIM_COLOR = '#ef4444'; // red
-const DIM_HIGHLIGHT_COLOR = '#b91c1c'; // darker red for calibration highlight
+const DIM_COLOR = '#DC143C'; // brand crimson: "redline" dims the customer controls
+const DIM_HIGHLIGHT_COLOR = '#8f0d27'; // darker red for calibration highlight
+const DIM_FONT = 'var(--font-b612), Arial, Helvetica, sans-serif';
 
 // Styling to match a "construction plan" look
 const MAIN_DIM_STROKE = 2.5;
@@ -46,8 +52,7 @@ const MAIN_DIM_STROKE_SMALL_HIGHLIGHT = 3;
 type Point = { x: number; y: number };
 
 function formatLabel(name: string, value?: string) {
-  const trimmed = value?.trim();
-  return trimmed ? `${name} ${trimmed}` : name;
+  return [name, value?.trim()].filter(Boolean).join(' ');
 }
 
 type PlacementKey = keyof typeof DUMPSTER_GATE_DIM_PLACEMENTS;
@@ -127,9 +132,9 @@ function DimLabel({
     return () => cancelAnimationFrame(id);
   }, [text, x, y, fontSize, fontFamily, textAnchor, dominantBaseline, transform]);
 
-  const padX = 10;
-  const padY = 6;
-  const rx = 6;
+  const padX = 12;
+  const padY = 7;
+  const rx = 2;
 
   return (
     <g pointerEvents="none" transform={transform}>
@@ -140,7 +145,8 @@ function DimLabel({
           width={bbox.width + padX * 2}
           height={bbox.height + padY * 2}
           fill="#ffffff"
-          stroke="#d1d5db"
+          stroke={color}
+          strokeOpacity={0.35}
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
           rx={rx}
@@ -153,7 +159,7 @@ function DimLabel({
         y={y}
         fill={color}
         fontSize={fontSize}
-        fontFamily={fontFamily}
+        style={{ fontFamily, letterSpacing: '0.02em' }}
         textAnchor={textAnchor}
         dominantBaseline={dominantBaseline}
       >
@@ -178,7 +184,11 @@ function Dim({
   labelRotate,
   strokeWidth = 4,
   color = DIM_COLOR,
+  hidden = false,
+  fontSize = 36,
 }: {
+  hidden?: boolean;
+  fontSize?: number;
   x1: number;
   y1: number;
   x2: number;
@@ -194,6 +204,7 @@ function Dim({
   strokeWidth?: number;
   color?: string;
 }) {
+  if (hidden) return null;
   const labelTransform = labelRotate ? `rotate(${labelRotate} ${labelX} ${labelY})` : undefined;
 
   const hasWitness =
@@ -246,8 +257,8 @@ function Dim({
         y={labelY}
         text={label}
         color={color}
-        fontSize={34}
-        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize={fontSize}
+        fontFamily={DIM_FONT}
         textAnchor="middle"
         dominantBaseline="middle"
         transform={labelTransform}
@@ -259,7 +270,12 @@ function Dim({
 export default function DimensionGraphic({
   values,
   style,
+  frameless = false,
+  hide = [],
 }: DimensionGraphicProps) {
+  const shown = (key: keyof DumpsterGatePrintValues) => !hide.includes(key);
+  // Labels are drawn in viewBox units; bump them up when the drawing is phone-width so they stay legible.
+  const [labelSize, setLabelSize] = useState(36);
   const isDoubleSwing = style === 'double-swing';
   const isSingleSwingLeft = style === 'single-swing-left';
   const isSingleSwingRight = style === 'single-swing-right';
@@ -284,6 +300,16 @@ export default function DimensionGraphic({
   const [activeStep, setActiveStep] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [calPanelMinimized, setCalPanelMinimized] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      setLabelSize(w < 480 ? 50 : w < 640 ? 44 : 36);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const panelRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     dragging: boolean;
@@ -569,17 +595,16 @@ export default function DimensionGraphic({
   return (
     <div className="w-full">
       <div
-        className="relative w-full max-w-3xl mx-auto bg-white rounded-lg overflow-hidden border border-gray-300"
-        style={{ aspectRatio: `${VIEWBOX_W} / ${VIEWBOX_H}` }}
+        className={
+          frameless
+            ? 'relative w-full'
+            : 'relative w-full max-w-3xl mx-auto bg-white rounded-lg overflow-hidden border border-gray-300'
+        }
+        style={{ aspectRatio: `${VIEWBOX_W} / ${VISIBLE_H}` }}
         ref={wrapperRef}
+        role="img"
+        aria-label="Elevation drawing of a double-swing dumpster gate with your enclosure dimensions"
       >
-        <Image
-          src={basePrint}
-          alt="Dumpster gate base print"
-          fill
-          className="object-contain"
-          priority
-        />
 
         {calibrate && (
           <div
@@ -679,10 +704,12 @@ export default function DimensionGraphic({
 
         <svg
           className="absolute inset-0 h-full w-full"
-          viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+          viewBox={`0 0 ${VIEWBOX_W} ${VISIBLE_H}`}
           preserveAspectRatio="xMidYMid meet"
           onClick={handleSvgClick}
+          aria-hidden="true"
         >
+          <image href={basePrint.src} x={0} y={0} width={VIEWBOX_W} height={VIEWBOX_H} />
           <defs>
             <marker
               id="dimTick"
@@ -715,7 +742,9 @@ export default function DimensionGraphic({
               a1y={placements.enclOverall.a1y}
               a2x={placements.enclOverall.a2x}
               a2y={placements.enclOverall.a2y}
-              label={formatLabel('ENCL. OVERALL', values.enclOverall)}
+              hidden={!shown('enclOverall')}
+              fontSize={labelSize}
+              label={formatLabel('ENCLOSURE', values.enclOverall)}
               labelX={placements.enclOverall.lx}
               labelY={placements.enclOverall.ly}
               color={calibrate && activeKey === 'enclOverall' ? DIM_HIGHLIGHT_COLOR : DIM_COLOR}
@@ -731,7 +760,9 @@ export default function DimensionGraphic({
               a1y={placements.enclCTOC.a1y}
               a2x={placements.enclCTOC.a2x}
               a2y={placements.enclCTOC.a2y}
-              label={formatLabel('ENCL. C TO C', values.enclCTOC)}
+              hidden={!shown('enclCTOC')}
+              fontSize={labelSize}
+              label={formatLabel('WALL C TO C', values.enclCTOC)}
               labelX={placements.enclCTOC.lx}
               labelY={placements.enclCTOC.ly}
               color={calibrate && activeKey === 'enclCTOC' ? DIM_HIGHLIGHT_COLOR : DIM_COLOR}
@@ -747,7 +778,9 @@ export default function DimensionGraphic({
               a1y={placements.lGap.a1y}
               a2x={placements.lGap.a2x}
               a2y={placements.lGap.a2y}
-              label={formatLabel('L_GAP', values.lGap)}
+              hidden={!shown('lGap')}
+              fontSize={labelSize}
+              label={formatLabel('', values.lGap)}
               labelX={placements.lGap.lx}
               labelY={placements.lGap.ly}
               strokeWidth={calibrate && activeKey === 'lGap' ? MAIN_DIM_STROKE_SMALL_HIGHLIGHT : MAIN_DIM_STROKE_SMALL}
@@ -764,7 +797,9 @@ export default function DimensionGraphic({
                 a1y={placements.cGap.a1y}
                 a2x={placements.cGap.a2x}
                 a2y={placements.cGap.a2y}
-                label={formatLabel('C_GAP', values.cGap)}
+                hidden={!shown('cGap')}
+                fontSize={labelSize}
+                label={formatLabel('', values.cGap)}
                 labelX={placements.cGap.lx}
                 labelY={placements.cGap.ly}
                 strokeWidth={calibrate && activeKey === 'cGap' ? MAIN_DIM_STROKE_SMALL_HIGHLIGHT : MAIN_DIM_STROKE_SMALL}
@@ -781,7 +816,9 @@ export default function DimensionGraphic({
               a1y={placements.rGap.a1y}
               a2x={placements.rGap.a2x}
               a2y={placements.rGap.a2y}
-              label={formatLabel('R_GAP', values.rGap)}
+              hidden={!shown('rGap')}
+              fontSize={labelSize}
+              label={formatLabel('', values.rGap)}
               labelX={placements.rGap.lx}
               labelY={placements.rGap.ly}
               strokeWidth={calibrate && activeKey === 'rGap' ? MAIN_DIM_STROKE_SMALL_HIGHLIGHT : MAIN_DIM_STROKE_SMALL}
@@ -799,7 +836,9 @@ export default function DimensionGraphic({
                 a1y={placements.gateHeight.a1y}
                 a2x={placements.gateHeight.a2x}
                 a2y={placements.gateHeight.a2y}
-                label={formatLabel('GATE HEIGHT', values.gateHeight)}
+                hidden={!shown('gateHeight')}
+                fontSize={labelSize}
+                label={formatLabel('GATE HT', values.gateHeight)}
                 labelX={placements.gateHeight.lx}
                 labelY={placements.gateHeight.ly}
                 color={calibrate && activeKey === 'gateHeight' ? DIM_HIGHLIGHT_COLOR : DIM_COLOR}
@@ -817,6 +856,8 @@ export default function DimensionGraphic({
                 a1y={placements.gateWidth.a1y}
                 a2x={placements.gateWidth.a2x}
                 a2y={placements.gateWidth.a2y}
+                hidden={!shown('gateWidth')}
+                fontSize={labelSize}
                 label={formatLabel('GATE WIDTH', values.gateWidth)}
                 labelX={placements.gateWidth.lx}
                 labelY={placements.gateWidth.ly}
@@ -835,7 +876,9 @@ export default function DimensionGraphic({
               a1y={placements.blockWidth.a1y}
               a2x={placements.blockWidth.a2x}
               a2y={placements.blockWidth.a2y}
-              label={formatLabel('BLOCK WIDTH', values.blockWidth)}
+              hidden={!shown('blockWidth')}
+              fontSize={labelSize}
+              label={formatLabel('WALL', values.blockWidth)}
               labelX={placements.blockWidth.lx}
               labelY={placements.blockWidth.ly}
               strokeWidth={calibrate && activeKey === 'blockWidth' ? MAIN_DIM_STROKE_SMALL_HIGHLIGHT : MAIN_DIM_STROKE_SMALL}
@@ -851,7 +894,9 @@ export default function DimensionGraphic({
               a1y={placements.blockHeight.a1y}
               a2x={placements.blockHeight.a2x}
               a2y={placements.blockHeight.a2y}
-              label={formatLabel('BLOCK HEIGHT', values.blockHeight)}
+              hidden={!shown('blockHeight')}
+              fontSize={labelSize}
+              label={formatLabel('WALL HT', values.blockHeight)}
               labelX={placements.blockHeight.lx}
               labelY={placements.blockHeight.ly}
               strokeWidth={calibrate && activeKey === 'blockHeight' ? MAIN_DIM_STROKE_SMALL_HIGHLIGHT : MAIN_DIM_STROKE_SMALL}
@@ -868,7 +913,9 @@ export default function DimensionGraphic({
               a1y={placements.bottomGap.a1y}
               a2x={placements.bottomGap.a2x}
               a2y={placements.bottomGap.a2y}
-              label={formatLabel('BOTTOM GAP', values.bottomGap)}
+              hidden={!shown('bottomGap')}
+              fontSize={labelSize}
+              label={formatLabel('GAP', values.bottomGap)}
               labelX={placements.bottomGap.lx}
               labelY={placements.bottomGap.ly}
               strokeWidth={calibrate && activeKey === 'bottomGap' ? MAIN_DIM_STROKE_SMALL_HIGHLIGHT : MAIN_DIM_STROKE_SMALL}
@@ -884,6 +931,8 @@ export default function DimensionGraphic({
               a1y={placements.postDepth.a1y}
               a2x={placements.postDepth.a2x}
               a2y={placements.postDepth.a2y}
+              hidden={!shown('postDepth')}
+              fontSize={labelSize}
               label={formatLabel('POST DEPTH', values.postDepth)}
               labelX={placements.postDepth.lx}
               labelY={placements.postDepth.ly}
@@ -921,10 +970,11 @@ export default function DimensionGraphic({
         </svg>
       </div>
       
-      {/* Caption */}
-      <p className="text-white/60 text-sm text-center mt-4">
-        Illustration for reference. Dimensions shown reflect selected configuration.
-      </p>
+      {!frameless && (
+        <p className="text-white/60 text-sm text-center mt-4">
+          Illustration for reference. Dimensions shown reflect selected configuration.
+        </p>
+      )}
     </div>
   );
 }
