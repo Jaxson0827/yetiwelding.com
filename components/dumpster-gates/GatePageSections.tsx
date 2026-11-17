@@ -1,10 +1,5 @@
-import Image, { type StaticImageData } from 'next/image';
 import Link from 'next/link';
-// photo3/photo4 have uppercase .JPG extensions, which Next's static image imports don't type; use paths.
-const photoBlueSky = '/projects/photo4.JPG';
-const photoStone = '/projects/photo3.JPG';
-import photoLong from '@/public/projects/photo6.jpg';
-import photoAngle from '@/public/projects/photo35.jpg';
+import GateGallery from './GateGallery';
 
 const H2 = 'font-display text-3xl font-extrabold leading-tight text-white [font-stretch:115%] sm:text-4xl';
 const RED = '#DC143C';
@@ -225,31 +220,6 @@ export function Specs() {
 /* Gallery                                                             */
 /* ------------------------------------------------------------------ */
 
-function Photo({
-  src,
-  alt,
-  className,
-  sizes,
-}: {
-  src: StaticImageData | string;
-  alt: string;
-  className: string;
-  sizes: string;
-}) {
-  return (
-    <div className={`relative overflow-hidden bg-gate-plate ${className}`}>
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        placeholder={typeof src === 'string' ? 'empty' : 'blur'}
-        sizes={sizes}
-        className="object-cover"
-      />
-    </div>
-  );
-}
-
 export function Gallery() {
   return (
     <section id="installs" aria-labelledby="installs-heading" className="scroll-mt-24 border-t border-gate-rule bg-black py-20">
@@ -260,31 +230,8 @@ export function Gallery() {
         <p className="mt-3 max-w-xl text-base text-white/75">
           A few of the enclosure gates we&apos;ve fabricated.
         </p>
-        <div className="mt-10 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
-          <Photo
-            src={photoBlueSky}
-            alt="Double-swing steel gate with ribbed panels, strap hinges and drop rods, between stone-veneer walls"
-            className="col-span-2 aspect-[4/3] lg:row-span-2 lg:aspect-auto"
-            sizes="(min-width: 1024px) 760px, 100vw"
-          />
-          <Photo
-            src={photoAngle}
-            alt="Steel enclosure gate beside a CMU wall at an apartment building"
-            className="aspect-[4/3]"
-            sizes="(min-width: 1024px) 380px, 50vw"
-          />
-          <Photo
-            src={photoStone}
-            alt="Closed double-swing steel gate between stone-capped walls"
-            className="aspect-[4/3]"
-            sizes="(min-width: 1024px) 380px, 50vw"
-          />
-          <Photo
-            src={photoLong}
-            alt="Long steel enclosure gate across a wide trash enclosure"
-            className="col-span-2 aspect-[21/9] lg:col-span-3"
-            sizes="(min-width: 1024px) 1150px, 100vw"
-          />
+        <div className="mt-10">
+          <GateGallery />
         </div>
       </div>
     </section>
